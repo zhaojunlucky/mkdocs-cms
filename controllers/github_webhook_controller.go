@@ -11,13 +11,14 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/go-github/v45/github"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
 	"github.com/zhaojunlucky/mkdocs-cms/services"
 )
 
 // GitHubWebhookController handles webhook events from GitHub
 type GitHubWebhookController struct {
-	gitRepoService *services.GitRepoService
+	gitRepoService *services.UserGitRepoService
 	eventService   *services.EventService
 	webhookSecret  string
 }
@@ -25,7 +26,7 @@ type GitHubWebhookController struct {
 // NewGitHubWebhookController creates a new GitHubWebhookController
 func NewGitHubWebhookController(webhookSecret string) *GitHubWebhookController {
 	return &GitHubWebhookController{
-		gitRepoService: services.NewGitRepoService(),
+		gitRepoService: services.NewUserGitRepoService(),
 		eventService:   services.NewEventService(),
 		webhookSecret:  webhookSecret,
 	}
@@ -57,7 +58,12 @@ func (c *GitHubWebhookController) HandleWebhook(ctx *gin.Context) {
 	// Process the webhook event based on its type
 	switch eventType {
 	case "push":
-		c.handlePushEvent(ctx, body)
+		var event github.PushEvent
+		if err := json.Unmarshal(body, &event); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid push event payload"})
+			return
+		}
+		c.handlePushEvent(ctx, &event, body)
 	case "pull_request":
 		c.handlePullRequestEvent(ctx, body)
 	case "installation":
@@ -95,29 +101,33 @@ func (c *GitHubWebhookController) verifySignature(r *http.Request, signature str
 }
 
 // handlePushEvent processes GitHub push events
-func (c *GitHubWebhookController) handlePushEvent(ctx *gin.Context, body []byte) {
-	var event models.GitHubPushEvent
-	if err := json.Unmarshal(body, &event); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid push event payload"})
-		return
-	}
-
+func (c *GitHubWebhookController) handlePushEvent(ctx *gin.Context, event *github.PushEvent, body []byte) {
 	// Extract repository information
-	repoFullName := event.Repository.FullName
-	repoURL := event.Repository.CloneURL
-	branch := strings.TrimPrefix(event.Ref, "refs/heads/")
+	repoName := event.GetRepo().GetName()
+	repoOwner := event.GetRepo().GetOwner().GetName()
+	repoFullName := repoOwner + "/" + repoName
+	branch := event.GetRef()
+	if len(branch) > 11 && branch[:11] == "refs/heads/" {
+		branch = branch[11:]
+	}
 
-	// Find repositories in our system that match this GitHub repository
-	repos, err := c.gitRepoService.GetReposByURL(repoURL)
-	if err != nil || len(repos) == 0 {
-		log.Printf("No matching repository found for %s", repoFullName)
-		ctx.JSON(http.StatusOK, gin.H{"message": "No matching repository found"})
+	// Find repositories that match the remote URL
+	remoteURL := "https://github.com/" + repoFullName + ".git"
+	repos, err := c.gitRepoService.GetReposByURL(remoteURL)
+	if err != nil {
+		log.Printf("Failed to find repositories for URL %s: %v", remoteURL, err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to find repositories"})
 		return
 	}
 
-	// For each matching repository, sync it
+	if len(repos) == 0 {
+		log.Printf("No repositories found for URL %s", remoteURL)
+		ctx.JSON(http.StatusOK, gin.H{"message": "No matching repositories found"})
+		return
+	}
+
+	// Sync each matching repository
 	for _, repo := range repos {
-		// Only sync if the branch matches
 		if repo.Branch == branch {
 			if err := c.gitRepoService.SyncRepository(repo.ID); err != nil {
 				log.Printf("Failed to sync repository %d: %v", repo.ID, err)
@@ -125,12 +135,14 @@ func (c *GitHubWebhookController) handlePushEvent(ctx *gin.Context, body []byte)
 			}
 
 			// Log the event
+			repoID := repo.ID
 			c.eventService.CreateEvent(models.CreateEventRequest{
-				ResourceType: "repository",
-				ResourceID:   int(repo.ID),
-				EventType:    "github_push",
+				Level:        models.EventLevelInfo,
+				Source:       models.EventSourceGitRepo,
 				Message:      "Repository synced due to GitHub push event",
-				Data:         string(body),
+				ResourceID:   &repoID,
+				ResourceType: "repository",
+				Details:      string(body),
 			})
 		}
 	}
@@ -140,47 +152,56 @@ func (c *GitHubWebhookController) handlePushEvent(ctx *gin.Context, body []byte)
 
 // handlePullRequestEvent processes GitHub pull request events
 func (c *GitHubWebhookController) handlePullRequestEvent(ctx *gin.Context, body []byte) {
-	var event models.GitHubPullRequestEvent
+	var event github.PullRequestEvent
 	if err := json.Unmarshal(body, &event); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid pull request event payload"})
 		return
 	}
 
 	// Only process closed pull requests that were merged
-	if event.Action != "closed" || !event.PullRequest.Merged {
-		ctx.JSON(http.StatusOK, gin.H{"message": "Pull request event ignored"})
+	if event.GetAction() != "closed" || !event.GetPullRequest().GetMerged() {
+		ctx.JSON(http.StatusOK, gin.H{"message": "Pull request not merged, no action needed"})
 		return
 	}
 
 	// Extract repository information
-	repoFullName := event.Repository.FullName
-	repoURL := event.Repository.CloneURL
-	branch := event.PullRequest.Base.Ref
+	repoName := event.GetRepo().GetName()
+	repoOwner := event.GetRepo().GetOwner().GetLogin()
+	repoFullName := repoOwner + "/" + repoName
+	targetBranch := event.GetPullRequest().GetBase().GetRef()
 
-	// Find repositories in our system that match this GitHub repository
-	repos, err := c.gitRepoService.GetReposByURL(repoURL)
-	if err != nil || len(repos) == 0 {
-		log.Printf("No matching repository found for %s", repoFullName)
-		ctx.JSON(http.StatusOK, gin.H{"message": "No matching repository found"})
+	// Find repositories that match the remote URL
+	remoteURL := "https://github.com/" + repoFullName + ".git"
+	repos, err := c.gitRepoService.GetReposByURL(remoteURL)
+	if err != nil {
+		log.Printf("Failed to find repositories for URL %s: %v", remoteURL, err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to find repositories"})
 		return
 	}
 
-	// For each matching repository, sync it
+	if len(repos) == 0 {
+		log.Printf("No repositories found for URL %s", remoteURL)
+		ctx.JSON(http.StatusOK, gin.H{"message": "No matching repositories found"})
+		return
+	}
+
+	// Sync each matching repository
 	for _, repo := range repos {
-		// Only sync if the branch matches
-		if repo.Branch == branch {
+		if repo.Branch == targetBranch {
 			if err := c.gitRepoService.SyncRepository(repo.ID); err != nil {
 				log.Printf("Failed to sync repository %d: %v", repo.ID, err)
 				continue
 			}
 
 			// Log the event
+			repoID := repo.ID
 			c.eventService.CreateEvent(models.CreateEventRequest{
-				ResourceType: "repository",
-				ResourceID:   int(repo.ID),
-				EventType:    "github_pull_request_merged",
+				Level:        models.EventLevelInfo,
+				Source:       models.EventSourceGitRepo,
 				Message:      "Repository synced due to GitHub pull request merge",
-				Data:         string(body),
+				ResourceID:   &repoID,
+				ResourceType: "repository",
+				Details:      string(body),
 			})
 		}
 	}
@@ -190,7 +211,7 @@ func (c *GitHubWebhookController) handlePullRequestEvent(ctx *gin.Context, body 
 
 // handleInstallationEvent processes GitHub App installation events
 func (c *GitHubWebhookController) handleInstallationEvent(ctx *gin.Context, body []byte) {
-	var event models.GitHubInstallationEvent
+	var event github.InstallationEvent
 	if err := json.Unmarshal(body, &event); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid installation event payload"})
 		return
@@ -198,11 +219,11 @@ func (c *GitHubWebhookController) handleInstallationEvent(ctx *gin.Context, body
 
 	// Log the installation event
 	c.eventService.CreateEvent(models.CreateEventRequest{
+		Level:        models.EventLevelInfo,
+		Source:       models.EventSourceAPI,
+		Message:      "GitHub App " + event.GetAction(),
 		ResourceType: "github_app",
-		ResourceID:   0, // No specific resource ID for app installation
-		EventType:    "github_app_" + event.Action,
-		Message:      "GitHub App " + event.Action,
-		Data:         string(body),
+		Details:      string(body),
 	})
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Installation event processed"})
@@ -210,7 +231,7 @@ func (c *GitHubWebhookController) handleInstallationEvent(ctx *gin.Context, body
 
 // handleInstallationRepositoriesEvent processes GitHub App installation repositories events
 func (c *GitHubWebhookController) handleInstallationRepositoriesEvent(ctx *gin.Context, body []byte) {
-	var event models.GitHubInstallationRepositoriesEvent
+	var event github.InstallationRepositoriesEvent
 	if err := json.Unmarshal(body, &event); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid installation repositories event payload"})
 		return
@@ -218,11 +239,11 @@ func (c *GitHubWebhookController) handleInstallationRepositoriesEvent(ctx *gin.C
 
 	// Log the installation repositories event
 	c.eventService.CreateEvent(models.CreateEventRequest{
+		Level:        models.EventLevelInfo,
+		Source:       models.EventSourceAPI,
+		Message:      "GitHub App " + event.GetAction() + " repositories",
 		ResourceType: "github_app",
-		ResourceID:   0, // No specific resource ID for app installation repositories
-		EventType:    "github_app_" + event.Action + "_repositories",
-		Message:      "GitHub App " + event.Action + " repositories",
-		Data:         string(body),
+		Details:      string(body),
 	})
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Installation repositories event processed"})

@@ -89,6 +89,8 @@ type CreateUserGitRepoRequest struct {
 	UserID      uint   `json:"user_id" binding:"required"`
 	AuthType    string `json:"auth_type"`
 	AuthData    string `json:"auth_data"`
+	LocalPath   string `json:"local_path"`
+	Provider    string `json:"provider"`
 }
 
 // UpdateUserGitRepoRequest is the structure for repository update requests

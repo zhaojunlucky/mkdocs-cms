@@ -6,23 +6,30 @@ import (
 
 // User represents a user in the system
 type User struct {
-	ID        uint      `json:"id" gorm:"primaryKey"`
-	Username  string    `json:"username" gorm:"unique;not null"`
-	Email     string    `json:"email" gorm:"unique;not null"`
-	Password  string    `json:"-" gorm:"not null"` // Password is not exposed in JSON
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID         string    `json:"id" gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
+	Username   string    `json:"username" gorm:"unique;not null"`
+	Email      string    `json:"email" gorm:"unique;not null"`
+	Password   string    `json:"-" gorm:"default:null"` // Password is not exposed in JSON and can be null for OAuth users
+	Name       string    `json:"name"`
+	FirstName  string    `json:"first_name"`
+	LastName   string    `json:"last_name"`
+	AvatarURL  string    `json:"avatar_url"`
+	Provider   string    `json:"provider" gorm:"default:null"` // OAuth provider (github, google, etc.)
+	ProviderID string    `json:"provider_id" gorm:"default:null"` // ID from the OAuth provider
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 // UserResponse is the structure returned to clients
 type UserResponse struct {
-	ID        uint      `json:"id"`
+	ID        string    `json:"id"`
 	Username  string    `json:"username"`
 	Email     string    `json:"email"`
+	Name      string    `json:"name"`
 	FirstName string    `json:"first_name"`
 	LastName  string    `json:"last_name"`
+	AvatarURL string    `json:"avatar_url"`
+	Provider  string    `json:"provider"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -33,8 +40,11 @@ func (u *User) ToResponse() UserResponse {
 		ID:        u.ID,
 		Username:  u.Username,
 		Email:     u.Email,
+		Name:      u.Name,
 		FirstName: u.FirstName,
 		LastName:  u.LastName,
+		AvatarURL: u.AvatarURL,
+		Provider:  u.Provider,
 		CreatedAt: u.CreatedAt,
 		UpdatedAt: u.UpdatedAt,
 	}

@@ -10,6 +10,7 @@ import (
 	"github.com/zhaojunlucky/mkdocs-cms/database"
 	"github.com/zhaojunlucky/mkdocs-cms/middleware"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
+	"github.com/zhaojunlucky/mkdocs-cms/services"
 )
 
 func main() {
@@ -36,8 +37,12 @@ func main() {
 
 // setupRoutes configures all the routes for our application
 func setupRoutes(r *gin.Engine) {
+	// Initialize services
+	userService := services.NewUserService()
+	
 	// Initialize controllers
 	siteConfigController := controllers.NewSiteConfigController()
+	authController := controllers.NewAuthController(userService)
 	
 	// Initialize GitHub App controllers
 	appID := int64(0)
@@ -71,8 +76,14 @@ func setupRoutes(r *gin.Engine) {
 	githubAppController := controllers.NewGitHubAppController(appID, privateKey, githubAppSettings)
 	githubWebhookController := controllers.NewGitHubWebhookController(githubAppSettings.WebhookSecret)
 	
+	// API routes
+	api := r.Group("/api")
+	
+	// Register auth routes
+	authController.RegisterRoutes(api)
+	
 	// API v1 routes
-	v1 := r.Group("/api/v1")
+	v1 := api.Group("/v1")
 	{
 		// User routes
 		v1.GET("/users", controllers.GetUsers)
@@ -90,7 +101,7 @@ func setupRoutes(r *gin.Engine) {
 		
 		// Git Repository routes
 		v1.GET("/repos", controllers.GetRepos)
-		v1.GET("/users/:user_id/repos", controllers.GetReposByUser)
+		v1.GET("/users/repos/:user_id", controllers.GetReposByUser)
 		v1.GET("/repos/:id", controllers.GetRepo)
 		v1.POST("/repos", controllers.CreateRepo)
 		v1.PUT("/repos/:id", controllers.UpdateRepo)
@@ -107,19 +118,19 @@ func setupRoutes(r *gin.Engine) {
 		
 		// Collection routes
 		v1.GET("/collections", controllers.GetCollections)
-		v1.GET("/repos/:repo_id/collections", controllers.GetCollectionsByRepo)
+		v1.GET("/repos/collections/:repo_id", controllers.GetCollectionsByRepo)
 		v1.GET("/collections/:id", controllers.GetCollection)
 		v1.POST("/collections", controllers.CreateCollection)
 		v1.PUT("/collections/:id", controllers.UpdateCollection)
 		v1.DELETE("/collections/:id", controllers.DeleteCollection)
-		v1.GET("/repos/:repo_id/collections/by-path", controllers.GetCollectionByPath)
-		v1.GET("/collections/:collection_id/files", controllers.GetCollectionFiles)
-		v1.GET("/collections/:collection_id/browse", controllers.GetCollectionFilesInPath)
-		v1.GET("/collections/:collection_id/file", controllers.GetFileContent)
-		v1.PUT("/collections/:collection_id/file", controllers.UpdateFileContent)
-		v1.DELETE("/collections/:collection_id/file", controllers.DeleteFile)
-		v1.GET("/collections/:collection_id/file/json", controllers.GetFileContentJSON)
-		v1.POST("/collections/:collection_id/file", controllers.UploadFile)
+		v1.GET("/repos/collections/by-path/:repo_id", controllers.GetCollectionByPath)
+		v1.GET("/collections/files/:id", controllers.GetCollectionFiles)
+		v1.GET("/collections/browse/:id", controllers.GetCollectionFilesInPath)
+		v1.GET("/collections/file/:id", controllers.GetFileContent)
+		v1.PUT("/collections/file/:id", controllers.UpdateFileContent)
+		v1.DELETE("/collections/file/:id", controllers.DeleteFile)
+		v1.GET("/collections/file/json/:id", controllers.GetFileContentJSON)
+		v1.POST("/collections/file/:id", controllers.UploadFile)
 		
 		// Site Configuration routes
 		v1.GET("/site-configs", siteConfigController.GetAllSiteConfigs)
@@ -144,4 +155,9 @@ func setupRoutes(r *gin.Engine) {
 
 	// Health check
 	r.GET("/health", controllers.HealthCheck)
+	
+	// Serve Angular app for any other routes
+	r.NoRoute(func(c *gin.Context) {
+		c.File("./web/dist/web/browser/index.html")
+	})
 }

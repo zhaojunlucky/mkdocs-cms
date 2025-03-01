@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,7 +15,7 @@ import (
 	"github.com/google/go-github/v45/github"
 	"github.com/zhaojunlucky/mkdocs-cms/database"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
-	"gorm.io/gorm"
+	"golang.org/x/oauth2"
 )
 
 // UserGitRepoService handles business logic for git repositories
@@ -254,10 +255,9 @@ func (s *UserGitRepoService) syncWithGitCommand(repo models.UserGitRepo) error {
 // syncWithGitHubApp uses GitHub App authentication to sync a repository
 func (s *UserGitRepoService) syncWithGitHubApp(repo models.UserGitRepo) error {
 	// Parse the auth data
-	var authData struct {
-		InstallationID int64 `json:"installation_id"`
-	}
-	if err := json.Unmarshal([]byte(repo.AuthData), &authData); err != nil {
+	var authData models.GitHubAuthData
+	err := json.Unmarshal([]byte(repo.AuthData), &authData)
+	if err != nil {
 		return fmt.Errorf("invalid auth data: %v", err)
 	}
 
@@ -267,8 +267,15 @@ func (s *UserGitRepoService) syncWithGitHubApp(repo models.UserGitRepo) error {
 		return fmt.Errorf("failed to generate authentication token: %v", err)
 	}
 
-	// Create a GitHub client with the JWT
-	client := github.NewClient(nil).WithAuthToken(token)
+	// Create an HTTP client that sends the JWT as a bearer token
+	httpClient := &http.Client{
+		Transport: &oauth2.Transport{
+			Source: oauth2.StaticTokenSource(
+				&oauth2.Token{AccessToken: token},
+			),
+		},
+	}
+	client := github.NewClient(httpClient)
 
 	// Get an installation token
 	installationToken, _, err := client.Apps.CreateInstallationToken(nil, authData.InstallationID, nil)

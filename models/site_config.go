@@ -37,7 +37,7 @@ type SiteConfigResponse struct {
 }
 
 // ToResponse converts a SiteConfig to a SiteConfigResponse
-func (s *SiteConfig) ToResponse(includeRepo bool) SiteConfigResponse {
+func (s *SiteConfig) ToResponse() SiteConfigResponse {
 	response := SiteConfigResponse{
 		ID:              s.ID,
 		Name:            s.Name,

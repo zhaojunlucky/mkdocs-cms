@@ -48,6 +48,62 @@ func (s *UserService) GetUserByID(id uint) (models.UserResponse, error) {
 	return user.ToResponse(), nil
 }
 
+// GetUserByEmail retrieves a user by email
+func (s *UserService) GetUserByEmail(email string) (*models.User, error) {
+	var user models.User
+	result := database.DB.First(&user, "email = ?", email)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, errors.New("user not found")
+		}
+		return nil, result.Error
+	}
+
+	return &user, nil
+}
+
+// GetUserByProviderID retrieves a user by provider and provider ID
+func (s *UserService) GetUserByProviderID(provider, providerID string) (*models.User, error) {
+	var user models.User
+	result := database.DB.First(&user, "provider = ? AND provider_id = ?", provider, providerID)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, errors.New("user not found")
+		}
+		return nil, result.Error
+	}
+
+	return &user, nil
+}
+
+// CreateOrUpdateUser creates a new user or updates an existing one
+func (s *UserService) CreateOrUpdateUser(user *models.User) (*models.User, error) {
+	// Check if user exists by provider and provider ID
+	existingUser, err := s.GetUserByProviderID(user.Provider, user.ProviderID)
+	if err == nil {
+		// User exists, update fields
+		existingUser.Username = user.Username
+		existingUser.Name = user.Name
+		existingUser.Email = user.Email
+		existingUser.AvatarURL = user.AvatarURL
+		
+		result := database.DB.Save(existingUser)
+		if result.Error != nil {
+			return nil, errors.New("failed to update user")
+		}
+		
+		return existingUser, nil
+	}
+	
+	// User doesn't exist, create new one
+	result := database.DB.Create(user)
+	if result.Error != nil {
+		return nil, errors.New("failed to create user")
+	}
+	
+	return user, nil
+}
+
 // CreateUser creates a new user
 func (s *UserService) CreateUser(req models.CreateUserRequest) (models.UserResponse, error) {
 	// Hash the password

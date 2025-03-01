@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/go-github/v45/github"
+	"golang.org/x/oauth2"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
 	"github.com/zhaojunlucky/mkdocs-cms/services"
 )
@@ -18,7 +20,7 @@ import (
 type GitHubAppController struct {
 	appID             int64
 	privateKey        []byte
-	gitRepoService    *services.GitRepoService
+	gitRepoService    *services.UserGitRepoService
 	eventService      *services.EventService
 	githubAppSettings *models.GitHubAppSettings
 }
@@ -28,7 +30,7 @@ func NewGitHubAppController(appID int64, privateKey []byte, settings *models.Git
 	return &GitHubAppController{
 		appID:             appID,
 		privateKey:        privateKey,
-		gitRepoService:    services.NewGitRepoService(),
+		gitRepoService:    services.NewUserGitRepoService(),
 		eventService:      services.NewEventService(),
 		githubAppSettings: settings,
 	}
@@ -56,7 +58,14 @@ func (c *GitHubAppController) GetInstallations(ctx *gin.Context) {
 	}
 
 	// Create a GitHub client with the JWT
-	client := github.NewClient(nil).WithAuthToken(token)
+	httpClient := &http.Client{
+		Transport: &oauth2.Transport{
+			Source: oauth2.StaticTokenSource(
+				&oauth2.Token{AccessToken: token},
+			),
+		},
+	}
+	client := github.NewClient(httpClient)
 
 	// Get all installations
 	installations, _, err := client.Apps.ListInstallations(ctx, nil)
@@ -97,7 +106,14 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 	}
 
 	// Create a GitHub client with the JWT
-	client := github.NewClient(nil).WithAuthToken(token)
+	httpClient := &http.Client{
+		Transport: &oauth2.Transport{
+			Source: oauth2.StaticTokenSource(
+				&oauth2.Token{AccessToken: token},
+			),
+		},
+	}
+	client := github.NewClient(httpClient)
 
 	// Get an installation token
 	installationToken, _, err := client.Apps.CreateInstallationToken(ctx, installationID, nil)
@@ -107,10 +123,17 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 	}
 
 	// Create a new client with the installation token
-	installationClient := github.NewClient(nil).WithAuthToken(installationToken.GetToken())
+	httpClient = &http.Client{
+		Transport: &oauth2.Transport{
+			Source: oauth2.StaticTokenSource(
+				&oauth2.Token{AccessToken: installationToken.GetToken()},
+			),
+		},
+	}
+	client = github.NewClient(httpClient)
 
 	// Get repositories for the installation
-	repos, _, err := installationClient.Apps.ListRepos(ctx, nil)
+	repos, _, err := client.Apps.ListRepos(ctx, nil)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get repositories: " + err.Error()})
 		return
@@ -136,6 +159,143 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
+// GetRepositoryByID returns a specific repository by ID
+func (c *GitHubAppController) GetRepositoryByID(ctx *gin.Context) {
+	// Parse the repository ID from the URL
+	repoIDStr := ctx.Param("id")
+	repoID, err := strconv.ParseUint(repoIDStr, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid repository ID"})
+		return
+	}
+
+	// Get the repository from the database
+	repo, err := c.gitRepoService.GetRepoByID(uint(repoID))
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Repository not found"})
+		return
+	}
+
+	// Return the repository
+	ctx.JSON(http.StatusOK, repo.ToResponse(true))
+}
+
+// CreateRepositoryFromGitHub creates a repository from GitHub
+func (c *GitHubAppController) CreateRepositoryFromGitHub(ctx *gin.Context) {
+	// Parse the installation ID from the URL
+	installationIDStr := ctx.Param("id")
+	installationID, err := strconv.ParseInt(installationIDStr, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid installation ID"})
+		return
+	}
+
+	// Parse request body
+	var request struct {
+		RepositoryID int64 `json:"repository_id"`
+		UserID       uint  `json:"user_id"`
+	}
+	if err := ctx.ShouldBindJSON(&request); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Generate a JWT for GitHub API authentication
+	token, err := c.generateJWT()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate authentication token"})
+		return
+	}
+
+	// Create a GitHub client with the JWT
+	httpClient := &http.Client{
+		Transport: &oauth2.Transport{
+			Source: oauth2.StaticTokenSource(
+				&oauth2.Token{AccessToken: token},
+			),
+		},
+	}
+	client := github.NewClient(httpClient)
+
+	// Get an installation token
+	installationToken, _, err := client.Apps.CreateInstallationToken(ctx, installationID, nil)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get installation token: " + err.Error()})
+		return
+	}
+
+	// Create a new client with the installation token
+	httpClient = &http.Client{
+		Transport: &oauth2.Transport{
+			Source: oauth2.StaticTokenSource(
+				&oauth2.Token{AccessToken: installationToken.GetToken()},
+			),
+		},
+	}
+	client = github.NewClient(httpClient)
+
+	// Get repositories for the installation
+	repos, _, err := client.Apps.ListRepos(ctx, nil)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get repositories: " + err.Error()})
+		return
+	}
+
+	// Find the selected repository
+	var selectedRepo *github.Repository
+	for _, repo := range repos.Repositories {
+		if repo.GetID() == request.RepositoryID {
+			selectedRepo = repo
+			break
+		}
+	}
+
+	if selectedRepo == nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Repository not found in installation"})
+		return
+	}
+
+	// Create the repository in our system
+	authData := models.GitHubAuthData{
+		InstallationID: installationID,
+	}
+	authDataJSON, err := json.Marshal(authData)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to serialize auth data"})
+		return
+	}
+
+	newRepo, err := c.gitRepoService.CreateRepo(models.CreateUserGitRepoRequest{
+		UserID:      request.UserID,
+		Name:        selectedRepo.GetName(),
+		Description: selectedRepo.GetDescription(),
+		RemoteURL:   selectedRepo.GetCloneURL(),
+		Branch:      selectedRepo.GetDefaultBranch(),
+		Provider:    "github",
+		AuthType:    "github_app",
+		AuthData:    string(authDataJSON),
+		LocalPath:   "", // Will be set by the service
+	})
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create repository: " + err.Error()})
+		return
+	}
+
+	// Log the event
+	c.eventService.CreateEvent(models.CreateEventRequest{
+		Level:        models.EventLevelInfo,
+		Source:       models.EventSourceGitRepo,
+		Message:      "GitHub repository created",
+		ResourceID:   &newRepo.ID,
+		ResourceType: "repository",
+		Details:      fmt.Sprintf("GitHub repository %s created", selectedRepo.GetFullName()),
+	})
+
+	// Return the repository
+	ctx.JSON(http.StatusCreated, newRepo.ToResponse(true))
+}
+
 // ImportRepositories imports repositories from a GitHub App installation
 func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 	installationID, err := strconv.ParseInt(ctx.Param("installation_id"), 10, 64)
@@ -158,7 +318,14 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 	}
 
 	// Create a GitHub client with the JWT
-	client := github.NewClient(nil).WithAuthToken(token)
+	httpClient := &http.Client{
+		Transport: &oauth2.Transport{
+			Source: oauth2.StaticTokenSource(
+				&oauth2.Token{AccessToken: token},
+			),
+		},
+	}
+	client := github.NewClient(httpClient)
 
 	// Get an installation token
 	installationToken, _, err := client.Apps.CreateInstallationToken(ctx, installationID, nil)
@@ -168,10 +335,17 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 	}
 
 	// Create a new client with the installation token
-	installationClient := github.NewClient(nil).WithAuthToken(installationToken.GetToken())
+	httpClient = &http.Client{
+		Transport: &oauth2.Transport{
+			Source: oauth2.StaticTokenSource(
+				&oauth2.Token{AccessToken: installationToken.GetToken()},
+			),
+		},
+	}
+	client = github.NewClient(httpClient)
 
 	// Get repositories for the installation
-	repos, _, err := installationClient.Apps.ListRepos(ctx, nil)
+	repos, _, err := client.Apps.ListRepos(ctx, nil)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get repositories: " + err.Error()})
 		return
@@ -194,15 +368,16 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 		}
 
 		// Create the repository in our system
-		newRepo, err := c.gitRepoService.CreateRepo(models.CreateGitRepoRequest{
+		newRepo, err := c.gitRepoService.CreateRepo(models.CreateUserGitRepoRequest{
 			UserID:      request.UserID,
 			Name:        selectedRepo.GetName(),
 			Description: selectedRepo.GetDescription(),
-			URL:         selectedRepo.GetCloneURL(),
+			RemoteURL:   selectedRepo.GetCloneURL(),
 			Branch:      selectedRepo.GetDefaultBranch(),
-			LocalPath:   "", // Will be set by the service
+			Provider:    "github",
 			AuthType:    "github_app",
 			AuthData:    fmt.Sprintf(`{"installation_id": %d}`, installationID),
+			LocalPath:   "", // Will be set by the service
 		})
 
 		if err != nil {
@@ -213,21 +388,148 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 
 		// Log the event
 		c.eventService.CreateEvent(models.CreateEventRequest{
+			Level:        models.EventLevelInfo,
+			Source:       models.EventSourceGitRepo,
+			Message:      "GitHub repository imported",
+			ResourceID:   &newRepo.ID,
 			ResourceType: "repository",
-			ResourceID:   int(newRepo.ID),
-			EventType:    "github_repo_imported",
-			Message:      "Repository imported from GitHub App installation",
-			Data:         fmt.Sprintf(`{"repository_id": %d, "installation_id": %d}`, repoID, installationID),
+			Details:      fmt.Sprintf("GitHub repository %s imported", selectedRepo.GetFullName()),
 		})
 	}
 
 	// Convert to response format
-	var response []models.GitRepoResponse
+	var response []models.UserGitRepoResponse
 	for _, repo := range importedRepos {
-		response = append(response, repo.ToResponse())
+		response = append(response, repo.ToResponse(true))
 	}
 
 	ctx.JSON(http.StatusOK, response)
+}
+
+// CreateWebhook creates a webhook for a repository
+func (c *GitHubAppController) CreateWebhook(ctx *gin.Context) {
+	installationID, err := strconv.ParseInt(ctx.Param("installation_id"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid installation ID"})
+		return
+	}
+
+	// Parse request body
+	var request struct {
+		RepositoryFullName string `json:"repository_full_name"`
+		WebhookURL         string `json:"webhook_url"`
+		UserID             uint   `json:"user_id"`
+		Branch             string `json:"branch"`
+		LocalPath          string `json:"local_path"`
+	}
+	if err := ctx.ShouldBindJSON(&request); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request: " + err.Error()})
+		return
+	}
+
+	// Generate a JWT for GitHub API authentication
+	token, err := c.generateJWT()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate authentication token"})
+		return
+	}
+
+	// Create a GitHub client with the JWT
+	httpClient := &http.Client{
+		Transport: &oauth2.Transport{
+			Source: oauth2.StaticTokenSource(
+				&oauth2.Token{AccessToken: token},
+			),
+		},
+	}
+	client := github.NewClient(httpClient)
+
+	// Get an installation token
+	installationToken, _, err := client.Apps.CreateInstallationToken(ctx, installationID, nil)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get installation token: " + err.Error()})
+		return
+	}
+
+	// Create a new client with the installation token
+	httpClient = &http.Client{
+		Transport: &oauth2.Transport{
+			Source: oauth2.StaticTokenSource(
+				&oauth2.Token{AccessToken: installationToken.GetToken()},
+			),
+		},
+	}
+	client = github.NewClient(httpClient)
+
+	// Parse owner and repo from the full name
+	parts := strings.Split(request.RepositoryFullName, "/")
+	if len(parts) != 2 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid repository full name format"})
+		return
+	}
+	owner := parts[0]
+	repo := parts[1]
+
+	// Create the webhook
+	hook := &github.Hook{
+		Config: map[string]interface{}{
+			"url":          request.WebhookURL,
+			"content_type": "json",
+			"secret":       c.githubAppSettings.WebhookSecret,
+		},
+		Events: []string{"push"},
+		Active: github.Bool(true),
+	}
+
+	createdHook, _, err := client.Repositories.CreateHook(ctx, owner, repo, hook)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create webhook: " + err.Error()})
+		return
+	}
+
+	// Create the git repository in our system
+	authData := models.GitHubAuthData{
+		InstallationID: installationID,
+	}
+	authDataJSON, err := json.Marshal(authData)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to serialize auth data"})
+		return
+	}
+
+	newRepo, err := c.gitRepoService.CreateRepo(models.CreateUserGitRepoRequest{
+		UserID:      request.UserID,
+		Name:        repo,
+		Description: "GitHub repository " + request.RepositoryFullName,
+		RemoteURL:   "https://github.com/" + request.RepositoryFullName + ".git",
+		Branch:      request.Branch,
+		Provider:    "github",
+		AuthType:    "github_app",
+		AuthData:    string(authDataJSON),
+		LocalPath:   request.LocalPath,
+	})
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create repository: " + err.Error()})
+		return
+	}
+
+	// Log the event
+	c.eventService.CreateEvent(models.CreateEventRequest{
+		Level:        models.EventLevelInfo,
+		Source:       models.EventSourceGitRepo,
+		Message:      "GitHub repository created",
+		ResourceID:   &newRepo.ID,
+		ResourceType: "repository",
+		Details:      fmt.Sprintf("GitHub repository %s created", request.RepositoryFullName),
+	})
+
+	response := map[string]interface{}{
+		"hook_id":   createdHook.GetID(),
+		"repo_id":   newRepo.ID,
+		"repo_name": newRepo.Name,
+	}
+
+	ctx.JSON(http.StatusCreated, response)
 }
 
 // generateJWT generates a JWT for GitHub App authentication
@@ -253,85 +555,4 @@ func (c *GitHubAppController) generateJWT() (string, error) {
 	}
 
 	return signedToken, nil
-}
-
-// CreateWebhook creates a webhook for a repository
-func (c *GitHubAppController) CreateWebhook(ctx *gin.Context) {
-	installationID, err := strconv.ParseInt(ctx.Param("installation_id"), 10, 64)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid installation ID"})
-		return
-	}
-
-	var request models.CreateWebhookRequest
-	if err := ctx.ShouldBindJSON(&request); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Generate a JWT for GitHub API authentication
-	token, err := c.generateJWT()
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate authentication token"})
-		return
-	}
-
-	// Create a GitHub client with the JWT
-	client := github.NewClient(nil).WithAuthToken(token)
-
-	// Get an installation token
-	installationToken, _, err := client.Apps.CreateInstallationToken(ctx, installationID, nil)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get installation token: " + err.Error()})
-		return
-	}
-
-	// Create a new client with the installation token
-	installationClient := github.NewClient(nil).WithAuthToken(installationToken.GetToken())
-
-	// Parse owner and repo from the full name
-	parts := request.RepositoryFullName
-	if len(parts) != 2 {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid repository full name"})
-		return
-	}
-	owner := parts[0]
-	repo := parts[1]
-
-	// Create the webhook
-	hook := &github.Hook{
-		Config: map[string]interface{}{
-			"url":          request.WebhookURL,
-			"content_type": "json",
-			"secret":       request.Secret,
-		},
-		Events: request.Events,
-		Active: github.Bool(true),
-	}
-
-	createdHook, _, err := installationClient.Repositories.CreateHook(ctx, owner, repo, hook)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create webhook: " + err.Error()})
-		return
-	}
-
-	// Log the event
-	c.eventService.CreateEvent(models.CreateEventRequest{
-		ResourceType: "repository",
-		ResourceID:   0, // No specific repository ID in our system
-		EventType:    "github_webhook_created",
-		Message:      "GitHub webhook created",
-		Data:         fmt.Sprintf(`{"repository": "%s/%s", "webhook_id": %d}`, owner, repo, createdHook.GetID()),
-	})
-
-	response := map[string]interface{}{
-		"id":           createdHook.GetID(),
-		"url":          createdHook.GetURL(),
-		"events":       createdHook.Events,
-		"active":       createdHook.GetActive(),
-		"created_at":   createdHook.GetCreatedAt().Format(time.RFC3339),
-		"updated_at":   createdHook.GetUpdatedAt().Format(time.RFC3339),
-	}
-
-	ctx.JSON(http.StatusCreated, response)
 }

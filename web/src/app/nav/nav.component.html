@@ -1,0 +1,37 @@
+<mat-toolbar color="primary" class="nav-toolbar">
+  <a routerLink="/home" class="logo-link">
+    <span class="logo">MkDocs CMS</span>
+  </a>
+  
+  <span class="spacer"></span>
+  
+  <ng-container *ngIf="authService.isLoggedIn">
+    <button mat-icon-button [matMenuTriggerFor]="userMenu" class="user-menu-button">
+      <mat-icon>account_circle</mat-icon>
+    </button>
+    
+    <mat-menu #userMenu="matMenu">
+      <div class="user-info" *ngIf="authService.currentUser">
+        <div class="user-avatar" *ngIf="authService.currentUser.avatar_url">
+          <img [src]="authService.currentUser.avatar_url" alt="User avatar">
+        </div>
+        <div class="user-details">
+          <p class="user-name">{{ authService.currentUser.name }}</p>
+          <p class="user-email">{{ authService.currentUser.email }}</p>
+        </div>
+      </div>
+      
+      <mat-divider></mat-divider>
+      
+      <button mat-menu-item (click)="logout()">
+        <mat-icon>logout</mat-icon>
+        <span>Logout</span>
+      </button>
+    </mat-menu>
+  </ng-container>
+  
+  <a *ngIf="!authService.isLoggedIn" mat-button routerLink="/login">
+    <mat-icon>login</mat-icon>
+    <span>Login</span>
+  </a>
+</mat-toolbar>
