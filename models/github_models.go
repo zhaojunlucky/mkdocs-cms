@@ -4,19 +4,19 @@ import "time"
 
 // GitHubAppSettings contains configuration for the GitHub App
 type GitHubAppSettings struct {
-	AppID       int64  `json:"app_id"`
-	AppName     string `json:"app_name"`
-	Description string `json:"description"`
-	HomepageURL string `json:"homepage_url"`
-	WebhookURL  string `json:"webhook_url"`
-	WebhookSecret string `json:"webhook_secret"`
+	AppID          int64  `json:"app_id"`
+	AppName        string `json:"app_name"`
+	Description    string `json:"description"`
+	HomepageURL    string `json:"homepage_url"`
+	WebhookURL     string `json:"webhook_url"`
+	WebhookSecret  string `json:"webhook_secret"`
 	PrivateKeyPath string `json:"private_key_path"`
 }
 
 // ImportRepositoriesRequest represents a request to import repositories from GitHub
 type ImportRepositoriesRequest struct {
-	UserID        string `json:"user_id" binding:"required"`
-	RepositoryIDs []string `json:"repository_ids" binding:"required"`
+	UserID        string  `json:"user_id"`
+	RepositoryIDs []int64 `json:"repositories" binding:"required"`
 }
 
 // CreateWebhookRequest represents a request to create a webhook for a GitHub repository
@@ -59,7 +59,7 @@ type GitHubPushEvent struct {
 		Name  string `json:"name"`
 		Email string `json:"email"`
 	} `json:"pusher"`
-	Sender GitHubUser `json:"sender"`
+	Sender  GitHubUser `json:"sender"`
 	Commits []struct {
 		ID        string    `json:"id"`
 		Message   string    `json:"message"`
@@ -73,8 +73,8 @@ type GitHubPushEvent struct {
 
 // GitHubPullRequestEvent represents a GitHub pull request event
 type GitHubPullRequestEvent struct {
-	Action      string           `json:"action"`
-	Number      int              `json:"number"`
+	Action      string `json:"action"`
+	Number      int    `json:"number"`
 	PullRequest struct {
 		URL       string    `json:"url"`
 		ID        string    `json:"id"`
@@ -115,7 +115,7 @@ type GitHubInstallationEvent struct {
 
 // GitHubInstallationRepositoriesEvent represents a GitHub App installation repositories event
 type GitHubInstallationRepositoriesEvent struct {
-	Action              string `json:"action"`
+	Action              string             `json:"action"`
 	RepositoriesAdded   []GitHubRepository `json:"repositories_added"`
 	RepositoriesRemoved []GitHubRepository `json:"repositories_removed"`
 	Installation        struct {

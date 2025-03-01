@@ -30,6 +30,7 @@ type UserGitRepo struct {
 	User        User         `json:"user" gorm:"foreignKey:UserID"`
 	AuthType    string       `json:"auth_type" gorm:"default:'none'"`
 	AuthData    string       `json:"auth_data"`
+	Provider    string       `json:"provider" gorm:"default:'git'"`
 	LastSyncAt  time.Time    `json:"last_sync_at"`
 	Status      GitRepoStatus `json:"status" gorm:"type:string;default:'pending'"`
 	ErrorMsg    string       `json:"error_msg"`

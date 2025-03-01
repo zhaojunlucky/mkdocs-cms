@@ -83,11 +83,11 @@ func (s *UserGitRepoService) GetReposByURL(url string) ([]models.UserGitRepo, er
 }
 
 // CreateRepo creates a new git repository
-func (s *UserGitRepoService) CreateRepo(request models.CreateUserGitRepoRequest) (models.UserGitRepo, error) {
+func (s *UserGitRepoService) CreateRepo(repo *models.UserGitRepo) error {
 	// Check if user exists
 	var user models.User
-	if err := database.DB.First(&user, request.UserID).Error; err != nil {
-		return models.UserGitRepo{}, errors.New("user not found")
+	if err := database.DB.First(&user, "id = ?", repo.UserID).Error; err != nil {
+		return errors.New("user not found")
 	}
 
 	// Generate local path for the repository
@@ -95,33 +95,23 @@ func (s *UserGitRepoService) CreateRepo(request models.CreateUserGitRepoRequest)
 
 	// Create base directory if it doesn't exist
 	if err := os.MkdirAll(baseRepoPath, 0755); err != nil {
-		return models.UserGitRepo{}, err
+		return err
 	}
 
 	// Create a unique local path for this repository
-	localPath := filepath.Join(baseRepoPath, user.Username, request.Name)
+	repo.LocalPath = filepath.Join(baseRepoPath, user.Username, repo.Name)
 
-	repo := models.UserGitRepo{
-		Name:        request.Name,
-		Description: request.Description,
-		LocalPath:   localPath,
-		RemoteURL:   request.RemoteURL,
-		UserID:      request.UserID,
-		AuthType:    request.AuthType,
-		AuthData:    request.AuthData,
-		Status:      models.StatusPending,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-	}
-
-	if request.Branch != "" {
-		repo.Branch = request.Branch
-	} else {
+	// Set default values if not provided
+	if repo.Branch == "" {
 		repo.Branch = "main" // Default branch
 	}
 
-	result := database.DB.Create(&repo)
-	return repo, result.Error
+	repo.Status = models.StatusPending
+	repo.CreatedAt = time.Now()
+	repo.UpdatedAt = time.Now()
+
+	result := database.DB.Create(repo)
+	return result.Error
 }
 
 // UpdateRepo updates an existing git repository

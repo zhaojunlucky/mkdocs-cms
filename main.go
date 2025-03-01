@@ -123,13 +123,23 @@ func setupRoutes(r *gin.Engine, appConfig *config.Config) {
 		postController.RegisterRoutes(v1)
 
 		// Git Repository routes
-		v1.GET("/repos", controllers.GetRepos)
-		v1.GET("/users/repos/:user_id", controllers.GetReposByUser)
-		v1.GET("/repos/:id", controllers.GetRepo)
-		v1.POST("/repos", controllers.CreateRepo)
-		v1.PUT("/repos/:id", controllers.UpdateRepo)
-		v1.DELETE("/repos/:id", controllers.DeleteRepo)
-		v1.POST("/repos/:id/sync", controllers.SyncRepo)
+		repos := v1.Group("/repos")
+		repos.Use(middleware.RequireAuth())
+		{
+			repos.GET("", controllers.GetRepos)
+			repos.GET("/:id", controllers.GetRepo)
+			repos.POST("", controllers.CreateRepo)
+			repos.PUT("/:id", controllers.UpdateRepo)
+			repos.DELETE("/:id", controllers.DeleteRepo)
+			repos.POST("/:id/sync", controllers.SyncRepo)
+		}
+		
+		// User repositories route
+		userRepos := v1.Group("/users/repos")
+		userRepos.Use(middleware.RequireAuth())
+		{
+			userRepos.GET("/:user_id", controllers.GetReposByUser)
+		}
 
 		// Event routes
 		v1.GET("/events", controllers.GetEvents)

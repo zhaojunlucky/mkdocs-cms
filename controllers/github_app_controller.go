@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -160,9 +159,9 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 	// Check if the requested installation belongs to the user
 	installationBelongsToUser := false
 	for _, inst := range installations {
-		if inst.GetID() == installationID && 
-		   user.Provider == "github" && 
-		   strings.EqualFold(inst.GetAccount().GetLogin(), user.Username) {
+		if inst.GetID() == installationID &&
+			user.Provider == "github" &&
+			strings.EqualFold(inst.GetAccount().GetLogin(), user.Username) {
 			installationBelongsToUser = true
 			break
 		}
@@ -314,16 +313,7 @@ func (c *GitHubAppController) CreateRepositoryFromGitHub(ctx *gin.Context) {
 	}
 
 	// Create the repository in our system
-	authData := models.GitHubAuthData{
-		InstallationID: installationID,
-	}
-	authDataJSON, err := json.Marshal(authData)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to serialize auth data"})
-		return
-	}
-
-	newRepo, err := c.gitRepoService.CreateRepo(models.CreateUserGitRepoRequest{
+	repo := &models.UserGitRepo{
 		UserID:      request.UserID,
 		Name:        selectedRepo.GetName(),
 		Description: selectedRepo.GetDescription(),
@@ -331,10 +321,10 @@ func (c *GitHubAppController) CreateRepositoryFromGitHub(ctx *gin.Context) {
 		Branch:      selectedRepo.GetDefaultBranch(),
 		Provider:    "github",
 		AuthType:    "github_app",
-		AuthData:    string(authDataJSON),
-		LocalPath:   "", // Will be set by the service
-	})
+		AuthData:    fmt.Sprintf(`{"installation_id": %d}`, installationID),
+	}
 
+	err = c.gitRepoService.CreateRepo(repo)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create repository: " + err.Error()})
 		return
@@ -345,17 +335,23 @@ func (c *GitHubAppController) CreateRepositoryFromGitHub(ctx *gin.Context) {
 		Level:        models.EventLevelInfo,
 		Source:       models.EventSourceGitRepo,
 		Message:      "GitHub repository created",
-		ResourceID:   &newRepo.ID,
+		ResourceID:   &repo.ID,
 		ResourceType: "repository",
 		Details:      fmt.Sprintf("GitHub repository %s created", selectedRepo.GetFullName()),
 	})
 
 	// Return the repository
-	ctx.JSON(http.StatusCreated, newRepo.ToResponse(true))
+	ctx.JSON(http.StatusCreated, repo.ToResponse(true))
 }
 
 // ImportRepositories imports repositories from a GitHub App installation
 func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
+	authenticatedUserID, exists := ctx.Get("userId")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
 	installationID, err := strconv.ParseInt(ctx.Param("installation_id"), 10, 64)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid installation ID"})
@@ -367,6 +363,7 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	request.UserID = authenticatedUserID.(string)
 
 	// Generate a JWT for GitHub API authentication
 	token, err := c.generateJWT()
@@ -415,7 +412,7 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 		// Find the repository in the list
 		var selectedRepo *github.Repository
 		for _, repo := range repos.Repositories {
-			if strconv.FormatInt(repo.GetID(), 10) == repoID {
+			if repo.GetID() == repoID {
 				selectedRepo = repo
 				break
 			}
@@ -426,7 +423,7 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 		}
 
 		// Create the repository in our system
-		newRepo, err := c.gitRepoService.CreateRepo(models.CreateUserGitRepoRequest{
+		newRepo := &models.UserGitRepo{
 			UserID:      request.UserID,
 			Name:        selectedRepo.GetName(),
 			Description: selectedRepo.GetDescription(),
@@ -436,13 +433,14 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 			AuthType:    "github_app",
 			AuthData:    fmt.Sprintf(`{"installation_id": %d}`, installationID),
 			LocalPath:   "", // Will be set by the service
-		})
+		}
 
+		err = c.gitRepoService.CreateRepo(newRepo)
 		if err != nil {
 			continue
 		}
 
-		importedRepos = append(importedRepos, newRepo)
+		importedRepos = append(importedRepos, *newRepo)
 
 		// Log the event
 		c.eventService.CreateEvent(models.CreateEventRequest{
@@ -546,16 +544,7 @@ func (c *GitHubAppController) CreateWebhook(ctx *gin.Context) {
 	}
 
 	// Create the git repository in our system
-	authData := models.GitHubAuthData{
-		InstallationID: installationID,
-	}
-	authDataJSON, err := json.Marshal(authData)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to serialize auth data"})
-		return
-	}
-
-	newRepo, err := c.gitRepoService.CreateRepo(models.CreateUserGitRepoRequest{
+	repoModel := &models.UserGitRepo{
 		UserID:      request.UserID,
 		Name:        repo,
 		Description: "GitHub repository " + request.RepositoryFullName,
@@ -563,9 +552,11 @@ func (c *GitHubAppController) CreateWebhook(ctx *gin.Context) {
 		Branch:      request.Branch,
 		Provider:    "github",
 		AuthType:    "github_app",
-		AuthData:    string(authDataJSON),
+		AuthData:    fmt.Sprintf(`{"installation_id": %d}`, installationID),
 		LocalPath:   request.LocalPath,
-	})
+	}
+
+	err = c.gitRepoService.CreateRepo(repoModel)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create repository: " + err.Error()})
 		return
@@ -576,15 +567,15 @@ func (c *GitHubAppController) CreateWebhook(ctx *gin.Context) {
 		Level:        models.EventLevelInfo,
 		Source:       models.EventSourceGitRepo,
 		Message:      "GitHub repository created",
-		ResourceID:   &newRepo.ID,
+		ResourceID:   &repoModel.ID,
 		ResourceType: "repository",
 		Details:      fmt.Sprintf("GitHub repository %s created", request.RepositoryFullName),
 	})
 
 	response := map[string]interface{}{
 		"hook_id":   createdHook.GetID(),
-		"repo_id":   newRepo.ID,
-		"repo_name": newRepo.Name,
+		"repo_id":   repoModel.ID,
+		"repo_name": repoModel.Name,
 	}
 
 	ctx.JSON(http.StatusCreated, response)
