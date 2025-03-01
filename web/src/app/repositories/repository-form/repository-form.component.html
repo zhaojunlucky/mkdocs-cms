@@ -1,0 +1,61 @@
+<div class="repository-form-container">
+  <div class="form-header">
+    <a routerLink="/home" class="back-link">← Back to Repositories</a>
+    <h1>Add New Repository</h1>
+  </div>
+  
+  <form [formGroup]="repoForm" (ngSubmit)="onSubmit()" class="repository-form">
+    <div class="form-group">
+      <label for="name">Repository Name</label>
+      <input 
+        type="text" 
+        id="name" 
+        formControlName="name" 
+        placeholder="My MkDocs Repository"
+        [ngClass]="{'invalid': repoForm.get('name')?.invalid && repoForm.get('name')?.touched}"
+      >
+      <div class="error-message" *ngIf="repoForm.get('name')?.invalid && repoForm.get('name')?.touched">
+        Repository name is required
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label for="url">Repository URL</label>
+      <input 
+        type="text" 
+        id="url" 
+        formControlName="url" 
+        placeholder="https://github.com/username/repo"
+        [ngClass]="{'invalid': repoForm.get('url')?.invalid && repoForm.get('url')?.touched}"
+      >
+      <div class="error-message" *ngIf="repoForm.get('url')?.invalid && repoForm.get('url')?.touched">
+        Repository URL is required
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label for="local_path">Local Path</label>
+      <input 
+        type="text" 
+        id="local_path" 
+        formControlName="local_path" 
+        placeholder="/path/to/local/repository"
+        [ngClass]="{'invalid': repoForm.get('local_path')?.invalid && repoForm.get('local_path')?.touched}"
+      >
+      <div class="error-message" *ngIf="repoForm.get('local_path')?.invalid && repoForm.get('local_path')?.touched">
+        Local path is required
+      </div>
+    </div>
+    
+    <div class="form-actions">
+      <button type="button" routerLink="/home" class="cancel-btn">Cancel</button>
+      <button type="submit" [disabled]="repoForm.invalid || loading" class="submit-btn">
+        {{ loading ? 'Adding...' : 'Add Repository' }}
+      </button>
+    </div>
+    
+    <div *ngIf="error" class="form-error">
+      {{ error }}
+    </div>
+  </form>
+</div>

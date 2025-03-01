@@ -35,7 +35,7 @@ func GetReposByUser(c *gin.Context) {
 		return
 	}
 
-	var response []models.UserGitRepoResponse
+	var response []models.UserGitRepoResponse = make([]models.UserGitRepoResponse, 0)
 	for _, repo := range repos {
 		response = append(response, repo.ToResponse(false))
 	}

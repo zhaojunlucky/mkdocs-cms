@@ -1,5 +1,40 @@
 <div class="home-container">
   <h1>Welcome to MkDocs CMS</h1>
-  <p>You are successfully logged in!</p>
-  <p>This is the home page of the MkDocs CMS web interface.</p>
+  
+  <div class="repositories-section">
+    <div class="section-header">
+      <h2>Your Repositories</h2>
+      <button class="add-repo-btn">Add Repository</button>
+    </div>
+    
+    <div *ngIf="loading" class="loading-indicator">
+      <p>Loading repositories...</p>
+    </div>
+    
+    <div *ngIf="error" class="error-message">
+      <p>{{ error }}</p>
+    </div>
+    
+    <div *ngIf="!loading && !error && repositories.length === 0" class="empty-state">
+      <p>You don't have any repositories yet.</p>
+      <button class="add-repo-btn">Add Your First Repository</button>
+    </div>
+    
+    <div *ngIf="!loading && repositories.length > 0" class="repositories-list">
+      <div *ngFor="let repo of repositories" class="repository-card">
+        <div class="repo-header">
+          <h3>{{ repo.name }}</h3>
+        </div>
+        <div class="repo-details">
+          <p class="repo-path">{{ repo.local_path }}</p>
+          <p class="repo-date">Added: {{ repo.created_at | date }}</p>
+        </div>
+        <div class="repo-actions">
+          <a [routerLink]="['/repositories', repo.id]" class="view-btn">View Collections</a>
+          <button class="edit-btn">Edit</button>
+          <button class="delete-btn">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

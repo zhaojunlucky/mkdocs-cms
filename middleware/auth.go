@@ -22,12 +22,12 @@ func NewAuthMiddleware() gin.HandlerFunc {
 	if configPath == "" {
 		configPath = "./config/oauth_config.yaml"
 	}
-	
+
 	appConfig, err := config.LoadConfig(configPath)
 	if err != nil {
 		log.Fatalf("Failed to load configuration for auth middleware: %v", err)
 	}
-	
+
 	authMiddleware := &AuthMiddleware{
 		jwtSecret: []byte(appConfig.JWT.Secret),
 	}
@@ -74,13 +74,13 @@ func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 	// Check if the token is valid
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		// Set user ID in the context
-		userId, ok := claims["userId"].(string)
+		userId, ok := claims["sub"].(string)
 		if !ok {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token claims"})
 			c.Abort()
 			return
 		}
-		
+
 		c.Set("userId", userId)
 		c.Next()
 	} else {
@@ -96,14 +96,14 @@ func RequireAuth() gin.HandlerFunc {
 	if configPath == "" {
 		configPath = "./config/oauth_config.yaml"
 	}
-	
+
 	appConfig, err := config.LoadConfig(configPath)
 	if err != nil {
 		log.Fatalf("Failed to load configuration for auth middleware: %v", err)
 	}
-	
+
 	jwtSecret := []byte(appConfig.JWT.Secret)
-	
+
 	return func(c *gin.Context) {
 		// Get the Authorization header
 		authHeader := c.GetHeader("Authorization")
@@ -149,7 +149,7 @@ func RequireAuth() gin.HandlerFunc {
 				c.Abort()
 				return
 			}
-			
+
 			c.Set("userId", userId)
 			c.Next()
 		} else {

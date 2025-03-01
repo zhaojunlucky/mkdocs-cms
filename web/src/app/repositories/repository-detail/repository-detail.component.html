@@ -1,0 +1,47 @@
+<div class="repository-detail-container">
+  <div *ngIf="loading" class="loading-indicator">
+    <p>Loading repository details...</p>
+  </div>
+  
+  <div *ngIf="error" class="error-message">
+    <p>{{ error }}</p>
+    <a routerLink="/home" class="back-btn">Back to Home</a>
+  </div>
+  
+  <div *ngIf="!loading && !error && repository">
+    <div class="repository-header">
+      <a routerLink="/home" class="back-link">← Back to Repositories</a>
+      <h1>{{ repository.name }}</h1>
+      <p class="repo-path">{{ repository.local_path }}</p>
+    </div>
+    
+    <div class="collections-section">
+      <div class="section-header">
+        <h2>Collections</h2>
+        <button class="add-collection-btn">Add Collection</button>
+      </div>
+      
+      <div *ngIf="collections.length === 0" class="empty-state">
+        <p>This repository doesn't have any collections yet.</p>
+        <button class="add-collection-btn">Add Your First Collection</button>
+      </div>
+      
+      <div *ngIf="collections.length > 0" class="collections-list">
+        <div *ngFor="let collection of collections" class="collection-card">
+          <div class="collection-header">
+            <h3>{{ collection.name }}</h3>
+          </div>
+          <div class="collection-details">
+            <p class="collection-path">{{ collection.path }}</p>
+            <p class="collection-date">Added: {{ collection.created_at | date }}</p>
+          </div>
+          <div class="collection-actions">
+            <a [routerLink]="['/collections', collection.id]" class="view-btn">View Posts</a>
+            <button class="edit-btn">Edit</button>
+            <button class="delete-btn">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
