@@ -25,9 +25,9 @@ type GitHubWebhookController struct {
 }
 
 // NewGitHubWebhookController creates a new GitHubWebhookController
-func NewGitHubWebhookController(webhookSecret string) *GitHubWebhookController {
+func NewGitHubWebhookController(webhookSecret string, settings *models.GitHubAppSettings) *GitHubWebhookController {
 	return &GitHubWebhookController{
-		gitRepoService: services.NewUserGitRepoService(),
+		gitRepoService: services.NewUserGitRepoService(settings),
 		eventService:   services.NewEventService(),
 		webhookSecret:  webhookSecret,
 	}

@@ -1,13 +1,19 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { RepositoryService, Repository } from '../services/repository.service';
+import { RepositoryService, Repository, SyncResponse, AsyncTask } from '../services/repository.service';
 import { AuthService } from '../auth/auth.service';
+import { interval } from 'rxjs';
+import { switchMap, takeWhile } from 'rxjs/operators';
+import { ComponentsModule } from '../components/components.module';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, ComponentsModule, MatButtonModule, MatIconModule, MatMenuModule],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
@@ -15,6 +21,7 @@ export class HomeComponent implements OnInit {
   repositories: Repository[] = [];
   loading = true;
   error = '';
+  activeTasks: Map<string, AsyncTask> = new Map(); // Map of repo ID to task
   
   constructor(
     private repositoryService: RepositoryService,
@@ -34,7 +41,7 @@ export class HomeComponent implements OnInit {
         this.repositories = repos;
         this.loading = false;
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Error loading repositories:', err);
         this.error = 'Failed to load repositories. Please try again later.';
         this.loading = false;
@@ -59,14 +66,58 @@ export class HomeComponent implements OnInit {
     repo.syncing = true; // Show syncing indicator
     
     this.repositoryService.syncRepository(repo.id).subscribe({
-      next: () => {
-        // Reload the repositories to get updated status
-        this.loadRepositories();
+      next: (response: SyncResponse) => {
+        console.log('Sync started with task ID:', response.task_id);
+        
+        // Create a temporary AsyncTask object until we get the full details
+        const tempTask: AsyncTask = {
+          id: response.task_id,
+          type: 'sync',
+          status: 'pending',
+          resource_id: repo.id.toString(),
+          user_id: '',
+          message: 'Sync in progress...',
+          progress: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        // Start polling for task status
+        this.activeTasks.set(repo.id.toString(), tempTask);
+        this.pollTaskStatus(response.task_id, repo);
       },
-      error: (err) => {
-        console.error('Error syncing repository:', err);
+      error: (err: any) => {
+        console.error('Error starting repository sync:', err);
         repo.syncing = false;
         // Optionally show an error message
+      }
+    });
+  }
+
+  // Poll for task status updates
+  private pollTaskStatus(taskId: string, repo: Repository, intervalMs: number = 2000): void {
+    const subscription = interval(intervalMs).pipe(
+      switchMap(() => this.repositoryService.getTask(taskId)),
+      takeWhile((task: AsyncTask) => task.status === 'pending' || task.status === 'running', true)
+    ).subscribe({
+      next: (task: AsyncTask) => {
+        console.log('Task status:', task.status);
+        
+        if (task.status === 'completed' || task.status === 'failed') {
+          // Task is done, stop polling and reload repositories
+          subscription.unsubscribe();
+          repo.syncing = false;
+          this.activeTasks.delete(repo.id.toString());
+          this.loadRepositories();
+        } else {
+          this.activeTasks.set(repo.id.toString(), task);
+        }
+      },
+      error: (err: any) => {
+        console.error('Error polling task status:', err);
+        subscription.unsubscribe();
+        repo.syncing = false;
+        this.activeTasks.delete(repo.id.toString());
       }
     });
   }
@@ -84,7 +135,7 @@ export class HomeComponent implements OnInit {
         next: () => {
           this.repositories = this.repositories.filter(r => r.id !== repo.id);
         },
-        error: (err) => {
+        error: (err: any) => {
           console.error('Error deleting repository:', err);
           // Optionally show an error message
         }

@@ -43,6 +43,14 @@
           <p class="repo-date">Last synced: {{ repo.last_sync_at ? (repo.last_sync_at | date) : 'Never' }}</p>
           <p class="repo-date">Added: {{ repo.created_at | date }}</p>
         </div>
+        
+        <!-- Task Status Component -->
+        <app-task-status 
+          *ngIf="activeTasks.has(repo.id.toString())" 
+          [task]="activeTasks.get(repo.id.toString())" 
+          [autoRefresh]="true">
+        </app-task-status>
+        
         <div class="repo-actions">
           <a [routerLink]="['/repositories', repo.id]" class="view-btn">View Collections</a>
         </div>

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,17 +26,19 @@ type UserGitRepoService struct {
 }
 
 // NewUserGitRepoService creates a new UserGitRepoService
-func NewUserGitRepoService() *UserGitRepoService {
-	// Try to load GitHub App settings from environment variables
-	appID, _ := strconv.ParseInt(os.Getenv("GITHUB_APP_ID"), 10, 64)
-	settings := &models.GitHubAppSettings{
-		AppID:          appID,
-		AppName:        os.Getenv("GITHUB_APP_NAME"),
-		Description:    os.Getenv("GITHUB_APP_DESCRIPTION"),
-		HomepageURL:    os.Getenv("GITHUB_APP_HOMEPAGE_URL"),
-		WebhookURL:     os.Getenv("GITHUB_APP_WEBHOOK_URL"),
-		WebhookSecret:  os.Getenv("GITHUB_APP_WEBHOOK_SECRET"),
-		PrivateKeyPath: os.Getenv("GITHUB_APP_PRIVATE_KEY_PATH"),
+func NewUserGitRepoService(settings *models.GitHubAppSettings) *UserGitRepoService {
+	// If settings is nil, try to load from environment variables
+	if settings == nil {
+		appID, _ := strconv.ParseInt(os.Getenv("GITHUB_APP_ID"), 10, 64)
+		settings = &models.GitHubAppSettings{
+			AppID:          appID,
+			AppName:        os.Getenv("GITHUB_APP_NAME"),
+			Description:    os.Getenv("GITHUB_APP_DESCRIPTION"),
+			HomepageURL:    os.Getenv("GITHUB_APP_HOMEPAGE_URL"),
+			WebhookURL:     os.Getenv("GITHUB_APP_WEBHOOK_URL"),
+			WebhookSecret:  os.Getenv("GITHUB_APP_WEBHOOK_SECRET"),
+			PrivateKeyPath: os.Getenv("GITHUB_APP_PRIVATE_KEY_PATH"),
+		}
 	}
 
 	// Try to load private key if path is provided
@@ -265,7 +268,8 @@ func (s *UserGitRepoService) syncWithGitHubApp(repo models.UserGitRepo) error {
 	client := github.NewClient(httpClient)
 
 	// Get an installation token
-	installationToken, _, err := client.Apps.CreateInstallationToken(nil, authData.InstallationID, nil)
+	ctx := context.Background()
+	installationToken, _, err := client.Apps.CreateInstallationToken(ctx, authData.InstallationID, nil)
 	if err != nil {
 		return fmt.Errorf("failed to get installation token: %v", err)
 	}

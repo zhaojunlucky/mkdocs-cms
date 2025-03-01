@@ -29,6 +29,32 @@ export interface Collection {
   updated_at: string;
 }
 
+export interface AsyncTask {
+  id: string;
+  type: string;
+  status: string;
+  resource_id: string;
+  user_id: string;
+  message: string;
+  progress: number;
+  started_at?: string;
+  completed_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Task {
+  id: string;
+  status: string;
+  progress?: number;
+  message?: string;
+}
+
+export interface SyncResponse {
+  message: string;
+  task_id: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -78,9 +104,27 @@ export class RepositoryService {
   }
 
   // Sync a repository
-  syncRepository(id: number): Observable<any> {
+  syncRepository(id: number): Observable<SyncResponse> {
     const headers = this.getAuthHeaders();
-    return this.http.post<any>(`${this.apiUrl}/v1/repos/${id}/sync`, {}, { headers });
+    return this.http.post<SyncResponse>(`${this.apiUrl}/v1/repos/${id}/sync`, {}, { headers });
+  }
+
+  // Get a task by ID
+  getTask(taskId: string): Observable<AsyncTask> {
+    const headers = this.getAuthHeaders();
+    return this.http.get<AsyncTask>(`${this.apiUrl}/v1/tasks/${taskId}`, { headers });
+  }
+
+  // Get all tasks for the current user
+  getUserTasks(): Observable<AsyncTask[]> {
+    const headers = this.getAuthHeaders();
+    return this.http.get<AsyncTask[]>(`${this.apiUrl}/v1/tasks`, { headers });
+  }
+
+  // Get all tasks for a specific resource
+  getResourceTasks(resourceId: string): Observable<AsyncTask[]> {
+    const headers = this.getAuthHeaders();
+    return this.http.get<AsyncTask[]>(`${this.apiUrl}/v1/tasks/resource/${resourceId}`, { headers });
   }
 
   // Helper method to get authentication headers

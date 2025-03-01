@@ -8,21 +8,31 @@ import (
 	"github.com/zhaojunlucky/mkdocs-cms/services"
 )
 
-var userGitRepoService = services.NewUserGitRepoService()
+// UserGitRepoController handles git repository-related HTTP requests
+type UserGitRepoController struct {
+	userGitRepoService *services.UserGitRepoService
+}
+
+// NewUserGitRepoController creates a new UserGitRepoController
+func NewUserGitRepoController(userGitRepoService *services.UserGitRepoService) *UserGitRepoController {
+	return &UserGitRepoController{
+		userGitRepoService: userGitRepoService,
+	}
+}
 
 // GetRepos returns all git repositories for the authenticated user
-func GetRepos(c *gin.Context) {
+func (c *UserGitRepoController) GetRepos(ctx *gin.Context) {
 	// Get the authenticated user ID from the context
-	authenticatedUserID, exists := c.Get("userId")
+	authenticatedUserID, exists := ctx.Get("userId")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
 	// Get only the repositories owned by the authenticated user
-	repos, err := userGitRepoService.GetReposByUser(authenticatedUserID.(string))
+	repos, err := c.userGitRepoService.GetReposByUser(authenticatedUserID.(string))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -31,31 +41,31 @@ func GetRepos(c *gin.Context) {
 		response = append(response, repo.ToResponse(false))
 	}
 
-	c.JSON(http.StatusOK, response)
+	ctx.JSON(http.StatusOK, response)
 }
 
 // GetReposByUser returns all git repositories for a specific user
-func GetReposByUser(c *gin.Context) {
+func (c *UserGitRepoController) GetReposByUser(ctx *gin.Context) {
 	// Get the authenticated user ID from the context
-	authenticatedUserID, exists := c.Get("userId")
+	authenticatedUserID, exists := ctx.Get("userId")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
 	// Get the requested user ID from the URL parameter
-	requestedUserID := c.Param("user_id")
+	requestedUserID := ctx.Param("user_id")
 
 	// Check if the authenticated user is trying to access their own repositories
 	// This ensures users can only see their own repositories
 	if authenticatedUserID.(string) != requestedUserID {
-		c.JSON(http.StatusForbidden, gin.H{"error": "You can only access your own repositories"})
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "You can only access your own repositories"})
 		return
 	}
 
-	repos, err := userGitRepoService.GetReposByUser(requestedUserID)
+	repos, err := c.userGitRepoService.GetReposByUser(requestedUserID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -64,169 +74,185 @@ func GetReposByUser(c *gin.Context) {
 		response = append(response, repo.ToResponse(false))
 	}
 
-	c.JSON(http.StatusOK, response)
+	ctx.JSON(http.StatusOK, response)
 }
 
 // GetRepo returns a specific git repository
-func GetRepo(c *gin.Context) {
+func (c *UserGitRepoController) GetRepo(ctx *gin.Context) {
 	// Get the authenticated user ID from the context
-	authenticatedUserID, exists := c.Get("userId")
+	authenticatedUserID, exists := ctx.Get("userId")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
-	id := c.Param("id")
-	repo, err := userGitRepoService.GetRepoByID(id)
+	id := ctx.Param("id")
+	repo, err := c.userGitRepoService.GetRepoByID(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Repository not found"})
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Repository not found"})
 		return
 	}
 
 	// Check if the authenticated user owns this repository
 	if repo.UserID != authenticatedUserID.(string) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "You can only access your own repositories"})
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "You can only access your own repositories"})
 		return
 	}
 
-	c.JSON(http.StatusOK, repo.ToResponse(true))
+	ctx.JSON(http.StatusOK, repo.ToResponse(true))
 }
 
 // CreateRepo creates a new git repository
-func CreateRepo(c *gin.Context) {
+func (c *UserGitRepoController) CreateRepo(ctx *gin.Context) {
 	// Get the authenticated user ID from the context
-	authenticatedUserID, exists := c.Get("userId")
+	authenticatedUserID, exists := ctx.Get("userId")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
 	var repo models.UserGitRepo
-	if err := c.ShouldBindJSON(&repo); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := ctx.ShouldBindJSON(&repo); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	// Set the user ID to the authenticated user
 	repo.UserID = authenticatedUserID.(string)
 
-	if err := userGitRepoService.CreateRepo(&repo); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := c.userGitRepoService.CreateRepo(&repo); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, repo.ToResponse(false))
+	ctx.JSON(http.StatusCreated, repo.ToResponse(false))
 }
 
 // UpdateRepo updates an existing git repository
-func UpdateRepo(c *gin.Context) {
+func (c *UserGitRepoController) UpdateRepo(ctx *gin.Context) {
 	// Get the authenticated user ID from the context
-	authenticatedUserID, exists := c.Get("userId")
+	authenticatedUserID, exists := ctx.Get("userId")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
-	id := c.Param("id")
+	id := ctx.Param("id")
 	
 	// First, get the existing repository to check ownership
-	existingRepo, err := userGitRepoService.GetRepoByID(id)
+	existingRepo, err := c.userGitRepoService.GetRepoByID(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Repository not found"})
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Repository not found"})
 		return
 	}
 	
 	// Check if the authenticated user owns this repository
 	if existingRepo.UserID != authenticatedUserID.(string) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "You can only update your own repositories"})
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "You can only update your own repositories"})
 		return
 	}
 
 	var request models.UpdateUserGitRepoRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := ctx.ShouldBindJSON(&request); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	repo, err := userGitRepoService.UpdateRepo(id, request)
+	repo, err := c.userGitRepoService.UpdateRepo(id, request)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, repo.ToResponse(false))
+	ctx.JSON(http.StatusOK, repo.ToResponse(false))
 }
 
 // DeleteRepo deletes a git repository
-func DeleteRepo(c *gin.Context) {
+func (c *UserGitRepoController) DeleteRepo(ctx *gin.Context) {
 	// Get the authenticated user ID from the context
-	authenticatedUserID, exists := c.Get("userId")
+	authenticatedUserID, exists := ctx.Get("userId")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
-	id := c.Param("id")
+	id := ctx.Param("id")
 	
 	// First, get the existing repository to check ownership
-	existingRepo, err := userGitRepoService.GetRepoByID(id)
+	existingRepo, err := c.userGitRepoService.GetRepoByID(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Repository not found"})
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Repository not found"})
 		return
 	}
 	
 	// Check if the authenticated user owns this repository
 	if existingRepo.UserID != authenticatedUserID.(string) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "You can only delete your own repositories"})
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "You can only delete your own repositories"})
 		return
 	}
 
-	if err := userGitRepoService.DeleteRepo(id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := c.userGitRepoService.DeleteRepo(id); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Repository deleted successfully"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "Repository deleted successfully"})
 }
 
 // SyncRepo synchronizes a git repository with its remote
-func SyncRepo(c *gin.Context) {
-	// Get the authenticated user ID from the context
-	authenticatedUserID, exists := c.Get("userId")
+func (c *UserGitRepoController) SyncRepo(ctx *gin.Context) {
+	// Get authenticated user ID from context
+	authenticatedUserID, exists := ctx.Get("userId")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
 		return
 	}
 
-	id := c.Param("id")
+	id := ctx.Param("id")
 	
 	// First, get the existing repository to check ownership
-	repo, err := userGitRepoService.GetRepoByID(id)
+	repo, err := c.userGitRepoService.GetRepoByID(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Repository not found"})
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Repository not found"})
 		return
 	}
 	
 	// Check if the authenticated user owns this repository
 	if repo.UserID != authenticatedUserID.(string) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "You can only sync your own repositories"})
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "You can only sync your own repositories"})
+		return
+	}
+
+	// Create an async task for the sync operation
+	asyncTaskService := services.NewAsyncTaskService()
+	task, err := asyncTaskService.CreateTask(models.TaskTypeSync, id, authenticatedUserID.(string))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create sync task"})
 		return
 	}
 
 	// Update status to syncing
-	if err := userGitRepoService.UpdateRepoStatus(id, models.StatusSyncing, ""); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := c.userGitRepoService.UpdateRepoStatus(id, models.StatusSyncing, ""); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	// Start sync in a goroutine
 	go func() {
-		if err := userGitRepoService.SyncRepo(id); err != nil {
-			userGitRepoService.UpdateRepoStatus(id, models.StatusFailed, err.Error())
+		// Update task status to running
+		asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusRunning, "Repository sync in progress")
+		
+		if err := c.userGitRepoService.SyncRepo(id); err != nil {
+			c.userGitRepoService.UpdateRepoStatus(id, models.StatusFailed, err.Error())
+			asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusFailed, err.Error())
 		} else {
-			userGitRepoService.UpdateRepoStatus(id, models.StatusSynced, "")
+			c.userGitRepoService.UpdateRepoStatus(id, models.StatusSynced, "")
+			asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusCompleted, "Repository sync completed successfully")
 		}
 	}()
 
-	c.JSON(http.StatusOK, gin.H{"message": "Repository sync started"})
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Repository sync started",
+		"task_id": task.ID,
+	})
 }

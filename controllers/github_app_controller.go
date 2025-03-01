@@ -29,7 +29,7 @@ func NewGitHubAppController(appID int64, privateKey []byte, settings *models.Git
 	return &GitHubAppController{
 		appID:             appID,
 		privateKey:        privateKey,
-		gitRepoService:    services.NewUserGitRepoService(),
+		gitRepoService:    services.NewUserGitRepoService(settings),
 		eventService:      services.NewEventService(),
 		githubAppSettings: settings,
 	}

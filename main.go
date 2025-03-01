@@ -34,8 +34,8 @@ func main() {
 	log.Printf("Loaded configuration:")
 	log.Printf("OAuth Redirect URL: %s", appConfig.OAuth.RedirectURL)
 	log.Printf("GitHub OAuth Client ID: %s", appConfig.GitHub.OAuth.ClientID)
-	log.Printf("GitHub OAuth Client Secret: %s (length: %d)", 
-		appConfig.GitHub.OAuth.ClientSecret[:4]+"...", 
+	log.Printf("GitHub OAuth Client Secret: %s (length: %d)",
+		appConfig.GitHub.OAuth.ClientSecret[:4]+"...",
 		len(appConfig.GitHub.OAuth.ClientSecret))
 	log.Printf("GitHub App ID: %d", appConfig.GitHub.App.AppID)
 
@@ -73,35 +73,42 @@ func main() {
 
 // setupRoutes configures all the routes for our application
 func setupRoutes(r *gin.Engine, appConfig *config.Config) {
-	// Initialize services
-	userService := services.NewUserService()
+	// Create GitHub App settings
+	githubAppSettings := &models.GitHubAppSettings{
+		AppID:          appConfig.GitHub.App.AppID,
+		AppName:        appConfig.GitHub.App.Name,
+		Description:    appConfig.GitHub.App.Description,
+		HomepageURL:    appConfig.GitHub.App.HomepageURL,
+		WebhookURL:     appConfig.GitHub.App.WebhookURL,
+		WebhookSecret:  appConfig.GitHub.App.WebhookSecret,
+		PrivateKeyPath: appConfig.GitHub.App.PrivateKeyPath,
+	}
 
-	// Initialize controllers
-	siteConfigController := controllers.NewSiteConfigController()
-	authController := controllers.NewAuthController(userService, appConfig)
-	postController := controllers.NewPostController()
-
+	// Read private key
 	bytes, err := os.ReadFile(appConfig.GitHub.App.PrivateKeyPath)
 	if err != nil {
 		log.Fatalf("Failed to read private key file: %v", err)
 		panic(err)
 	}
 
+	// Initialize services
+	userService := services.NewUserService()
+	userGitRepoService := services.NewUserGitRepoService(githubAppSettings)
+
+	// Initialize controllers
+	siteConfigController := controllers.NewSiteConfigController()
+	authController := controllers.NewAuthController(userService, appConfig)
+	postController := controllers.NewPostController()
+	asyncTaskController := controllers.NewAsyncTaskController()
+	userGitRepoController := controllers.NewUserGitRepoController(userGitRepoService)
+
 	// Initialize GitHub App controllers
 	githubAppController := controllers.NewGitHubAppController(
 		appConfig.GitHub.App.AppID,
 		bytes,
-		&models.GitHubAppSettings{
-			AppID:          appConfig.GitHub.App.AppID,
-			AppName:        appConfig.GitHub.App.Name,
-			Description:    appConfig.GitHub.App.Description,
-			HomepageURL:    appConfig.GitHub.App.HomepageURL,
-			WebhookURL:     appConfig.GitHub.App.WebhookURL,
-			WebhookSecret:  appConfig.GitHub.App.WebhookSecret,
-			PrivateKeyPath: appConfig.GitHub.App.PrivateKeyPath,
-		},
+		githubAppSettings,
 	)
-	githubWebhookController := controllers.NewGitHubWebhookController(appConfig.GitHub.App.WebhookSecret)
+	githubWebhookController := controllers.NewGitHubWebhookController(appConfig.GitHub.App.WebhookSecret, githubAppSettings)
 
 	// API routes
 	api := r.Group("/api")
@@ -126,19 +133,19 @@ func setupRoutes(r *gin.Engine, appConfig *config.Config) {
 		repos := v1.Group("/repos")
 		repos.Use(middleware.RequireAuth())
 		{
-			repos.GET("", controllers.GetRepos)
-			repos.GET("/:id", controllers.GetRepo)
-			repos.POST("", controllers.CreateRepo)
-			repos.PUT("/:id", controllers.UpdateRepo)
-			repos.DELETE("/:id", controllers.DeleteRepo)
-			repos.POST("/:id/sync", controllers.SyncRepo)
+			repos.GET("", userGitRepoController.GetRepos)
+			repos.GET("/:id", userGitRepoController.GetRepo)
+			repos.POST("", userGitRepoController.CreateRepo)
+			repos.PUT("/:id", userGitRepoController.UpdateRepo)
+			repos.DELETE("/:id", userGitRepoController.DeleteRepo)
+			repos.POST("/:id/sync", userGitRepoController.SyncRepo)
 		}
-		
+
 		// User repositories route
 		userRepos := v1.Group("/users/repos")
 		userRepos.Use(middleware.RequireAuth())
 		{
-			userRepos.GET("/:user_id", controllers.GetReposByUser)
+			userRepos.GET("/:user_id", userGitRepoController.GetReposByUser)
 		}
 
 		// Event routes
@@ -182,6 +189,9 @@ func setupRoutes(r *gin.Engine, appConfig *config.Config) {
 			github.POST("/installations/:installation_id/import", githubAppController.ImportRepositories)
 			github.POST("/installations/:installation_id/webhooks", githubAppController.CreateWebhook)
 		}
+
+		// AsyncTask routes
+		asyncTaskController.RegisterRoutes(v1)
 	}
 
 	// GitHub webhook endpoint
