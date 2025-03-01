@@ -33,6 +33,9 @@ func main() {
 
 // setupRoutes configures all the routes for our application
 func setupRoutes(r *gin.Engine) {
+	// Initialize controllers
+	siteConfigController := controllers.NewSiteConfigController()
+	
 	// API v1 routes
 	v1 := r.Group("/api/v1")
 	{
@@ -75,6 +78,13 @@ func setupRoutes(r *gin.Engine) {
 		v1.PUT("/collections/:id", controllers.UpdateCollection)
 		v1.DELETE("/collections/:id", controllers.DeleteCollection)
 		v1.GET("/repos/:repo_id/collections/by-path", controllers.GetCollectionByPath)
+		
+		// Site Configuration routes
+		v1.GET("/site-configs", siteConfigController.GetAllSiteConfigs)
+		v1.GET("/site-configs/:id", siteConfigController.GetSiteConfigByID)
+		v1.POST("/site-configs", siteConfigController.CreateSiteConfig)
+		v1.PUT("/site-configs/:id", siteConfigController.UpdateSiteConfig)
+		v1.DELETE("/site-configs/:id", siteConfigController.DeleteSiteConfig)
 	}
 
 	// Health check
