@@ -47,7 +47,7 @@ type GitHubAppConfig struct {
 	InstallationID string `yaml:"installation_id"`
 	PrivateKeyPath string `yaml:"private_key_path"`
 	WebhookSecret  string `yaml:"webhook_secret"`
-	Name           string `yaml:"name"`
+	Name           string `yaml:"app_name"`
 	Description    string `yaml:"description"`
 	HomepageURL    string `yaml:"homepage_url"`
 	WebhookURL     string `yaml:"webhook_url"`

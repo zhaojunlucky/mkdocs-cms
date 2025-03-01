@@ -11,9 +11,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/go-github/v45/github"
-	"golang.org/x/oauth2"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
 	"github.com/zhaojunlucky/mkdocs-cms/services"
+	"golang.org/x/oauth2"
 )
 
 // GitHubAppController handles GitHub App API endpoints
@@ -40,16 +40,24 @@ func NewGitHubAppController(appID int64, privateKey []byte, settings *models.Git
 func (c *GitHubAppController) GetAppInfo(ctx *gin.Context) {
 	appInfo := map[string]interface{}{
 		"app_id":      c.appID,
-		"app_name":    c.githubAppSettings.AppName,
+		"name":        c.githubAppSettings.AppName,
 		"description": c.githubAppSettings.Description,
 		"homepage":    c.githubAppSettings.HomepageURL,
+		"html_url":    fmt.Sprintf("https://github.com/apps/%s", c.githubAppSettings.AppName),
 	}
 
 	ctx.JSON(http.StatusOK, appInfo)
 }
 
-// GetInstallations returns all installations of the GitHub App
+// GetInstallations returns installations of the GitHub App for the current user
 func (c *GitHubAppController) GetInstallations(ctx *gin.Context) {
+	// Get current user from context
+	userID, exists := ctx.Get("userId")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
 	// Generate a JWT for GitHub API authentication
 	token, err := c.generateJWT()
 	if err != nil {
@@ -74,17 +82,30 @@ func (c *GitHubAppController) GetInstallations(ctx *gin.Context) {
 		return
 	}
 
-	// Convert to a simpler format for the response
-	var response []map[string]interface{}
+	// Get user's GitHub username from database
+	user, err := services.NewUserService().GetUserByID(fmt.Sprintf("%v", userID))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user information: " + err.Error()})
+		return
+	}
+
+	// Convert to a simpler format for the response and filter by user
+	response := make([]map[string]interface{}, 0)
 	for _, inst := range installations {
-		installation := map[string]interface{}{
-			"id":           inst.GetID(),
-			"account":      inst.GetAccount().GetLogin(),
-			"account_type": inst.GetAccount().GetType(),
-			"created_at":   inst.GetCreatedAt().Format(time.RFC3339),
-			"updated_at":   inst.GetUpdatedAt().Format(time.RFC3339),
+		// Only include installations for the current user's GitHub account
+		// For GitHub provider, the username is typically the GitHub username
+		if user.Provider == "github" && strings.EqualFold(inst.GetAccount().GetLogin(), user.Username) {
+			installation := map[string]interface{}{
+				"id": inst.GetID(),
+				"account": map[string]interface{}{
+					"login":      inst.GetAccount().GetLogin(),
+					"avatar_url": inst.GetAccount().GetAvatarURL(),
+				},
+				"created_at": inst.GetCreatedAt().Format(time.RFC3339),
+				"updated_at": inst.GetUpdatedAt().Format(time.RFC3339),
+			}
+			response = append(response, installation)
 		}
-		response = append(response, installation)
 	}
 
 	ctx.JSON(http.StatusOK, response)
@@ -92,6 +113,13 @@ func (c *GitHubAppController) GetInstallations(ctx *gin.Context) {
 
 // GetInstallationRepositories returns repositories for a specific installation
 func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
+	// Get current user from context
+	userID, exists := ctx.Get("userId")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
 	installationID, err := strconv.ParseInt(ctx.Param("installation_id"), 10, 64)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid installation ID"})
@@ -114,6 +142,36 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 		},
 	}
 	client := github.NewClient(httpClient)
+
+	// Verify that the installation belongs to the user
+	installations, _, err := client.Apps.ListInstallations(ctx, nil)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get installations: " + err.Error()})
+		return
+	}
+
+	// Get user's GitHub username from database
+	user, err := services.NewUserService().GetUserByID(fmt.Sprintf("%v", userID))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user information: " + err.Error()})
+		return
+	}
+
+	// Check if the requested installation belongs to the user
+	installationBelongsToUser := false
+	for _, inst := range installations {
+		if inst.GetID() == installationID && 
+		   user.Provider == "github" && 
+		   strings.EqualFold(inst.GetAccount().GetLogin(), user.Username) {
+			installationBelongsToUser = true
+			break
+		}
+	}
+
+	if !installationBelongsToUser {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Installation does not belong to the authenticated user"})
+		return
+	}
 
 	// Get an installation token
 	installationToken, _, err := client.Apps.CreateInstallationToken(ctx, installationID, nil)
@@ -143,15 +201,15 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 	var response []map[string]interface{}
 	for _, repo := range repos.Repositories {
 		repository := map[string]interface{}{
-			"id":            repo.GetID(),
-			"name":          repo.GetName(),
-			"full_name":     repo.GetFullName(),
-			"private":       repo.GetPrivate(),
-			"html_url":      repo.GetHTMLURL(),
-			"clone_url":     repo.GetCloneURL(),
+			"id":             repo.GetID(),
+			"name":           repo.GetName(),
+			"full_name":      repo.GetFullName(),
+			"private":        repo.GetPrivate(),
+			"html_url":       repo.GetHTMLURL(),
+			"clone_url":      repo.GetCloneURL(),
 			"default_branch": repo.GetDefaultBranch(),
-			"created_at":    repo.GetCreatedAt().Format(time.RFC3339),
-			"updated_at":    repo.GetUpdatedAt().Format(time.RFC3339),
+			"created_at":     repo.GetCreatedAt().Format(time.RFC3339),
+			"updated_at":     repo.GetUpdatedAt().Format(time.RFC3339),
 		}
 		response = append(response, repository)
 	}

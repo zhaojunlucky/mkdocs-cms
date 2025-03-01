@@ -164,6 +164,7 @@ func setupRoutes(r *gin.Engine, appConfig *config.Config) {
 
 		// GitHub App routes
 		github := v1.Group("/github")
+		github.Use(middleware.RequireAuth())
 		{
 			github.GET("/app", githubAppController.GetAppInfo)
 			github.GET("/installations", githubAppController.GetInstallations)

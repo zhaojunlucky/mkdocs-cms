@@ -143,7 +143,7 @@ func RequireAuth() gin.HandlerFunc {
 		// Check if the token is valid
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 			// Set user ID in the context
-			userId, ok := claims["userId"].(string)
+			userId, ok := claims["sub"].(string)
 			if !ok {
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token claims"})
 				c.Abort()

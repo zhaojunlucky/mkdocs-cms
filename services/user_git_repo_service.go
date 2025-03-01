@@ -29,12 +29,12 @@ func NewUserGitRepoService() *UserGitRepoService {
 	// Try to load GitHub App settings from environment variables
 	appID, _ := strconv.ParseInt(os.Getenv("GITHUB_APP_ID"), 10, 64)
 	settings := &models.GitHubAppSettings{
-		AppID:         appID,
-		AppName:       os.Getenv("GITHUB_APP_NAME"),
-		Description:   os.Getenv("GITHUB_APP_DESCRIPTION"),
-		HomepageURL:   os.Getenv("GITHUB_APP_HOMEPAGE_URL"),
-		WebhookURL:    os.Getenv("GITHUB_APP_WEBHOOK_URL"),
-		WebhookSecret: os.Getenv("GITHUB_APP_WEBHOOK_SECRET"),
+		AppID:          appID,
+		AppName:        os.Getenv("GITHUB_APP_NAME"),
+		Description:    os.Getenv("GITHUB_APP_DESCRIPTION"),
+		HomepageURL:    os.Getenv("GITHUB_APP_HOMEPAGE_URL"),
+		WebhookURL:     os.Getenv("GITHUB_APP_WEBHOOK_URL"),
+		WebhookSecret:  os.Getenv("GITHUB_APP_WEBHOOK_SECRET"),
 		PrivateKeyPath: os.Getenv("GITHUB_APP_PRIVATE_KEY_PATH"),
 	}
 
@@ -91,10 +91,7 @@ func (s *UserGitRepoService) CreateRepo(request models.CreateUserGitRepoRequest)
 	}
 
 	// Generate local path for the repository
-	baseRepoPath := os.Getenv("REPO_BASE_PATH")
-	if baseRepoPath == "" {
-		baseRepoPath = "./repositories"
-	}
+	baseRepoPath := "/Users/jun/Downloads/mkdocs-cms"
 
 	// Create base directory if it doesn't exist
 	if err := os.MkdirAll(baseRepoPath, 0755); err != nil {
@@ -290,7 +287,7 @@ func (s *UserGitRepoService) syncWithGitHubApp(repo models.UserGitRepo) error {
 		// Insert the token into the URL
 		// Example: https://x-access-token:TOKEN@github.com/owner/repo.git
 		cloneURL = fmt.Sprintf("https://x-access-token:%s@%s", installationToken.GetToken(), cloneURL[8:])
-		
+
 		cmd := exec.Command("git", "clone", "-b", repo.Branch, cloneURL, repo.LocalPath)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("failed to clone repository: %v", err)
@@ -302,13 +299,13 @@ func (s *UserGitRepoService) syncWithGitHubApp(repo models.UserGitRepo) error {
 		if err := setRemoteCmd.Run(); err != nil {
 			return fmt.Errorf("failed to set remote URL: %v", err)
 		}
-		
+
 		// Pull the latest changes
 		pullCmd := exec.Command("git", "-C", repo.LocalPath, "pull", "origin", repo.Branch)
 		if err := pullCmd.Run(); err != nil {
 			return fmt.Errorf("failed to pull repository: %v", err)
 		}
-		
+
 		// Reset the remote URL to the original
 		resetRemoteCmd := exec.Command("git", "-C", repo.LocalPath, "remote", "set-url", "origin", repo.RemoteURL)
 		if err := resetRemoteCmd.Run(); err != nil {

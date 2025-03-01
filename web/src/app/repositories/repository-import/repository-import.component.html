@@ -11,6 +11,11 @@
   
   <div *ngIf="error" class="error-message">
     <p>{{ error }}</p>
+    <button *ngIf="installations.length === 0 && githubAppInfo" 
+            class="github-app-install-btn" 
+            (click)="navigateToGitHubAppInstallation()">
+      Install GitHub App
+    </button>
   </div>
   
   <div *ngIf="importSuccess" class="success-message">
@@ -35,9 +40,11 @@
     <!-- No Installations Message -->
     <div *ngIf="installations.length === 0 && !loading" class="no-installations">
       <p>No GitHub installations found. Please install the GitHub App to your account first.</p>
-      <a href="https://github.com/apps/your-github-app-name" target="_blank" class="github-app-link">
+      <button *ngIf="githubAppInfo" 
+              class="github-app-install-btn" 
+              (click)="navigateToGitHubAppInstallation()">
         Install GitHub App
-      </a>
+      </button>
     </div>
     
     <!-- Repository Selection -->
