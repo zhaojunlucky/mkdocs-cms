@@ -2,7 +2,11 @@ package services
 
 import (
 	"errors"
+	"fmt"
+	"io/fs"
+	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/zhaojunlucky/mkdocs-cms/database"
@@ -133,4 +137,258 @@ func (s *UserGitRepoCollectionService) GetCollectionByName(repoID uint, name str
 	var collection models.UserGitRepoCollection
 	result := database.DB.Where("repo_id = ? AND name = ?", repoID, name).First(&collection)
 	return collection, result.Error
+}
+
+// FileInfo represents information about a file or directory
+type FileInfo struct {
+	Name      string    `json:"name"`
+	Path      string    `json:"path"`
+	IsDir     bool      `json:"is_dir"`
+	Size      int64     `json:"size"`
+	ModTime   time.Time `json:"mod_time"`
+	Extension string    `json:"extension,omitempty"`
+}
+
+// ListFilesInCollection lists all files under a collection path
+func (s *UserGitRepoCollectionService) ListFilesInCollection(collectionID uint) ([]FileInfo, error) {
+	// Get the collection
+	collection, err := s.GetCollectionByID(collectionID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if the path exists
+	if _, err := os.Stat(collection.Path); os.IsNotExist(err) {
+		return nil, errors.New("collection path does not exist")
+	}
+
+	// Read the directory
+	entries, err := os.ReadDir(collection.Path)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to FileInfo
+	var files []FileInfo
+	for _, entry := range entries {
+		info, err := entry.Info()
+		if err != nil {
+			continue
+		}
+
+		fileInfo := FileInfo{
+			Name:    entry.Name(),
+			Path:    filepath.Join(collection.Path, entry.Name()),
+			IsDir:   entry.IsDir(),
+			Size:    info.Size(),
+			ModTime: info.ModTime(),
+		}
+
+		// Add extension for files
+		if !entry.IsDir() {
+			fileInfo.Extension = filepath.Ext(entry.Name())
+		}
+
+		files = append(files, fileInfo)
+	}
+
+	return files, nil
+}
+
+// ListFilesInPath lists all files under a specific path within a collection
+func (s *UserGitRepoCollectionService) ListFilesInPath(collectionID uint, subPath string) ([]FileInfo, error) {
+	// Get the collection
+	collection, err := s.GetCollectionByID(collectionID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Ensure the subPath doesn't try to escape the collection directory
+	cleanSubPath := filepath.Clean(subPath)
+	if cleanSubPath == ".." || filepath.IsAbs(cleanSubPath) || strings.HasPrefix(cleanSubPath, "../") {
+		return nil, errors.New("invalid path")
+	}
+
+	// Construct the full path
+	fullPath := filepath.Join(collection.Path, cleanSubPath)
+
+	// Check if the path exists
+	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+		return nil, errors.New("path does not exist")
+	}
+
+	// Read the directory
+	entries, err := os.ReadDir(fullPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to FileInfo
+	var files []FileInfo
+	for _, entry := range entries {
+		info, err := entry.Info()
+		if err != nil {
+			continue
+		}
+
+		relativePath := filepath.Join(cleanSubPath, entry.Name())
+		fileInfo := FileInfo{
+			Name:    entry.Name(),
+			Path:    relativePath,
+			IsDir:   entry.IsDir(),
+			Size:    info.Size(),
+			ModTime: info.ModTime(),
+		}
+
+		// Add extension for files
+		if !entry.IsDir() {
+			fileInfo.Extension = filepath.Ext(entry.Name())
+		}
+
+		files = append(files, fileInfo)
+	}
+
+	return files, nil
+}
+
+// GetFileContent retrieves the content of a file within a collection
+func (s *UserGitRepoCollectionService) GetFileContent(collectionID uint, filePath string) ([]byte, string, error) {
+	// Get the collection
+	collection, err := s.GetCollectionByID(collectionID)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// Ensure the filePath doesn't try to escape the collection directory
+	cleanFilePath := filepath.Clean(filePath)
+	if cleanFilePath == ".." || filepath.IsAbs(cleanFilePath) || strings.HasPrefix(cleanFilePath, "../") {
+		return nil, "", errors.New("invalid path")
+	}
+
+	// Construct the full path
+	fullPath := filepath.Join(collection.Path, cleanFilePath)
+
+	// Check if the path exists and is a file
+	fileInfo, err := os.Stat(fullPath)
+	if os.IsNotExist(err) {
+		return nil, "", errors.New("file does not exist")
+	}
+	if err != nil {
+		return nil, "", err
+	}
+	if fileInfo.IsDir() {
+		return nil, "", errors.New("path is a directory, not a file")
+	}
+
+	// Read the file content
+	content, err := os.ReadFile(fullPath)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// Determine content type based on file extension
+	contentType := "text/plain"
+	ext := filepath.Ext(fullPath)
+	switch strings.ToLower(ext) {
+	case ".html", ".htm":
+		contentType = "text/html"
+	case ".css":
+		contentType = "text/css"
+	case ".js":
+		contentType = "application/javascript"
+	case ".json":
+		contentType = "application/json"
+	case ".xml":
+		contentType = "application/xml"
+	case ".md":
+		contentType = "text/markdown"
+	case ".png":
+		contentType = "image/png"
+	case ".jpg", ".jpeg":
+		contentType = "image/jpeg"
+	case ".gif":
+		contentType = "image/gif"
+	case ".svg":
+		contentType = "image/svg+xml"
+	case ".pdf":
+		contentType = "application/pdf"
+	}
+
+	return content, contentType, nil
+}
+
+// UpdateFileContent updates the content of a file within a collection
+func (s *UserGitRepoCollectionService) UpdateFileContent(collectionID uint, filePath string, content []byte) error {
+	// Get the collection
+	collection, err := s.GetCollectionByID(collectionID)
+	if err != nil {
+		return err
+	}
+
+	// Ensure the filePath doesn't try to escape the collection directory
+	cleanFilePath := filepath.Clean(filePath)
+	if cleanFilePath == ".." || filepath.IsAbs(cleanFilePath) || strings.HasPrefix(cleanFilePath, "../") {
+		return errors.New("invalid path")
+	}
+
+	// Construct the full path
+	fullPath := filepath.Join(collection.Path, cleanFilePath)
+
+	// Check if the file exists
+	fileInfo, err := os.Stat(fullPath)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	// If the file exists, check if it's a directory
+	if err == nil && fileInfo.IsDir() {
+		return errors.New("cannot update a directory")
+	}
+
+	// Create parent directories if they don't exist
+	parentDir := filepath.Dir(fullPath)
+	if err := os.MkdirAll(parentDir, 0755); err != nil {
+		return err
+	}
+
+	// Write the content to the file
+	if err := os.WriteFile(fullPath, content, 0644); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DeleteFile deletes a file or directory within a collection
+func (s *UserGitRepoCollectionService) DeleteFile(collectionID uint, filePath string) error {
+	// Get the collection
+	collection, err := s.GetCollectionByID(collectionID)
+	if err != nil {
+		return err
+	}
+
+	// Ensure the filePath doesn't try to escape the collection directory
+	cleanFilePath := filepath.Clean(filePath)
+	if cleanFilePath == ".." || filepath.IsAbs(cleanFilePath) || strings.HasPrefix(cleanFilePath, "../") {
+		return errors.New("invalid path")
+	}
+
+	// Construct the full path
+	fullPath := filepath.Join(collection.Path, cleanFilePath)
+
+	// Check if the path exists
+	_, err = os.Stat(fullPath)
+	if os.IsNotExist(err) {
+		return errors.New("file or directory does not exist")
+	}
+	if err != nil {
+		return err
+	}
+
+	// Delete the file or directory
+	if err := os.RemoveAll(fullPath); err != nil {
+		return err
+	}
+
+	return nil
 }

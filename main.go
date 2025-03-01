@@ -113,6 +113,13 @@ func setupRoutes(r *gin.Engine) {
 		v1.PUT("/collections/:id", controllers.UpdateCollection)
 		v1.DELETE("/collections/:id", controllers.DeleteCollection)
 		v1.GET("/repos/:repo_id/collections/by-path", controllers.GetCollectionByPath)
+		v1.GET("/collections/:collection_id/files", controllers.GetCollectionFiles)
+		v1.GET("/collections/:collection_id/browse", controllers.GetCollectionFilesInPath)
+		v1.GET("/collections/:collection_id/file", controllers.GetFileContent)
+		v1.PUT("/collections/:collection_id/file", controllers.UpdateFileContent)
+		v1.DELETE("/collections/:collection_id/file", controllers.DeleteFile)
+		v1.GET("/collections/:collection_id/file/json", controllers.GetFileContentJSON)
+		v1.POST("/collections/:collection_id/file", controllers.UploadFile)
 		
 		// Site Configuration routes
 		v1.GET("/site-configs", siteConfigController.GetAllSiteConfigs)

@@ -1,8 +1,12 @@
 package controllers
 
 import (
+	"encoding/base64"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
@@ -143,4 +147,225 @@ func GetCollectionByPath(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, collection.ToResponse(true))
+}
+
+// GetCollectionFiles returns all files in a collection
+func GetCollectionFiles(c *gin.Context) {
+	collectionID, err := strconv.ParseUint(c.Param("collection_id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid collection ID"})
+		return
+	}
+
+	files, err := userGitRepoCollectionService.ListFilesInCollection(uint(collectionID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, files)
+}
+
+// GetCollectionFilesInPath returns all files in a specific path within a collection
+func GetCollectionFilesInPath(c *gin.Context) {
+	collectionID, err := strconv.ParseUint(c.Param("collection_id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid collection ID"})
+		return
+	}
+
+	path := c.Query("path")
+	if path == "" {
+		// If no path is provided, return files at the root of the collection
+		files, err := userGitRepoCollectionService.ListFilesInCollection(uint(collectionID))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, files)
+		return
+	}
+
+	files, err := userGitRepoCollectionService.ListFilesInPath(uint(collectionID), path)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, files)
+}
+
+// GetFileContent returns the content of a file within a collection
+func GetFileContent(c *gin.Context) {
+	collectionID, err := strconv.ParseUint(c.Param("collection_id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid collection ID"})
+		return
+	}
+
+	filePath := c.Query("path")
+	if filePath == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File path is required"})
+		return
+	}
+
+	content, contentType, err := userGitRepoCollectionService.GetFileContent(uint(collectionID), filePath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Set the content type and return the file content
+	c.Header("Content-Type", contentType)
+	c.Data(http.StatusOK, contentType, content)
+}
+
+// UpdateFileContent updates the content of a file within a collection
+func UpdateFileContent(c *gin.Context) {
+	collectionID, err := strconv.ParseUint(c.Param("collection_id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid collection ID"})
+		return
+	}
+
+	filePath := c.Query("path")
+	if filePath == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File path is required"})
+		return
+	}
+
+	// Read the request body
+	content, err := c.GetRawData()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to read request body"})
+		return
+	}
+
+	if err := userGitRepoCollectionService.UpdateFileContent(uint(collectionID), filePath, content); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "File updated successfully"})
+}
+
+// DeleteFile deletes a file or directory within a collection
+func DeleteFile(c *gin.Context) {
+	collectionID, err := strconv.ParseUint(c.Param("collection_id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid collection ID"})
+		return
+	}
+
+	filePath := c.Query("path")
+	if filePath == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File path is required"})
+		return
+	}
+
+	if err := userGitRepoCollectionService.DeleteFile(uint(collectionID), filePath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "File deleted successfully"})
+}
+
+// UploadFile uploads a file to a collection using JSON request
+func UploadFile(c *gin.Context) {
+	collectionID, err := strconv.ParseUint(c.Param("collection_id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid collection ID"})
+		return
+	}
+
+	var request models.FileUploadRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Convert content from base64 if needed, or use as-is if it's plain text
+	var content []byte
+	// Check if content is base64 encoded (simple heuristic)
+	if strings.HasPrefix(request.Content, "data:") && strings.Contains(request.Content, ";base64,") {
+		// Extract the base64 part
+		parts := strings.Split(request.Content, ";base64,")
+		if len(parts) != 2 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid base64 content format"})
+			return
+		}
+		
+		// Decode base64
+		var err error
+		content, err = base64.StdEncoding.DecodeString(parts[1])
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to decode base64 content: " + err.Error()})
+			return
+		}
+	} else {
+		// Use content as-is (plain text)
+		content = []byte(request.Content)
+	}
+
+	if err := userGitRepoCollectionService.UpdateFileContent(uint(collectionID), request.Path, content); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "File uploaded successfully"})
+}
+
+// GetFileContentJSON returns the content of a file within a collection as JSON
+func GetFileContentJSON(c *gin.Context) {
+	collectionID, err := strconv.ParseUint(c.Param("collection_id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid collection ID"})
+		return
+	}
+
+	filePath := c.Query("path")
+	if filePath == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File path is required"})
+		return
+	}
+
+	content, contentType, err := userGitRepoCollectionService.GetFileContent(uint(collectionID), filePath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Get file info
+	collection, err := userGitRepoCollectionService.GetCollectionByID(uint(collectionID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	fullPath := filepath.Join(collection.Path, filePath)
+	fileInfo, err := os.Stat(fullPath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Prepare response
+	response := models.FileResponse{
+		Name:      filepath.Base(filePath),
+		Path:      filePath,
+		IsDir:     fileInfo.IsDir(),
+		Size:      fileInfo.Size(),
+		ModTime:   fileInfo.ModTime(),
+		Extension: filepath.Ext(filePath),
+	}
+
+	// For binary files, encode as base64
+	if !strings.HasPrefix(contentType, "text/") && contentType != "application/json" && contentType != "application/xml" {
+		response.Content = "data:" + contentType + ";base64," + base64.StdEncoding.EncodeToString(content)
+	} else {
+		response.Content = string(content)
+	}
+
+	c.JSON(http.StatusOK, response)
 }

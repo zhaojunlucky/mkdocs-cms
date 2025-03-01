@@ -87,3 +87,20 @@ type UpdateUserGitRepoCollectionRequest struct {
 	Format      ContentFormat `json:"format"`
 	Description string        `json:"description"`
 }
+
+// FileUploadRequest represents a request to upload a file
+type FileUploadRequest struct {
+	Path    string `json:"path" binding:"required"`
+	Content string `json:"content" binding:"required"`
+}
+
+// FileResponse represents a response with file information
+type FileResponse struct {
+	Name      string    `json:"name"`
+	Path      string    `json:"path"`
+	IsDir     bool      `json:"is_dir"`
+	Size      int64     `json:"size"`
+	ModTime   time.Time `json:"mod_time"`
+	Extension string    `json:"extension,omitempty"`
+	Content   string    `json:"content,omitempty"`
+}
