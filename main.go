@@ -58,6 +58,7 @@ func main() {
 	// Apply middleware
 	router.Use(middleware.Logger())
 	router.Use(middleware.CORSWithConfig(appConfig))
+	router.Use(middleware.NewAuthMiddleware()) // Update to use new auth middleware
 	router.Use(gin.Recovery())
 
 	// Setup API routes
@@ -78,6 +79,7 @@ func setupRoutes(r *gin.Engine, appConfig *config.Config) {
 	// Initialize controllers
 	siteConfigController := controllers.NewSiteConfigController()
 	authController := controllers.NewAuthController(userService, appConfig)
+	postController := controllers.NewPostController()
 
 	bytes, err := os.ReadFile(appConfig.GitHub.App.PrivateKeyPath)
 	if err != nil {
@@ -117,12 +119,8 @@ func setupRoutes(r *gin.Engine, appConfig *config.Config) {
 		v1.PUT("/users/:id", controllers.UpdateUser)
 		v1.DELETE("/users/:id", controllers.DeleteUser)
 
-		// Post routes
-		v1.GET("/posts", controllers.GetPosts)
-		v1.GET("/posts/:id", controllers.GetPost)
-		v1.POST("/posts", controllers.CreatePost)
-		v1.PUT("/posts/:id", controllers.UpdatePost)
-		v1.DELETE("/posts/:id", controllers.DeletePost)
+		// Post routes - Register the post controller
+		postController.RegisterRoutes(v1)
 
 		// Git Repository routes
 		v1.GET("/repos", controllers.GetRepos)

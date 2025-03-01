@@ -6,29 +6,11 @@ import (
 	"github.com/zhaojunlucky/mkdocs-cms/models"
 )
 
-// MigrateDB performs database migrations
+// MigrateDB runs database migrations
 func MigrateDB() {
-	if DB == nil {
-		log.Fatal("Database not initialized")
-	}
+	log.Println("Running database migrations...")
 
-	// Drop tables if they exist
-	for _, model := range []interface{}{
-		&models.User{},
-		&models.Post{},
-		&models.UserGitRepo{},
-		&models.Event{},
-		&models.UserGitRepoCollection{},
-		&models.SiteConfig{},
-	} {
-		if DB.Migrator().HasTable(model) {
-			if err := DB.Migrator().DropTable(model); err != nil {
-				log.Printf("Warning: Failed to drop table for %T: %v", model, err)
-			}
-		}
-	}
-
-	// Create tables with new schema
+	// Auto migrate all models
 	err := DB.AutoMigrate(
 		&models.User{},
 		&models.Post{},
@@ -41,23 +23,59 @@ func MigrateDB() {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
 
-	log.Println("Database migration completed successfully")
+	// Add FilePath and CollectionID columns to posts table if they don't exist
+	if !DB.Migrator().HasColumn(&models.Post{}, "file_path") {
+		err := DB.Migrator().AddColumn(&models.Post{}, "file_path")
+		if err != nil {
+			log.Printf("Error adding file_path column: %v", err)
+		}
+	}
+
+	if !DB.Migrator().HasColumn(&models.Post{}, "collection_id") {
+		err := DB.Migrator().AddColumn(&models.Post{}, "collection_id")
+		if err != nil {
+			log.Printf("Error adding collection_id column: %v", err)
+		}
+	}
+
+	// Drop Content column from posts table if it exists
+	if DB.Migrator().HasColumn(&models.Post{}, "content") {
+		err := DB.Migrator().DropColumn(&models.Post{}, "content")
+		if err != nil {
+			log.Printf("Error dropping content column: %v", err)
+		} else {
+			log.Println("Dropped content column from posts table")
+		}
+	}
+
+	log.Println("Database migrations completed successfully")
 }
 
 // CreateTestUser creates a test user for development
 func CreateTestUser() {
-	user := models.User{
-		ID:       "test-user-id-123456",
-		Username: "testuser",
-		Email:    "test@example.com",
-		Password: "$2a$10$zJBMxLd8H4ywXUzWJJA.wOmFj1V/Jv/q8W8X0ICDYFxVdwrKKK1Uy", // password is "password"
-		Name:     "Test User",
+	log.Println("Creating test user...")
+
+	// Check if test user already exists
+	var count int64
+	DB.Model(&models.User{}).Where("email = ?", "test@example.com").Count(&count)
+	if count > 0 {
+		log.Println("Test user already exists, skipping creation")
+		return
 	}
 
-	result := DB.Create(&user)
-	if result.Error != nil {
-		log.Printf("Failed to create test user: %v", result.Error)
-	} else {
-		log.Println("Test user created successfully")
+	// Create test user
+	testUser := models.User{
+		ID:        "test-user-id",
+		Name:      "Test User",
+		Email:     "test@example.com",
+		AvatarURL: "https://via.placeholder.com/150",
+		Provider:  "test",
 	}
+
+	result := DB.Create(&testUser)
+	if result.Error != nil {
+		log.Fatalf("Failed to create test user: %v", result.Error)
+	}
+
+	log.Println("Test user created successfully")
 }
