@@ -28,6 +28,8 @@ type UserGitRepo struct {
 	Branch      string       `json:"branch" gorm:"default:main"`
 	UserID      uint         `json:"user_id" gorm:"not null"`
 	User        User         `json:"user" gorm:"foreignKey:UserID"`
+	AuthType    string       `json:"auth_type" gorm:"default:'none'"`
+	AuthData    string       `json:"auth_data"`
 	LastSyncAt  time.Time    `json:"last_sync_at"`
 	Status      GitRepoStatus `json:"status" gorm:"type:string;default:'pending'"`
 	ErrorMsg    string       `json:"error_msg"`
@@ -45,6 +47,7 @@ type UserGitRepoResponse struct {
 	Branch      string       `json:"branch"`
 	UserID      uint         `json:"user_id"`
 	User        UserResponse `json:"user,omitempty"`
+	AuthType    string       `json:"auth_type"`
 	LastSyncAt  time.Time    `json:"last_sync_at"`
 	Status      GitRepoStatus `json:"status"`
 	ErrorMsg    string       `json:"error_msg,omitempty"`
@@ -62,6 +65,7 @@ func (r *UserGitRepo) ToResponse(includeUser bool) UserGitRepoResponse {
 		RemoteURL:   r.RemoteURL,
 		Branch:      r.Branch,
 		UserID:      r.UserID,
+		AuthType:    r.AuthType,
 		LastSyncAt:  r.LastSyncAt,
 		Status:      r.Status,
 		ErrorMsg:    r.ErrorMsg,
@@ -83,6 +87,8 @@ type CreateUserGitRepoRequest struct {
 	RemoteURL   string `json:"remote_url" binding:"required"`
 	Branch      string `json:"branch"`
 	UserID      uint   `json:"user_id" binding:"required"`
+	AuthType    string `json:"auth_type"`
+	AuthData    string `json:"auth_data"`
 }
 
 // UpdateUserGitRepoRequest is the structure for repository update requests
@@ -91,6 +97,8 @@ type UpdateUserGitRepoRequest struct {
 	Description string       `json:"description"`
 	RemoteURL   string       `json:"remote_url"`
 	Branch      string       `json:"branch"`
+	AuthType    string       `json:"auth_type"`
+	AuthData    string       `json:"auth_data"`
 	Status      GitRepoStatus `json:"status"`
 	ErrorMsg    string       `json:"error_msg"`
 }

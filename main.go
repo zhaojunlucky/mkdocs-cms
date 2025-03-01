@@ -2,11 +2,14 @@ package main
 
 import (
 	"log"
+	"os"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/zhaojunlucky/mkdocs-cms/controllers"
 	"github.com/zhaojunlucky/mkdocs-cms/database"
 	"github.com/zhaojunlucky/mkdocs-cms/middleware"
+	"github.com/zhaojunlucky/mkdocs-cms/models"
 )
 
 func main() {
@@ -35,6 +38,38 @@ func main() {
 func setupRoutes(r *gin.Engine) {
 	// Initialize controllers
 	siteConfigController := controllers.NewSiteConfigController()
+	
+	// Initialize GitHub App controllers
+	appID := int64(0)
+	if appIDStr := os.Getenv("GITHUB_APP_ID"); appIDStr != "" {
+		if id, err := strconv.ParseInt(appIDStr, 10, 64); err == nil {
+			appID = id
+		}
+	}
+	
+	// Load private key for GitHub App
+	var privateKey []byte
+	if privateKeyPath := os.Getenv("GITHUB_APP_PRIVATE_KEY_PATH"); privateKeyPath != "" {
+		var err error
+		privateKey, err = os.ReadFile(privateKeyPath)
+		if err != nil {
+			log.Printf("Warning: Failed to read GitHub App private key: %v", err)
+		}
+	}
+	
+	// Create GitHub App settings
+	githubAppSettings := &models.GitHubAppSettings{
+		AppID:         appID,
+		AppName:       os.Getenv("GITHUB_APP_NAME"),
+		Description:   os.Getenv("GITHUB_APP_DESCRIPTION"),
+		HomepageURL:   os.Getenv("GITHUB_APP_HOMEPAGE_URL"),
+		WebhookURL:    os.Getenv("GITHUB_APP_WEBHOOK_URL"),
+		WebhookSecret: os.Getenv("GITHUB_APP_WEBHOOK_SECRET"),
+		PrivateKeyPath: os.Getenv("GITHUB_APP_PRIVATE_KEY_PATH"),
+	}
+	
+	githubAppController := controllers.NewGitHubAppController(appID, privateKey, githubAppSettings)
+	githubWebhookController := controllers.NewGitHubWebhookController(githubAppSettings.WebhookSecret)
 	
 	// API v1 routes
 	v1 := r.Group("/api/v1")
@@ -85,7 +120,20 @@ func setupRoutes(r *gin.Engine) {
 		v1.POST("/site-configs", siteConfigController.CreateSiteConfig)
 		v1.PUT("/site-configs/:id", siteConfigController.UpdateSiteConfig)
 		v1.DELETE("/site-configs/:id", siteConfigController.DeleteSiteConfig)
+		
+		// GitHub App routes
+		github := v1.Group("/github")
+		{
+			github.GET("/app", githubAppController.GetAppInfo)
+			github.GET("/installations", githubAppController.GetInstallations)
+			github.GET("/installations/:installation_id/repositories", githubAppController.GetInstallationRepositories)
+			github.POST("/installations/:installation_id/import", githubAppController.ImportRepositories)
+			github.POST("/installations/:installation_id/webhooks", githubAppController.CreateWebhook)
+		}
 	}
+	
+	// GitHub webhook endpoint
+	r.POST("/api/webhooks/github", githubWebhookController.HandleWebhook)
 
 	// Health check
 	r.GET("/health", controllers.HealthCheck)

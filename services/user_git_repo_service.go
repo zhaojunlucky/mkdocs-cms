@@ -1,22 +1,56 @@
 package services
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/go-github/v45/github"
 	"github.com/zhaojunlucky/mkdocs-cms/database"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
 	"gorm.io/gorm"
 )
 
 // UserGitRepoService handles business logic for git repositories
-type UserGitRepoService struct{}
+type UserGitRepoService struct {
+	githubAppSettings *models.GitHubAppSettings
+	privateKey        []byte
+}
 
 // NewUserGitRepoService creates a new UserGitRepoService
 func NewUserGitRepoService() *UserGitRepoService {
-	return &UserGitRepoService{}
+	// Try to load GitHub App settings from environment variables
+	appID, _ := strconv.ParseInt(os.Getenv("GITHUB_APP_ID"), 10, 64)
+	settings := &models.GitHubAppSettings{
+		AppID:         appID,
+		AppName:       os.Getenv("GITHUB_APP_NAME"),
+		Description:   os.Getenv("GITHUB_APP_DESCRIPTION"),
+		HomepageURL:   os.Getenv("GITHUB_APP_HOMEPAGE_URL"),
+		WebhookURL:    os.Getenv("GITHUB_APP_WEBHOOK_URL"),
+		WebhookSecret: os.Getenv("GITHUB_APP_WEBHOOK_SECRET"),
+		PrivateKeyPath: os.Getenv("GITHUB_APP_PRIVATE_KEY_PATH"),
+	}
+
+	// Try to load private key if path is provided
+	var privateKey []byte
+	if settings.PrivateKeyPath != "" {
+		var err error
+		privateKey, err = os.ReadFile(settings.PrivateKeyPath)
+		if err != nil {
+			fmt.Printf("Warning: Failed to read GitHub App private key: %v\n", err)
+		}
+	}
+
+	return &UserGitRepoService{
+		githubAppSettings: settings,
+		privateKey:        privateKey,
+	}
 }
 
 // GetAllRepos returns all git repositories
@@ -38,6 +72,13 @@ func (s *UserGitRepoService) GetRepoByID(id uint) (models.UserGitRepo, error) {
 	var repo models.UserGitRepo
 	result := database.DB.First(&repo, id)
 	return repo, result.Error
+}
+
+// GetReposByURL returns repositories that match a specific remote URL
+func (s *UserGitRepoService) GetReposByURL(url string) ([]models.UserGitRepo, error) {
+	var repos []models.UserGitRepo
+	result := database.DB.Where("remote_url = ?", url).Find(&repos)
+	return repos, result.Error
 }
 
 // CreateRepo creates a new git repository
@@ -68,6 +109,8 @@ func (s *UserGitRepoService) CreateRepo(request models.CreateUserGitRepoRequest)
 		LocalPath:   localPath,
 		RemoteURL:   request.RemoteURL,
 		UserID:      request.UserID,
+		AuthType:    request.AuthType,
+		AuthData:    request.AuthData,
 		Status:      models.StatusPending,
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
@@ -102,6 +145,12 @@ func (s *UserGitRepoService) UpdateRepo(id uint, request models.UpdateUserGitRep
 	}
 	if request.Branch != "" {
 		repo.Branch = request.Branch
+	}
+	if request.AuthType != "" {
+		repo.AuthType = request.AuthType
+	}
+	if request.AuthData != "" {
+		repo.AuthData = request.AuthData
 	}
 	if request.Status != "" {
 		repo.Status = request.Status
@@ -154,7 +203,6 @@ func (s *UserGitRepoService) UpdateRepoStatus(id uint, status models.GitRepoStat
 }
 
 // SyncRepo synchronizes a git repository with its remote
-// This is a placeholder for actual git operations
 func (s *UserGitRepoService) SyncRepo(id uint) error {
 	var repo models.UserGitRepo
 	if err := database.DB.First(&repo, id).Error; err != nil {
@@ -166,10 +214,134 @@ func (s *UserGitRepoService) SyncRepo(id uint) error {
 		return err
 	}
 
-	// TODO: Implement actual git operations here
-	// For now, we'll just simulate a successful sync
-	time.Sleep(2 * time.Second)
+	var err error
+	switch repo.AuthType {
+	case "github_app":
+		err = s.syncWithGitHubApp(repo)
+	default:
+		err = s.syncWithGitCommand(repo)
+	}
+
+	if err != nil {
+		s.UpdateRepoStatus(id, models.StatusFailed, err.Error())
+		return err
+	}
 
 	// Update status to synced
 	return s.UpdateRepoStatus(id, models.StatusSynced, "")
+}
+
+// syncWithGitCommand uses git command line to sync a repository
+func (s *UserGitRepoService) syncWithGitCommand(repo models.UserGitRepo) error {
+	// Check if repository directory exists
+	if _, err := os.Stat(repo.LocalPath); os.IsNotExist(err) {
+		// Clone the repository
+		cmd := exec.Command("git", "clone", "-b", repo.Branch, repo.RemoteURL, repo.LocalPath)
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to clone repository: %v", err)
+		}
+	} else {
+		// Pull the latest changes
+		cmd := exec.Command("git", "-C", repo.LocalPath, "pull", "origin", repo.Branch)
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to pull repository: %v", err)
+		}
+	}
+
+	return nil
+}
+
+// syncWithGitHubApp uses GitHub App authentication to sync a repository
+func (s *UserGitRepoService) syncWithGitHubApp(repo models.UserGitRepo) error {
+	// Parse the auth data
+	var authData struct {
+		InstallationID int64 `json:"installation_id"`
+	}
+	if err := json.Unmarshal([]byte(repo.AuthData), &authData); err != nil {
+		return fmt.Errorf("invalid auth data: %v", err)
+	}
+
+	// Generate a JWT for GitHub API authentication
+	token, err := s.generateJWT()
+	if err != nil {
+		return fmt.Errorf("failed to generate authentication token: %v", err)
+	}
+
+	// Create a GitHub client with the JWT
+	client := github.NewClient(nil).WithAuthToken(token)
+
+	// Get an installation token
+	installationToken, _, err := client.Apps.CreateInstallationToken(nil, authData.InstallationID, nil)
+	if err != nil {
+		return fmt.Errorf("failed to get installation token: %v", err)
+	}
+
+	// Use the installation token for git operations
+	if _, err := os.Stat(repo.LocalPath); os.IsNotExist(err) {
+		// Clone the repository
+		cloneURL := repo.RemoteURL
+		// Insert the token into the URL
+		// Example: https://x-access-token:TOKEN@github.com/owner/repo.git
+		cloneURL = fmt.Sprintf("https://x-access-token:%s@%s", installationToken.GetToken(), cloneURL[8:])
+		
+		cmd := exec.Command("git", "clone", "-b", repo.Branch, cloneURL, repo.LocalPath)
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to clone repository: %v", err)
+		}
+	} else {
+		// Set the remote URL with the token
+		remoteURL := fmt.Sprintf("https://x-access-token:%s@%s", installationToken.GetToken(), repo.RemoteURL[8:])
+		setRemoteCmd := exec.Command("git", "-C", repo.LocalPath, "remote", "set-url", "origin", remoteURL)
+		if err := setRemoteCmd.Run(); err != nil {
+			return fmt.Errorf("failed to set remote URL: %v", err)
+		}
+		
+		// Pull the latest changes
+		pullCmd := exec.Command("git", "-C", repo.LocalPath, "pull", "origin", repo.Branch)
+		if err := pullCmd.Run(); err != nil {
+			return fmt.Errorf("failed to pull repository: %v", err)
+		}
+		
+		// Reset the remote URL to the original
+		resetRemoteCmd := exec.Command("git", "-C", repo.LocalPath, "remote", "set-url", "origin", repo.RemoteURL)
+		if err := resetRemoteCmd.Run(); err != nil {
+			return fmt.Errorf("failed to reset remote URL: %v", err)
+		}
+	}
+
+	return nil
+}
+
+// SyncRepository is an alias for SyncRepo for compatibility with the webhook controller
+func (s *UserGitRepoService) SyncRepository(id uint) error {
+	return s.SyncRepo(id)
+}
+
+// generateJWT generates a JWT for GitHub App authentication
+func (s *UserGitRepoService) generateJWT() (string, error) {
+	if s.privateKey == nil || s.githubAppSettings.AppID == 0 {
+		return "", errors.New("GitHub App not configured")
+	}
+
+	// Parse the private key
+	key, err := jwt.ParseRSAPrivateKeyFromPEM(s.privateKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse private key: %v", err)
+	}
+
+	// Create the JWT
+	now := time.Now()
+	claims := jwt.RegisteredClaims{
+		IssuedAt:  jwt.NewNumericDate(now),
+		ExpiresAt: jwt.NewNumericDate(now.Add(10 * time.Minute)),
+		Issuer:    strconv.FormatInt(s.githubAppSettings.AppID, 10),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	signedToken, err := token.SignedString(key)
+	if err != nil {
+		return "", fmt.Errorf("failed to sign JWT: %v", err)
+	}
+
+	return signedToken, nil
 }
