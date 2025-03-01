@@ -1,7 +1,9 @@
 package services
 
 import (
+	"crypto/rand"
 	"errors"
+	"fmt"
 
 	"github.com/zhaojunlucky/mkdocs-cms/database"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
@@ -35,17 +37,13 @@ func (s *UserService) GetAllUsers() ([]models.UserResponse, error) {
 }
 
 // GetUserByID retrieves a user by ID
-func (s *UserService) GetUserByID(id uint) (models.UserResponse, error) {
+func (s *UserService) GetUserByID(id string) (*models.User, error) {
 	var user models.User
-	result := database.DB.First(&user, id)
+	result := database.DB.First(&user, "id = ?", id)
 	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return models.UserResponse{}, errors.New("user not found")
-		}
-		return models.UserResponse{}, result.Error
+		return nil, result.Error
 	}
-
-	return user.ToResponse(), nil
+	return &user, nil
 }
 
 // GetUserByEmail retrieves a user by email
@@ -76,31 +74,55 @@ func (s *UserService) GetUserByProviderID(provider, providerID string) (*models.
 	return &user, nil
 }
 
-// CreateOrUpdateUser creates a new user or updates an existing one
+// CreateOrUpdateUser creates a new user or updates an existing one based on email
 func (s *UserService) CreateOrUpdateUser(user *models.User) (*models.User, error) {
-	// Check if user exists by provider and provider ID
-	existingUser, err := s.GetUserByProviderID(user.Provider, user.ProviderID)
-	if err == nil {
+	// Check if user exists
+	var existingUser models.User
+	result := database.DB.Where("email = ?", user.Email).First(&existingUser)
+
+	if result.RowsAffected > 0 {
 		// User exists, update fields
 		existingUser.Username = user.Username
 		existingUser.Name = user.Name
-		existingUser.Email = user.Email
 		existingUser.AvatarURL = user.AvatarURL
-		
-		result := database.DB.Save(existingUser)
+		existingUser.Provider = user.Provider
+		existingUser.ProviderID = user.ProviderID
+
+		// Update user
+		result = database.DB.Save(&existingUser)
 		if result.Error != nil {
 			return nil, errors.New("failed to update user")
 		}
-		
-		return existingUser, nil
+
+		return &existingUser, nil
 	}
-	
+
 	// User doesn't exist, create new one
-	result := database.DB.Create(user)
+	// Set a default password for OAuth users (this will be a random string that can't be used to log in)
+	if user.Password == "" {
+		randomBytes := make([]byte, 32)
+		if _, err := rand.Read(randomBytes); err == nil {
+			hashedPassword, err := bcrypt.GenerateFromPassword(randomBytes, bcrypt.DefaultCost)
+			if err == nil {
+				user.Password = string(hashedPassword)
+			}
+		}
+	}
+
+	// Generate a unique ID for the user if not provided
+	if user.ID == "" {
+		randomBytes := make([]byte, 16)
+		if _, err := rand.Read(randomBytes); err == nil {
+			user.ID = fmt.Sprintf("%x", randomBytes)
+		}
+	}
+
+	// Create the user
+	result = database.DB.Create(user)
 	if result.Error != nil {
 		return nil, errors.New("failed to create user")
 	}
-	
+
 	return user, nil
 }
 
@@ -129,9 +151,9 @@ func (s *UserService) CreateUser(req models.CreateUserRequest) (models.UserRespo
 }
 
 // UpdateUser updates an existing user
-func (s *UserService) UpdateUser(id uint, req models.UpdateUserRequest) (models.UserResponse, error) {
+func (s *UserService) UpdateUser(id string, req models.UpdateUserRequest) (models.UserResponse, error) {
 	var user models.User
-	result := database.DB.First(&user, id)
+	result := database.DB.First(&user, "id = ?", id)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return models.UserResponse{}, errors.New("user not found")
@@ -166,8 +188,8 @@ func (s *UserService) UpdateUser(id uint, req models.UpdateUserRequest) (models.
 }
 
 // DeleteUser deletes a user by ID
-func (s *UserService) DeleteUser(id uint) error {
-	result := database.DB.Delete(&models.User{}, id)
+func (s *UserService) DeleteUser(id string) error {
+	result := database.DB.Delete(&models.User{}, "id = ?", id)
 	if result.Error != nil {
 		return errors.New("failed to delete user")
 	}

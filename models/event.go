@@ -42,7 +42,7 @@ type Event struct {
 	Message     string      `json:"message" gorm:"not null"`
 	Details     string      `json:"details" gorm:"type:text"`
 	StackTrace  string      `json:"stack_trace" gorm:"type:text"`
-	UserID      *uint       `json:"user_id" gorm:"index"`
+	UserID      *string     `json:"user_id" gorm:"index"`
 	User        *User       `json:"user" gorm:"foreignKey:UserID"`
 	ResourceID  *uint       `json:"resource_id"`
 	ResourceType string     `json:"resource_type" gorm:"index"`
@@ -50,7 +50,7 @@ type Event struct {
 	UserAgent   string      `json:"user_agent"`
 	Resolved    bool        `json:"resolved" gorm:"default:false;index"`
 	ResolvedAt  *time.Time  `json:"resolved_at"`
-	ResolvedBy  *uint       `json:"resolved_by"`
+	ResolvedBy  *string     `json:"resolved_by"`
 	CreatedAt   time.Time   `json:"created_at" gorm:"index"`
 }
 
@@ -62,7 +62,7 @@ type EventResponse struct {
 	Message      string      `json:"message"`
 	Details      string      `json:"details,omitempty"`
 	StackTrace   string      `json:"stack_trace,omitempty"`
-	UserID       *uint       `json:"user_id,omitempty"`
+	UserID       *string     `json:"user_id,omitempty"`
 	User         *UserResponse `json:"user,omitempty"`
 	ResourceID   *uint       `json:"resource_id,omitempty"`
 	ResourceType string      `json:"resource_type,omitempty"`
@@ -70,7 +70,7 @@ type EventResponse struct {
 	UserAgent    string      `json:"user_agent,omitempty"`
 	Resolved     bool        `json:"resolved"`
 	ResolvedAt   *time.Time  `json:"resolved_at,omitempty"`
-	ResolvedBy   *uint       `json:"resolved_by,omitempty"`
+	ResolvedBy   *string     `json:"resolved_by,omitempty"`
 	CreatedAt    time.Time   `json:"created_at"`
 }
 
@@ -112,7 +112,7 @@ type CreateEventRequest struct {
 	Message      string      `json:"message" binding:"required"`
 	Details      string      `json:"details"`
 	StackTrace   string      `json:"stack_trace"`
-	UserID       *uint       `json:"user_id"`
+	UserID       *string     `json:"user_id"`
 	ResourceID   *uint       `json:"resource_id"`
 	ResourceType string      `json:"resource_type"`
 	IPAddress    string      `json:"ip_address"`
@@ -122,5 +122,5 @@ type CreateEventRequest struct {
 // UpdateEventRequest is the structure for event update requests
 type UpdateEventRequest struct {
 	Resolved   *bool      `json:"resolved"`
-	ResolvedBy *uint      `json:"resolved_by"`
+	ResolvedBy *string    `json:"resolved_by"`
 }

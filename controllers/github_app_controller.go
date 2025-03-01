@@ -170,7 +170,7 @@ func (c *GitHubAppController) GetRepositoryByID(ctx *gin.Context) {
 	}
 
 	// Get the repository from the database
-	repo, err := c.gitRepoService.GetRepoByID(uint(repoID))
+	repo, err := c.gitRepoService.GetRepoByID(strconv.FormatUint(repoID, 10))
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "Repository not found"})
 		return
@@ -192,8 +192,8 @@ func (c *GitHubAppController) CreateRepositoryFromGitHub(ctx *gin.Context) {
 
 	// Parse request body
 	var request struct {
-		RepositoryID int64 `json:"repository_id"`
-		UserID       uint  `json:"user_id"`
+		RepositoryID string `json:"repository_id"`
+		UserID       string `json:"user_id"`
 	}
 	if err := ctx.ShouldBindJSON(&request); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -244,7 +244,7 @@ func (c *GitHubAppController) CreateRepositoryFromGitHub(ctx *gin.Context) {
 	// Find the selected repository
 	var selectedRepo *github.Repository
 	for _, repo := range repos.Repositories {
-		if repo.GetID() == request.RepositoryID {
+		if strconv.FormatInt(repo.GetID(), 10) == request.RepositoryID {
 			selectedRepo = repo
 			break
 		}
@@ -357,7 +357,7 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 		// Find the repository in the list
 		var selectedRepo *github.Repository
 		for _, repo := range repos.Repositories {
-			if repo.GetID() == repoID {
+			if strconv.FormatInt(repo.GetID(), 10) == repoID {
 				selectedRepo = repo
 				break
 			}
@@ -418,7 +418,7 @@ func (c *GitHubAppController) CreateWebhook(ctx *gin.Context) {
 	var request struct {
 		RepositoryFullName string `json:"repository_full_name"`
 		WebhookURL         string `json:"webhook_url"`
-		UserID             uint   `json:"user_id"`
+		UserID             string `json:"user_id"`
 		Branch             string `json:"branch"`
 		LocalPath          string `json:"local_path"`
 	}

@@ -9,7 +9,7 @@ import { MatDividerModule } from '@angular/material/divider';
 
 @NgModule({
   declarations: [
-    LoginComponent
+
   ],
   imports: [
     CommonModule,
@@ -17,7 +17,8 @@ import { MatDividerModule } from '@angular/material/divider';
     MatCardModule,
     MatButtonModule,
     MatIconModule,
-    MatDividerModule
+    MatDividerModule,
+    LoginComponent
   ],
   exports: [
     LoginComponent

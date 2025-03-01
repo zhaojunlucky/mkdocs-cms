@@ -62,14 +62,14 @@ func (s *UserGitRepoService) GetAllRepos() ([]models.UserGitRepo, error) {
 }
 
 // GetReposByUser returns all git repositories for a specific user
-func (s *UserGitRepoService) GetReposByUser(userID uint) ([]models.UserGitRepo, error) {
+func (s *UserGitRepoService) GetReposByUser(userID string) ([]models.UserGitRepo, error) {
 	var repos []models.UserGitRepo
 	result := database.DB.Where("user_id = ?", userID).Find(&repos)
 	return repos, result.Error
 }
 
 // GetRepoByID returns a specific git repository by ID
-func (s *UserGitRepoService) GetRepoByID(id uint) (models.UserGitRepo, error) {
+func (s *UserGitRepoService) GetRepoByID(id string) (models.UserGitRepo, error) {
 	var repo models.UserGitRepo
 	result := database.DB.First(&repo, id)
 	return repo, result.Error
@@ -128,7 +128,7 @@ func (s *UserGitRepoService) CreateRepo(request models.CreateUserGitRepoRequest)
 }
 
 // UpdateRepo updates an existing git repository
-func (s *UserGitRepoService) UpdateRepo(id uint, request models.UpdateUserGitRepoRequest) (models.UserGitRepo, error) {
+func (s *UserGitRepoService) UpdateRepo(id string, request models.UpdateUserGitRepoRequest) (models.UserGitRepo, error) {
 	var repo models.UserGitRepo
 	if err := database.DB.First(&repo, id).Error; err != nil {
 		return models.UserGitRepo{}, err
@@ -166,7 +166,7 @@ func (s *UserGitRepoService) UpdateRepo(id uint, request models.UpdateUserGitRep
 }
 
 // DeleteRepo deletes a git repository
-func (s *UserGitRepoService) DeleteRepo(id uint) error {
+func (s *UserGitRepoService) DeleteRepo(id string) error {
 	var repo models.UserGitRepo
 	if err := database.DB.First(&repo, id).Error; err != nil {
 		return err
@@ -187,7 +187,7 @@ func (s *UserGitRepoService) DeleteRepo(id uint) error {
 }
 
 // UpdateRepoStatus updates the status of a git repository
-func (s *UserGitRepoService) UpdateRepoStatus(id uint, status models.GitRepoStatus, errorMsg string) error {
+func (s *UserGitRepoService) UpdateRepoStatus(id string, status models.GitRepoStatus, errorMsg string) error {
 	var repo models.UserGitRepo
 	if err := database.DB.First(&repo, id).Error; err != nil {
 		return err
@@ -204,7 +204,7 @@ func (s *UserGitRepoService) UpdateRepoStatus(id uint, status models.GitRepoStat
 }
 
 // SyncRepo synchronizes a git repository with its remote
-func (s *UserGitRepoService) SyncRepo(id uint) error {
+func (s *UserGitRepoService) SyncRepo(id string) error {
 	var repo models.UserGitRepo
 	if err := database.DB.First(&repo, id).Error; err != nil {
 		return err
@@ -320,7 +320,7 @@ func (s *UserGitRepoService) syncWithGitHubApp(repo models.UserGitRepo) error {
 }
 
 // SyncRepository is an alias for SyncRepo for compatibility with the webhook controller
-func (s *UserGitRepoService) SyncRepository(id uint) error {
+func (s *UserGitRepoService) SyncRepository(id string) error {
 	return s.SyncRepo(id)
 }
 

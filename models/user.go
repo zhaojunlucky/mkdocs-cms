@@ -6,16 +6,16 @@ import (
 
 // User represents a user in the system
 type User struct {
-	ID         string    `json:"id" gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
+	ID         string    `json:"id" gorm:"primaryKey;type:text"`
 	Username   string    `json:"username" gorm:"unique;not null"`
 	Email      string    `json:"email" gorm:"unique;not null"`
-	Password   string    `json:"-" gorm:"default:null"` // Password is not exposed in JSON and can be null for OAuth users
+	Password   string    `json:"-"` // Password is not exposed in JSON
 	Name       string    `json:"name"`
 	FirstName  string    `json:"first_name"`
 	LastName   string    `json:"last_name"`
 	AvatarURL  string    `json:"avatar_url"`
-	Provider   string    `json:"provider" gorm:"default:null"` // OAuth provider (github, google, etc.)
-	ProviderID string    `json:"provider_id" gorm:"default:null"` // ID from the OAuth provider
+	Provider   string    `json:"provider"` // OAuth provider (github, google, etc.)
+	ProviderID string    `json:"provider_id"` // ID from the OAuth provider
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 }

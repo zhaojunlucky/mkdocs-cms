@@ -9,7 +9,7 @@ type Post struct {
 	ID        uint      `json:"id" gorm:"primaryKey"`
 	Title     string    `json:"title" gorm:"not null"`
 	Content   string    `json:"content" gorm:"type:text;not null"`
-	UserID    uint      `json:"user_id" gorm:"not null"`
+	UserID    string    `json:"user_id" gorm:"not null"`
 	User      User      `json:"user" gorm:"foreignKey:UserID"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -20,7 +20,7 @@ type PostResponse struct {
 	ID        uint         `json:"id"`
 	Title     string       `json:"title"`
 	Content   string       `json:"content"`
-	UserID    uint         `json:"user_id"`
+	UserID    string       `json:"user_id"`
 	User      UserResponse `json:"user,omitempty"`
 	CreatedAt time.Time    `json:"created_at"`
 	UpdatedAt time.Time    `json:"updated_at"`
@@ -48,7 +48,7 @@ func (p *Post) ToResponse(includeUser bool) PostResponse {
 type CreatePostRequest struct {
 	Title   string `json:"title" binding:"required"`
 	Content string `json:"content" binding:"required"`
-	UserID  uint   `json:"user_id" binding:"required"`
+	UserID  string `json:"user_id" binding:"required"`
 }
 
 // UpdatePostRequest is the structure for post update requests

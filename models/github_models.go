@@ -15,8 +15,8 @@ type GitHubAppSettings struct {
 
 // ImportRepositoriesRequest represents a request to import repositories from GitHub
 type ImportRepositoriesRequest struct {
-	UserID        uint    `json:"user_id" binding:"required"`
-	RepositoryIDs []int64 `json:"repository_ids" binding:"required"`
+	UserID        string `json:"user_id" binding:"required"`
+	RepositoryIDs []string `json:"repository_ids" binding:"required"`
 }
 
 // CreateWebhookRequest represents a request to create a webhook for a GitHub repository
@@ -29,7 +29,7 @@ type CreateWebhookRequest struct {
 
 // GitHubRepository represents a GitHub repository
 type GitHubRepository struct {
-	ID            int64     `json:"id"`
+	ID            string    `json:"id"`
 	Name          string    `json:"name"`
 	FullName      string    `json:"full_name"`
 	Private       bool      `json:"private"`
@@ -43,7 +43,7 @@ type GitHubRepository struct {
 
 // GitHubUser represents a GitHub user or organization
 type GitHubUser struct {
-	ID        int64  `json:"id"`
+	ID        string `json:"id"`
 	Login     string `json:"login"`
 	AvatarURL string `json:"avatar_url"`
 	Type      string `json:"type"`
@@ -77,7 +77,7 @@ type GitHubPullRequestEvent struct {
 	Number      int              `json:"number"`
 	PullRequest struct {
 		URL       string    `json:"url"`
-		ID        int64     `json:"id"`
+		ID        string    `json:"id"`
 		Number    int       `json:"number"`
 		State     string    `json:"state"`
 		Locked    bool      `json:"locked"`
@@ -106,7 +106,7 @@ type GitHubPullRequestEvent struct {
 type GitHubInstallationEvent struct {
 	Action       string `json:"action"`
 	Installation struct {
-		ID      int64     `json:"id"`
+		ID      string     `json:"id"`
 		Account GitHubUser `json:"account"`
 	} `json:"installation"`
 	Repositories []GitHubRepository `json:"repositories"`
@@ -119,7 +119,7 @@ type GitHubInstallationRepositoriesEvent struct {
 	RepositoriesAdded   []GitHubRepository `json:"repositories_added"`
 	RepositoriesRemoved []GitHubRepository `json:"repositories_removed"`
 	Installation        struct {
-		ID      int64     `json:"id"`
+		ID      string     `json:"id"`
 		Account GitHubUser `json:"account"`
 	} `json:"installation"`
 	Sender GitHubUser `json:"sender"`

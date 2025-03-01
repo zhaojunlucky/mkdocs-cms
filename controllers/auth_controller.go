@@ -8,13 +8,12 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/zhaojunlucky/mkdocs-cms/config"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
 	"github.com/zhaojunlucky/mkdocs-cms/services"
 	"golang.org/x/oauth2"
@@ -23,54 +22,41 @@ import (
 )
 
 type AuthController struct {
-	userService *services.UserService
-	githubOAuthConfig *oauth2.Config
-	googleOAuthConfig *oauth2.Config
-	jwtSecret []byte
+	userService        *services.UserService
+	githubOAuthConfig  *oauth2.Config
+	googleOAuthConfig  *oauth2.Config
+	jwtSecret          []byte
+	jwtExpirationHours int
 }
 
-func NewAuthController(userService *services.UserService) *AuthController {
+func NewAuthController(userService *services.UserService, appConfig *config.Config) *AuthController {
 	// Initialize GitHub OAuth config
-	githubClientID := os.Getenv("GITHUB_OAUTH_CLIENT_ID")
-	githubClientSecret := os.Getenv("GITHUB_OAUTH_CLIENT_SECRET")
-	
-	// Initialize Google OAuth config
-	googleClientID := os.Getenv("GOOGLE_OAUTH_CLIENT_ID")
-	googleClientSecret := os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET")
-	
-	// Get JWT secret from environment
-	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
-	if len(jwtSecret) == 0 {
-		// Use a default secret for development
-		jwtSecret = []byte("mkdocs-cms-default-secret")
-	}
-	
-	redirectURL := os.Getenv("OAUTH_REDIRECT_URL")
-	if redirectURL == "" {
-		redirectURL = "http://localhost:4200/login"
-	}
-	
 	githubConfig := &oauth2.Config{
-		ClientID:     githubClientID,
-		ClientSecret: githubClientSecret,
-		RedirectURL:  redirectURL,
+		ClientID:     appConfig.GitHub.OAuth.ClientID,
+		ClientSecret: appConfig.GitHub.OAuth.ClientSecret,
+		RedirectURL:  appConfig.OAuth.RedirectURL,
 		Scopes:       []string{"user:email", "read:user"},
 		Endpoint:     github.Endpoint,
 	}
-	
+
+	// Initialize Google OAuth config
 	googleConfig := &oauth2.Config{
-		ClientID:     googleClientID,
-		ClientSecret: googleClientSecret,
-		RedirectURL:  redirectURL,
-		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"},
+		ClientID:     appConfig.Google.OAuth.ClientID,
+		ClientSecret: appConfig.Google.OAuth.ClientSecret,
+		RedirectURL:  appConfig.OAuth.RedirectURL,
+		Scopes:       appConfig.Google.OAuth.Scopes,
 		Endpoint:     google.Endpoint,
 	}
-	
+
+	// Get JWT secret from configuration
+	jwtSecret := []byte(appConfig.JWT.Secret)
+
 	return &AuthController{
-		userService: userService,
-		githubOAuthConfig: githubConfig,
-		googleOAuthConfig: googleConfig,
-		jwtSecret: jwtSecret,
+		userService:        userService,
+		githubOAuthConfig:  githubConfig,
+		googleOAuthConfig:  googleConfig,
+		jwtSecret:          jwtSecret,
+		jwtExpirationHours: appConfig.JWT.ExpirationHours,
 	}
 }
 
@@ -94,10 +80,10 @@ func (c *AuthController) GithubLogin(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate state"})
 		return
 	}
-	
+
 	// Store state in cookie
 	ctx.SetCookie("oauth_state", state, 3600, "/", "", false, true)
-	
+
 	// Redirect to GitHub OAuth page
 	url := c.githubOAuthConfig.AuthCodeURL(state)
 	ctx.Redirect(http.StatusTemporaryRedirect, url)
@@ -111,13 +97,13 @@ func (c *AuthController) GithubCallback(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid state"})
 		return
 	}
-	
+
 	// Verify state
 	if state != ctx.Query("state") {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid state"})
 		return
 	}
-	
+
 	// Exchange code for token
 	code := ctx.Query("code")
 	token, err := c.githubOAuthConfig.Exchange(ctx, code)
@@ -125,7 +111,7 @@ func (c *AuthController) GithubCallback(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to exchange code for token"})
 		return
 	}
-	
+
 	// Get user info from GitHub
 	client := c.githubOAuthConfig.Client(ctx, token)
 	resp, err := client.Get("https://api.github.com/user")
@@ -134,14 +120,14 @@ func (c *AuthController) GithubCallback(ctx *gin.Context) {
 		return
 	}
 	defer resp.Body.Close()
-	
+
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read response body"})
 		return
 	}
-	
+
 	// Parse user info
 	var githubUser struct {
 		ID        int    `json:"id"`
@@ -150,12 +136,12 @@ func (c *AuthController) GithubCallback(ctx *gin.Context) {
 		Email     string `json:"email"`
 		AvatarURL string `json:"avatar_url"`
 	}
-	
+
 	if err := json.Unmarshal(body, &githubUser); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse user info"})
 		return
 	}
-	
+
 	// If email is not provided, get it from the emails API
 	if githubUser.Email == "" {
 		emails, err := c.getGithubEmails(client)
@@ -177,33 +163,34 @@ func (c *AuthController) GithubCallback(ctx *gin.Context) {
 			}
 		}
 	}
-	
+
 	// Create or update user in database
 	user := &models.User{
-		Username:  githubUser.Login,
-		Name:      githubUser.Name,
-		Email:     githubUser.Email,
-		AvatarURL: githubUser.AvatarURL,
-		Provider:  "github",
+		Username:   githubUser.Login,
+		Name:       githubUser.Name,
+		Email:      githubUser.Email,
+		AvatarURL:  githubUser.AvatarURL,
+		Provider:   "github",
 		ProviderID: fmt.Sprintf("%d", githubUser.ID),
 	}
-	
+
 	// Save user to database
 	savedUser, err := c.userService.CreateOrUpdateUser(user)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save user"})
 		return
 	}
-	
+
 	// Generate JWT token
 	jwtToken, err := c.generateJWT(savedUser)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
 	}
-	
+
 	// Redirect to frontend with token
-	redirectURL := fmt.Sprintf("%s?token=%s", c.githubOAuthConfig.RedirectURL, url.QueryEscape(jwtToken))
+	frontendURL := "http://localhost:4200/login"
+	redirectURL := fmt.Sprintf("%s?token=%s", frontendURL, url.QueryEscape(jwtToken))
 	ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }
 
@@ -215,10 +202,10 @@ func (c *AuthController) GoogleLogin(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate state"})
 		return
 	}
-	
+
 	// Store state in cookie
 	ctx.SetCookie("oauth_state", state, 3600, "/", "", false, true)
-	
+
 	// Redirect to Google OAuth page
 	url := c.googleOAuthConfig.AuthCodeURL(state)
 	ctx.Redirect(http.StatusTemporaryRedirect, url)
@@ -232,13 +219,13 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid state"})
 		return
 	}
-	
+
 	// Verify state
 	if state != ctx.Query("state") {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid state"})
 		return
 	}
-	
+
 	// Exchange code for token
 	code := ctx.Query("code")
 	token, err := c.googleOAuthConfig.Exchange(ctx, code)
@@ -246,7 +233,7 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to exchange code for token"})
 		return
 	}
-	
+
 	// Get user info from Google
 	client := c.googleOAuthConfig.Client(ctx, token)
 	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
@@ -255,14 +242,14 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 		return
 	}
 	defer resp.Body.Close()
-	
+
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read response body"})
 		return
 	}
-	
+
 	// Parse user info
 	var googleUser struct {
 		ID      string `json:"id"`
@@ -270,38 +257,39 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 		Name    string `json:"name"`
 		Picture string `json:"picture"`
 	}
-	
+
 	if err := json.Unmarshal(body, &googleUser); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse user info"})
 		return
 	}
-	
+
 	// Create or update user in database
 	user := &models.User{
-		Username:  googleUser.Email,
-		Name:      googleUser.Name,
-		Email:     googleUser.Email,
-		AvatarURL: googleUser.Picture,
-		Provider:  "google",
+		Username:   googleUser.Email,
+		Name:       googleUser.Name,
+		Email:      googleUser.Email,
+		AvatarURL:  googleUser.Picture,
+		Provider:   "google",
 		ProviderID: googleUser.ID,
 	}
-	
+
 	// Save user to database
 	savedUser, err := c.userService.CreateOrUpdateUser(user)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save user"})
 		return
 	}
-	
+
 	// Generate JWT token
 	jwtToken, err := c.generateJWT(savedUser)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
 	}
-	
+
 	// Redirect to frontend with token
-	redirectURL := fmt.Sprintf("%s?token=%s", c.googleOAuthConfig.RedirectURL, url.QueryEscape(jwtToken))
+	frontendURL := "http://localhost:4200/login"
+	redirectURL := fmt.Sprintf("%s?token=%s", frontendURL, url.QueryEscape(jwtToken))
 	ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }
 
@@ -313,7 +301,7 @@ func (c *AuthController) GetCurrentUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	
+
 	ctx.JSON(http.StatusOK, user)
 }
 
@@ -359,28 +347,21 @@ func (c *AuthController) AuthMiddleware() gin.HandlerFunc {
 					return
 				}
 			}
-			
+
 			// Get user ID from claims
 			userIDStr, ok := claims["sub"].(string)
 			if !ok {
 				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
 				return
 			}
-			
-			// Convert string ID to uint
-			userID, err := strconv.ParseUint(userIDStr, 10, 64)
-			if err != nil {
-				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
-				return
-			}
-			
+
 			// Get user from database
-			user, err := c.userService.GetUserByID(uint(userID))
+			user, err := c.userService.GetUserByID(userIDStr)
 			if err != nil {
 				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
 				return
 			}
-			
+
 			// Set user in context
 			ctx.Set("user", user)
 			ctx.Next()
@@ -405,21 +386,21 @@ func generateRandomState() (string, error) {
 func (c *AuthController) generateJWT(user *models.User) (string, error) {
 	// Create token
 	token := jwt.New(jwt.SigningMethodHS256)
-	
+
 	// Set claims
 	claims := token.Claims.(jwt.MapClaims)
 	claims["sub"] = user.ID
 	claims["name"] = user.Name
 	claims["email"] = user.Email
 	claims["iat"] = time.Now().Unix()
-	claims["exp"] = time.Now().Add(time.Hour * 24 * 7).Unix() // Token expires in 7 days
-	
+	claims["exp"] = time.Now().Add(time.Hour * time.Duration(c.jwtExpirationHours)).Unix() // Token expires in jwtExpirationHours hours
+
 	// Sign token
 	tokenString, err := token.SignedString(c.jwtSecret)
 	if err != nil {
 		return "", err
 	}
-	
+
 	return tokenString, nil
 }
 
@@ -434,21 +415,21 @@ func (c *AuthController) getGithubEmails(client *http.Client) ([]struct {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var emails []struct {
 		Email    string `json:"email"`
 		Primary  bool   `json:"primary"`
 		Verified bool   `json:"verified"`
 	}
-	
+
 	if err := json.Unmarshal(body, &emails); err != nil {
 		return nil, err
 	}
-	
+
 	return emails, nil
 }

@@ -26,7 +26,7 @@ type UserGitRepo struct {
 	LocalPath   string       `json:"local_path" gorm:"not null"`
 	RemoteURL   string       `json:"remote_url" gorm:"not null"`
 	Branch      string       `json:"branch" gorm:"default:main"`
-	UserID      uint         `json:"user_id" gorm:"not null"`
+	UserID      string       `json:"user_id" gorm:"not null"`
 	User        User         `json:"user" gorm:"foreignKey:UserID"`
 	AuthType    string       `json:"auth_type" gorm:"default:'none'"`
 	AuthData    string       `json:"auth_data"`
@@ -45,7 +45,7 @@ type UserGitRepoResponse struct {
 	LocalPath   string       `json:"local_path"`
 	RemoteURL   string       `json:"remote_url"`
 	Branch      string       `json:"branch"`
-	UserID      uint         `json:"user_id"`
+	UserID      string       `json:"user_id"`
 	User        UserResponse `json:"user,omitempty"`
 	AuthType    string       `json:"auth_type"`
 	LastSyncAt  time.Time    `json:"last_sync_at"`
@@ -86,7 +86,7 @@ type CreateUserGitRepoRequest struct {
 	Description string `json:"description"`
 	RemoteURL   string `json:"remote_url" binding:"required"`
 	Branch      string `json:"branch"`
-	UserID      uint   `json:"user_id" binding:"required"`
+	UserID      string `json:"user_id" binding:"required"`
 	AuthType    string `json:"auth_type"`
 	AuthData    string `json:"auth_data"`
 	LocalPath   string `json:"local_path"`

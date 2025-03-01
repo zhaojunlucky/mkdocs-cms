@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
@@ -29,13 +28,8 @@ func GetRepos(c *gin.Context) {
 
 // GetReposByUser returns all git repositories for a specific user
 func GetReposByUser(c *gin.Context) {
-	userID, err := strconv.ParseUint(c.Param("user_id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
-
-	repos, err := userGitRepoService.GetReposByUser(uint(userID))
+	userID := c.Param("user_id")
+	repos, err := userGitRepoService.GetReposByUser(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -51,13 +45,8 @@ func GetReposByUser(c *gin.Context) {
 
 // GetRepo returns a specific git repository
 func GetRepo(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
-		return
-	}
-
-	repo, err := userGitRepoService.GetRepoByID(uint(id))
+	id := c.Param("id")
+	repo, err := userGitRepoService.GetRepoByID(id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Repository not found"})
 		return
@@ -85,19 +74,14 @@ func CreateRepo(c *gin.Context) {
 
 // UpdateRepo updates an existing git repository
 func UpdateRepo(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
-		return
-	}
-
+	id := c.Param("id")
 	var request models.UpdateUserGitRepoRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	repo, err := userGitRepoService.UpdateRepo(uint(id), request)
+	repo, err := userGitRepoService.UpdateRepo(id, request)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -108,13 +92,8 @@ func UpdateRepo(c *gin.Context) {
 
 // DeleteRepo deletes a git repository
 func DeleteRepo(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
-		return
-	}
-
-	if err := userGitRepoService.DeleteRepo(uint(id)); err != nil {
+	id := c.Param("id")
+	if err := userGitRepoService.DeleteRepo(id); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -124,18 +103,13 @@ func DeleteRepo(c *gin.Context) {
 
 // SyncRepo synchronizes a git repository with its remote
 func SyncRepo(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
-		return
-	}
-
-	if err := userGitRepoService.SyncRepo(uint(id)); err != nil {
+	id := c.Param("id")
+	if err := userGitRepoService.SyncRepo(id); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	repo, err := userGitRepoService.GetRepoByID(uint(id))
+	repo, err := userGitRepoService.GetRepoByID(id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

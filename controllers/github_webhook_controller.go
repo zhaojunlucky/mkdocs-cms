@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -129,7 +130,7 @@ func (c *GitHubWebhookController) handlePushEvent(ctx *gin.Context, event *githu
 	// Sync each matching repository
 	for _, repo := range repos {
 		if repo.Branch == branch {
-			if err := c.gitRepoService.SyncRepository(repo.ID); err != nil {
+			if err := c.gitRepoService.SyncRepository(fmt.Sprintf("%d", repo.ID)); err != nil {
 				log.Printf("Failed to sync repository %d: %v", repo.ID, err)
 				continue
 			}
@@ -188,7 +189,7 @@ func (c *GitHubWebhookController) handlePullRequestEvent(ctx *gin.Context, body 
 	// Sync each matching repository
 	for _, repo := range repos {
 		if repo.Branch == targetBranch {
-			if err := c.gitRepoService.SyncRepository(repo.ID); err != nil {
+			if err := c.gitRepoService.SyncRepository(fmt.Sprintf("%d", repo.ID)); err != nil {
 				log.Printf("Failed to sync repository %d: %v", repo.ID, err)
 				continue
 			}
@@ -204,6 +205,7 @@ func (c *GitHubWebhookController) handlePullRequestEvent(ctx *gin.Context, body 
 				Details:      string(body),
 			})
 		}
+
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Pull request event processed"})
