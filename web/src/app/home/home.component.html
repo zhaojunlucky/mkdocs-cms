@@ -4,7 +4,7 @@
   <div class="repositories-section">
     <div class="section-header">
       <h2>Your Repositories</h2>
-      <button class="add-repo-btn">Add Repository</button>
+      <button class="add-repo-btn" routerLink="/repositories/import">Add Repository</button>
     </div>
     
     <div *ngIf="loading" class="loading-indicator">
@@ -17,7 +17,7 @@
     
     <div *ngIf="!loading && !error && repositories.length === 0" class="empty-state">
       <p>You don't have any repositories yet.</p>
-      <button class="add-repo-btn">Add Your First Repository</button>
+      <button class="add-repo-btn" routerLink="/repositories/import">Add Your First Repository</button>
     </div>
     
     <div *ngIf="!loading && repositories.length > 0" class="repositories-list">

@@ -18,12 +18,12 @@
     <div class="collections-section">
       <div class="section-header">
         <h2>Collections</h2>
-        <button class="add-collection-btn">Add Collection</button>
+        <button class="add-collection-btn" routerLink="/repositories/import">Add Collection</button>
       </div>
       
       <div *ngIf="collections.length === 0" class="empty-state">
         <p>This repository doesn't have any collections yet.</p>
-        <button class="add-collection-btn">Add Your First Collection</button>
+        <button class="add-collection-btn" routerLink="/repositories/import">Add Your First Collection</button>
       </div>
       
       <div *ngIf="collections.length > 0" class="collections-list">
