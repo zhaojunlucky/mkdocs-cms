@@ -24,15 +24,27 @@
       <div *ngFor="let repo of repositories" class="repository-card">
         <div class="repo-header">
           <h3>{{ repo.name }}</h3>
+          <div class="repo-menu">
+            <button class="menu-btn" (click)="toggleMenu(repo)">
+              <i class="fas fa-ellipsis-v"></i>
+            </button>
+            <div class="dropdown-menu" *ngIf="repo?.showMenu">
+              <button (click)="syncRepository(repo)">Sync Repository</button>
+              <button (click)="editRepository(repo)">Edit</button>
+              <button (click)="deleteRepository(repo)">Delete</button>
+            </div>
+          </div>
         </div>
         <div class="repo-details">
-          <p class="repo-path">{{ repo.local_path }}</p>
+          <p class="repo-status" [ngClass]="getStatusClass(repo)">
+            Status: {{ repo.syncing ? 'Syncing...' : (repo.status | titlecase) }}
+            <span *ngIf="repo.error_msg" class="error-tooltip">{{ repo.error_msg }}</span>
+          </p>
+          <p class="repo-date">Last synced: {{ repo.last_sync_at ? (repo.last_sync_at | date) : 'Never' }}</p>
           <p class="repo-date">Added: {{ repo.created_at | date }}</p>
         </div>
         <div class="repo-actions">
           <a [routerLink]="['/repositories', repo.id]" class="view-btn">View Collections</a>
-          <button class="edit-btn">Edit</button>
-          <button class="delete-btn">Delete</button>
         </div>
       </div>
     </div>

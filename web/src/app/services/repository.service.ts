@@ -6,11 +6,18 @@ import { AuthService } from '../auth/auth.service';
 export interface Repository {
   id: number;
   name: string;
-  url: string;
+  description?: string;
+  remote_url?: string;
+  branch?: string;
   local_path: string;
   user_id: string;
+  status: string;
+  last_sync_at?: string;
+  error_msg?: string;
   created_at: string;
   updated_at: string;
+  showMenu?: boolean;
+  syncing?: boolean;
 }
 
 export interface Collection {
@@ -68,6 +75,12 @@ export class RepositoryService {
   deleteRepository(id: number): Observable<void> {
     const headers = this.getAuthHeaders();
     return this.http.delete<void>(`${this.apiUrl}/repos/${id}`, { headers });
+  }
+
+  // Sync a repository
+  syncRepository(id: number): Observable<any> {
+    const headers = this.getAuthHeaders();
+    return this.http.post<any>(`${this.apiUrl}/v1/repos/${id}/sync`, {}, { headers });
   }
 
   // Helper method to get authentication headers
