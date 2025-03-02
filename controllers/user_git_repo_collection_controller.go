@@ -71,59 +71,30 @@ func GetCollection(c *gin.Context) {
 }
 
 // CreateCollection creates a new collection
+// This method is kept for backward compatibility but returns an error message
+// as collections are now read-only from veda/config.yml
 func CreateCollection(c *gin.Context) {
-	var request models.CreateUserGitRepoCollectionRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	collection, err := userGitRepoCollectionService.CreateCollection(request)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusCreated, collection.ToResponse(false))
+	c.JSON(http.StatusBadRequest, gin.H{
+		"error": "Collections are now defined in veda/config.yml file in the repository. Please edit that file directly.",
+	})
 }
 
 // UpdateCollection updates an existing collection
+// This method is kept for backward compatibility but returns an error message
+// as collections are now read-only from veda/config.yml
 func UpdateCollection(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
-		return
-	}
-
-	var request models.UpdateUserGitRepoCollectionRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	collection, err := userGitRepoCollectionService.UpdateCollection(uint(id), request)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, collection.ToResponse(false))
+	c.JSON(http.StatusBadRequest, gin.H{
+		"error": "Collections are now defined in veda/config.yml file in the repository. Please edit that file directly.",
+	})
 }
 
 // DeleteCollection deletes a collection
+// This method is kept for backward compatibility but returns an error message
+// as collections are now read-only from veda/config.yml
 func DeleteCollection(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
-		return
-	}
-
-	if err := userGitRepoCollectionService.DeleteCollection(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Collection deleted successfully"})
+	c.JSON(http.StatusBadRequest, gin.H{
+		"error": "Collections are now defined in veda/config.yml file in the repository. Please edit that file directly.",
+	})
 }
 
 // GetCollectionByPath returns a collection by its path

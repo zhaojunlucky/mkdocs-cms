@@ -161,9 +161,7 @@ func setupRoutes(r *gin.Engine, appConfig *config.Config) {
 		v1.GET("/collections", controllers.GetCollections)
 		v1.GET("/repos/collections/:repo_id", controllers.GetCollectionsByRepo)
 		v1.GET("/collections/:id", controllers.GetCollection)
-		v1.POST("/collections", controllers.CreateCollection)
-		v1.PUT("/collections/:id", controllers.UpdateCollection)
-		v1.DELETE("/collections/:id", controllers.DeleteCollection)
+		// Removed collection create/update/delete endpoints as collections are now read-only from veda/config.yml
 		v1.GET("/repos/collections/by-path/:repo_id", controllers.GetCollectionByPath)
 		v1.GET("/collections/files/:id", controllers.GetCollectionFiles)
 		v1.GET("/collections/browse/:id", controllers.GetCollectionFilesInPath)

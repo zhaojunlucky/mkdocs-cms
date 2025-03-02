@@ -18,12 +18,14 @@
     <div class="collections-section">
       <div class="section-header">
         <h2>Collections</h2>
-        <button class="add-collection-btn" routerLink="/repositories/import">Add Collection</button>
+        <div class="info-message">
+          <p>Collections are defined in veda/config.yml file in the repository.</p>
+        </div>
       </div>
       
       <div *ngIf="collections.length === 0" class="empty-state">
-        <p>This repository doesn't have any collections yet.</p>
-        <button class="add-collection-btn" routerLink="/repositories/import">Add Your First Collection</button>
+        <p>This repository doesn't have any collections defined in veda/config.yml.</p>
+        <p>Add collections by editing the veda/config.yml file in your repository.</p>
       </div>
       
       <div *ngIf="collections.length > 0" class="collections-list">
@@ -37,8 +39,6 @@
           </div>
           <div class="collection-actions">
             <a [routerLink]="['/collections', collection.id]" class="view-btn">View Posts</a>
-            <button class="edit-btn">Edit</button>
-            <button class="delete-btn">Delete</button>
           </div>
         </div>
       </div>

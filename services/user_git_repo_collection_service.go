@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/zhaojunlucky/mkdocs-cms/database"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
+	"gopkg.in/yaml.v3"
 )
 
 // UserGitRepoCollectionService handles business logic for git repository collections
@@ -19,122 +21,152 @@ func NewUserGitRepoCollectionService() *UserGitRepoCollectionService {
 	return &UserGitRepoCollectionService{}
 }
 
+// VedaConfig represents the structure of veda/config.yml
+type VedaConfig struct {
+	Collections []Collection `yaml:"collections"`
+}
+
+// Collection represents a collection in veda/config.yml
+type Collection struct {
+	Name   string  `yaml:"name"`
+	Label  string  `yaml:"label"`
+	Path   string  `yaml:"path"`
+	Format string  `yaml:"format"`
+	Fields []Field `yaml:"fields,omitempty"`
+}
+
+// Field represents a field in a collection
+type Field struct {
+	Type     string `yaml:"type"`
+	Name     string `yaml:"name"`
+	Label    string `yaml:"label"`
+	Required bool   `yaml:"required,omitempty"`
+	Format   string `yaml:"format,omitempty"`
+	List     bool   `yaml:"list,omitempty"`
+}
+
 // GetAllCollections returns all collections
 func (s *UserGitRepoCollectionService) GetAllCollections() ([]models.UserGitRepoCollection, error) {
-	var collections []models.UserGitRepoCollection
-	result := database.DB.Find(&collections)
-	return collections, result.Error
+	// This method is not applicable anymore as collections are read from veda/config.yml
+	return nil, errors.New("collections are now stored in veda/config.yml, use GetCollectionsByRepo instead")
 }
 
 // GetCollectionsByRepo returns all collections for a specific repository
 func (s *UserGitRepoCollectionService) GetCollectionsByRepo(repoID uint) ([]models.UserGitRepoCollection, error) {
+	// Get the repository to find its local path
+	var repo models.UserGitRepo
+	if err := database.DB.First(&repo, repoID).Error; err != nil {
+		return nil, errors.New("repository not found")
+	}
+
+	// Read collections from veda/config.yml
+	collections, err := s.readCollectionsFromConfig(repo)
+	if err != nil {
+		return nil, err
+	}
+
+	return collections, nil
+}
+
+// readCollectionsFromConfig reads collections from veda/config.yml
+func (s *UserGitRepoCollectionService) readCollectionsFromConfig(repo models.UserGitRepo) ([]models.UserGitRepoCollection, error) {
+	configPath := filepath.Join(repo.LocalPath, "veda", "config.yml")
+
+	// Check if the config file exists
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("veda/config.yml not found in repository %s", repo.Name)
+	}
+
+	// Read the config file
+	configData, err := os.ReadFile(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read veda/config.yml: %v", err)
+	}
+
+	// Parse the YAML
+	var config VedaConfig
+	if err := yaml.Unmarshal(configData, &config); err != nil {
+		return nil, fmt.Errorf("invalid YAML format in veda/config.yml: %v", err)
+	}
+
+	// Convert to UserGitRepoCollection models
 	var collections []models.UserGitRepoCollection
-	result := database.DB.Where("repo_id = ?", repoID).Find(&collections)
-	return collections, result.Error
+	for _, col := range config.Collections {
+		// Resolve the path relative to the repository
+		fullPath := filepath.Join(repo.LocalPath, col.Path)
+		
+		collection := models.UserGitRepoCollection{
+			Name:        col.Name,
+			Label:       col.Label,
+			Path:        fullPath,
+			Format:      models.ContentFormat(col.Format),
+			Description: "", // No description in veda/config.yml
+			RepoID:      repo.ID,
+		}
+		collections = append(collections, collection)
+	}
+
+	return collections, nil
 }
 
 // GetCollectionByID returns a specific collection by ID
 func (s *UserGitRepoCollectionService) GetCollectionByID(id uint) (models.UserGitRepoCollection, error) {
+	// Since collections are now read from veda/config.yml, we need to find the repository first
 	var collection models.UserGitRepoCollection
-	result := database.DB.Preload("Repo").First(&collection, id)
-	return collection, result.Error
-}
-
-// CreateCollection creates a new collection
-func (s *UserGitRepoCollectionService) CreateCollection(request models.CreateUserGitRepoCollectionRequest) (models.UserGitRepoCollection, error) {
-	// Check if repository exists
-	var repo models.UserGitRepo
-	if err := database.DB.First(&repo, request.RepoID).Error; err != nil {
-		return models.UserGitRepoCollection{}, errors.New("repository not found")
-	}
-
-	// Validate path format
-	if !filepath.IsAbs(request.Path) {
-		// If path is not absolute, make it relative to the repository path
-		request.Path = filepath.Join(repo.LocalPath, request.Path)
-	}
-
-	// Set default format if not provided
-	format := request.Format
-	if format == "" {
-		format = models.FormatMarkdown
-	}
-
-	collection := models.UserGitRepoCollection{
-		Name:        request.Name,
-		Label:       request.Label,
-		Path:        request.Path,
-		Format:      format,
-		Description: request.Description,
-		RepoID:      request.RepoID,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-	}
-
-	result := database.DB.Create(&collection)
-	return collection, result.Error
-}
-
-// UpdateCollection updates an existing collection
-func (s *UserGitRepoCollectionService) UpdateCollection(id uint, request models.UpdateUserGitRepoCollectionRequest) (models.UserGitRepoCollection, error) {
-	var collection models.UserGitRepoCollection
-	if err := database.DB.First(&collection, id).Error; err != nil {
-		return models.UserGitRepoCollection{}, err
-	}
-
-	// Update fields if provided
-	if request.Name != "" {
-		collection.Name = request.Name
-	}
-	if request.Label != "" {
-		collection.Label = request.Label
-	}
-	if request.Path != "" {
-		// If path is not absolute, make it relative to the repository path
-		if !filepath.IsAbs(request.Path) {
-			var repo models.UserGitRepo
-			if err := database.DB.First(&repo, collection.RepoID).Error; err != nil {
-				return models.UserGitRepoCollection{}, errors.New("repository not found")
-			}
-			collection.Path = filepath.Join(repo.LocalPath, request.Path)
-		} else {
-			collection.Path = request.Path
+	if err := database.DB.Preload("Repo").First(&collection, id).Error; err != nil {
+		// If we can't find it in the database, try to find it by name in the repository
+		var repo models.UserGitRepo
+		if err := database.DB.First(&repo, "id = ?", id).Error; err != nil {
+			return models.UserGitRepoCollection{}, errors.New("repository not found")
 		}
+		
+		// Read collections from veda/config.yml
+		collections, err := s.readCollectionsFromConfig(repo)
+		if err != nil {
+			return models.UserGitRepoCollection{}, err
+		}
+		
+		// Find the collection by ID (which is now just an index)
+		if int(id) < len(collections) {
+			return collections[id], nil
+		}
+		
+		return models.UserGitRepoCollection{}, errors.New("collection not found")
 	}
-	if request.Format != "" {
-		collection.Format = request.Format
-	}
-	if request.Description != "" {
-		collection.Description = request.Description
-	}
-
-	collection.UpdatedAt = time.Now()
-	result := database.DB.Save(&collection)
-	return collection, result.Error
-}
-
-// DeleteCollection deletes a collection
-func (s *UserGitRepoCollectionService) DeleteCollection(id uint) error {
-	var collection models.UserGitRepoCollection
-	if err := database.DB.First(&collection, id).Error; err != nil {
-		return err
-	}
-
-	return database.DB.Delete(&collection).Error
-}
-
-// GetCollectionByPath returns a collection by its path within a repository
-func (s *UserGitRepoCollectionService) GetCollectionByPath(repoID uint, path string) (models.UserGitRepoCollection, error) {
-	var collection models.UserGitRepoCollection
-	result := database.DB.Where("repo_id = ? AND path = ?", repoID, path).First(&collection)
-	return collection, result.Error
+	
+	return collection, nil
 }
 
 // GetCollectionByName returns a collection by its name within a repository
 func (s *UserGitRepoCollectionService) GetCollectionByName(repoID uint, name string) (models.UserGitRepoCollection, error) {
-	var collection models.UserGitRepoCollection
-	result := database.DB.Where("repo_id = ? AND name = ?", repoID, name).First(&collection)
-	return collection, result.Error
+	collections, err := s.GetCollectionsByRepo(repoID)
+	if err != nil {
+		return models.UserGitRepoCollection{}, err
+	}
+
+	for _, collection := range collections {
+		if collection.Name == name {
+			return collection, nil
+		}
+	}
+
+	return models.UserGitRepoCollection{}, errors.New("collection not found")
+}
+
+// GetCollectionByPath returns a collection by its path within a repository
+func (s *UserGitRepoCollectionService) GetCollectionByPath(repoID uint, path string) (models.UserGitRepoCollection, error) {
+	collections, err := s.GetCollectionsByRepo(repoID)
+	if err != nil {
+		return models.UserGitRepoCollection{}, err
+	}
+
+	for _, collection := range collections {
+		if strings.HasSuffix(collection.Path, path) {
+			return collection, nil
+		}
+	}
+
+	return models.UserGitRepoCollection{}, errors.New("collection not found")
 }
 
 // FileInfo represents information about a file or directory
