@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+import { HttpClientModule } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
@@ -17,6 +18,7 @@ import { MarkdownModule } from './markdown/markdown.module';
   ],
   imports: [
     BrowserModule,
+    HttpClientModule,
     RouterModule,
     FormsModule,
     ReactiveFormsModule,
@@ -25,10 +27,9 @@ import { MarkdownModule } from './markdown/markdown.module';
     ComponentsModule,
     MaterialModule,
     MarkdownModule,
-    AppComponent,
-    HomeComponent
+    AppComponent
   ],
   providers: [],
-  bootstrap: []
+  bootstrap: [AppComponent]
 })
 export class AppModule { }

@@ -41,7 +41,7 @@ func GenerateGitHubAppJWT(appID int64, privateKey []byte) (string, error) {
 }
 
 // GetGitHubInstallationToken gets an installation token for a GitHub App
-func GetGitHubInstallationToken(appID int64, privateKey []byte, installationID int64) (string, error) {
+func GetGitHubInstallationToken(appID int64, privateKey []byte, installationID int64, opts *github.InstallationTokenOptions) (string, error) {
 	// Generate JWT
 	token, err := GenerateGitHubAppJWT(appID, privateKey)
 	if err != nil {
@@ -59,7 +59,7 @@ func GetGitHubInstallationToken(appID int64, privateKey []byte, installationID i
 	client := github.NewClient(httpClient)
 
 	// Get installation token
-	installationToken, _, err := client.Apps.CreateInstallationToken(context.Background(), installationID, nil)
+	installationToken, _, err := client.Apps.CreateInstallationToken(context.Background(), installationID, opts)
 	if err != nil {
 		return "", fmt.Errorf("failed to get installation token: %v", err)
 	}

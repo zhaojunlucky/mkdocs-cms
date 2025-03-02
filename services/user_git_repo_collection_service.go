@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"github.com/google/go-github/v45/github"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -469,39 +470,57 @@ func (s *UserGitRepoCollectionService) GetRepo(repoID uint) (models.UserGitRepo,
 // CommitWithGithubApp commits changes using GitHub app authentication
 func (s *UserGitRepoCollectionService) CommitWithGithubApp(repo models.UserGitRepo, message string) error {
 	// Get installation token
+	opts := &github.InstallationTokenOptions{
+		RepositoryIDs: []int64{repo.GitRepoID},
+		Permissions: &github.InstallationPermissions{
+			Contents: github.String("write"),
+		},
+	}
+
 	token, err := utils.GetGitHubInstallationToken(
 		s.userGitRepoService.githubAppSettings.AppID,
 		s.userGitRepoService.privateKey,
 		repo.InstallationID,
+		opts,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to get installation token: %v", err)
 	}
 
 	// Set up git config with token
-	cmd := exec.Command("git", "config", "--local", "http.https://github.com/.extraheader", fmt.Sprintf("AUTHORIZATION: token %s", token))
-	cmd.Dir = repo.LocalPath
+
+	remoteURL := fmt.Sprintf("https://x-access-token:%s@%s", token, repo.RemoteURL[8:])
+	cmd := exec.Command("git", "-C", repo.LocalPath, "remote", "set-url", "origin", remoteURL)
+
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to configure git with token: %v", err)
 	}
 
-	// Add all changes
-	cmd = exec.Command("git", "add", ".")
-	cmd.Dir = repo.LocalPath
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to stage changes: %v", err)
+	// Check if there are any changes
+	statusCmd := exec.Command("git", "-C", repo.LocalPath, "status", "--porcelain")
+	output, err := statusCmd.Output()
+	if err != nil {
+		return fmt.Errorf("failed to check git status: %v", err)
 	}
 
-	// Commit changes
-	cmd = exec.Command("git", "commit", "-m", message)
-	cmd.Dir = repo.LocalPath
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to commit changes: %v", err)
+	needPush := len(output) > 0
+	// If no changes, return early
+	if needPush {
+		// Add all changes
+		cmd = exec.Command("git", "-C", repo.LocalPath, "add", ".")
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to stage changes: %v", err)
+		}
+
+		// Commit changes
+		cmd = exec.Command("git", "-C", repo.LocalPath, "commit", "-m", message)
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to commit changes: %v", err)
+		}
 	}
 
 	// Push changes
-	cmd = exec.Command("git", "push", "origin", repo.Branch)
-	cmd.Dir = repo.LocalPath
+	cmd = exec.Command("git", "-C", repo.LocalPath, "push", "origin", repo.Branch)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to push changes: %v", err)
 	}

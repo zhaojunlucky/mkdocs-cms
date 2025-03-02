@@ -36,6 +36,12 @@ func NewAuthMiddleware() gin.HandlerFunc {
 
 // RequireAuth is a middleware that checks if the user is authenticated
 func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
+
+	if shouldSkipAuth(c.Request.URL.Path) {
+		c.Next()
+		return
+	}
+
 	// Get the Authorization header
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {
@@ -105,6 +111,11 @@ func RequireAuth() gin.HandlerFunc {
 	jwtSecret := []byte(appConfig.JWT.Secret)
 
 	return func(c *gin.Context) {
+		if shouldSkipAuth(c.Request.URL.Path) {
+			c.Next()
+			return
+		}
+
 		// Get the Authorization header
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -158,4 +169,21 @@ func RequireAuth() gin.HandlerFunc {
 			return
 		}
 	}
+}
+
+func shouldSkipAuth(path string) bool {
+	// List of paths that should bypass auth
+	skipPaths := []string{
+		"/api/auth/github",
+		"/api/auth/github/callback",
+		"/api/auth/google",
+		"/api/auth/google/callback",
+	}
+
+	for _, skipPath := range skipPaths {
+		if strings.HasSuffix(path, skipPath) {
+			return true
+		}
+	}
+	return false
 }

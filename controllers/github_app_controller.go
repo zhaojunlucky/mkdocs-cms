@@ -424,15 +424,17 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 
 		// Create the repository in our system
 		newRepo := &models.UserGitRepo{
-			UserID:      request.UserID,
-			Name:        selectedRepo.GetName(),
-			Description: selectedRepo.GetDescription(),
-			RemoteURL:   selectedRepo.GetCloneURL(),
-			Branch:      selectedRepo.GetDefaultBranch(),
-			Provider:    "github",
-			AuthType:    "github_app",
-			AuthData:    fmt.Sprintf(`{"installation_id": %d}`, installationID),
-			LocalPath:   "", // Will be set by the service
+			UserID:         request.UserID,
+			Name:           selectedRepo.GetName(),
+			Description:    selectedRepo.GetDescription(),
+			RemoteURL:      selectedRepo.GetCloneURL(),
+			Branch:         selectedRepo.GetDefaultBranch(),
+			Provider:       "github",
+			AuthType:       "github_app",
+			InstallationID: installationID,
+			GitRepoID:      *selectedRepo.ID,
+			AuthData:       fmt.Sprintf(`{"installation_id": %d}`, installationID),
+			LocalPath:      "", // Will be set by the service
 		}
 
 		err = c.gitRepoService.CreateRepo(newRepo)

@@ -52,7 +52,7 @@ export class AuthService {
   }
 
   get isLoggedIn(): boolean {
-    return !!this.userSubject.value && !!this.tokenSubject.value && this.isAuthenticated();
+    return !!this.userSubject.value && !!this.tokenSubject.value;
   }
 
   loginWithGithub(): void {
@@ -127,21 +127,5 @@ export class AuthService {
     this.userSubject.next(null);
     this.tokenSubject.next(null);
     this.router.navigate(['/login']);
-  }
-
-  isAuthenticated(): boolean {
-    const token = this.tokenSubject.value;
-    if (!token || !this.userSubject.value) {
-      return false;
-    }
-
-    try {
-      const tokenData = JSON.parse(atob(token.split('.')[1]));
-      const expirationTime = tokenData.exp * 1000; // Convert to milliseconds
-      return Date.now() < expirationTime;
-    } catch (e) {
-      console.error('Error parsing JWT token:', e);
-      return false;
-    }
   }
 }
