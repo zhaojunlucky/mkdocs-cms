@@ -3,16 +3,33 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+}
 
-  ::ng-deep .CodeMirror {
-    height: 500px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+::ng-deep {
+  .CodeMirror {
+    height: 100% !important;
+    min-height: 400px;
   }
 
-  ::ng-deep .editor-toolbar {
-    border: 1px solid #ddd;
-    border-radius: 4px 4px 0 0;
-    border-bottom: none;
+  .editor-toolbar {
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+  }
+
+  .CodeMirror-scroll {
+    min-height: 400px;
+  }
+
+  .EasyMDEContainer {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
   }
 }
