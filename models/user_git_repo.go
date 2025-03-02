@@ -27,6 +27,7 @@ type UserGitRepo struct {
 	Description string       `json:"description"`
 	LocalPath   string       `json:"local_path" gorm:"not null"`
 	RemoteURL   string       `json:"remote_url" gorm:"not null"`
+	CloneURL    string       `json:"clone_url"`
 	Branch      string       `json:"branch" gorm:"default:main"`
 	UserID      string       `json:"user_id" gorm:"not null"`
 	User        User         `json:"user" gorm:"foreignKey:UserID"`
@@ -38,6 +39,7 @@ type UserGitRepo struct {
 	ErrorMsg    string       `json:"error_msg"`
 	CreatedAt   time.Time    `json:"created_at"`
 	UpdatedAt   time.Time    `json:"updated_at"`
+	InstallationID int64     `json:"installation_id"`
 }
 
 // UserGitRepoResponse is the structure returned to clients
@@ -47,6 +49,7 @@ type UserGitRepoResponse struct {
 	Description string       `json:"description"`
 	LocalPath   string       `json:"local_path"`
 	RemoteURL   string       `json:"remote_url"`
+	CloneURL    string       `json:"clone_url"`
 	Branch      string       `json:"branch"`
 	UserID      string       `json:"user_id"`
 	User        UserResponse `json:"user,omitempty"`
@@ -56,6 +59,7 @@ type UserGitRepoResponse struct {
 	ErrorMsg    string       `json:"error_msg,omitempty"`
 	CreatedAt   time.Time    `json:"created_at"`
 	UpdatedAt   time.Time    `json:"updated_at"`
+	InstallationID int64     `json:"installation_id"`
 }
 
 // ToResponse converts a UserGitRepo to a UserGitRepoResponse
@@ -66,6 +70,7 @@ func (r *UserGitRepo) ToResponse(includeUser bool) UserGitRepoResponse {
 		Description: r.Description,
 		LocalPath:   r.LocalPath,
 		RemoteURL:   r.RemoteURL,
+		CloneURL:    r.CloneURL,
 		Branch:      r.Branch,
 		UserID:      r.UserID,
 		AuthType:    r.AuthType,
@@ -74,6 +79,7 @@ func (r *UserGitRepo) ToResponse(includeUser bool) UserGitRepoResponse {
 		ErrorMsg:    r.ErrorMsg,
 		CreatedAt:   r.CreatedAt,
 		UpdatedAt:   r.UpdatedAt,
+		InstallationID: r.InstallationID,
 	}
 
 	if includeUser {
@@ -88,12 +94,14 @@ type CreateUserGitRepoRequest struct {
 	Name        string `json:"name" binding:"required"`
 	Description string `json:"description"`
 	RemoteURL   string `json:"remote_url" binding:"required"`
+	CloneURL    string `json:"clone_url"`
 	Branch      string `json:"branch"`
 	UserID      string `json:"user_id" binding:"required"`
 	AuthType    string `json:"auth_type"`
 	AuthData    string `json:"auth_data"`
 	LocalPath   string `json:"local_path"`
 	Provider    string `json:"provider"`
+	InstallationID int64 `json:"installation_id"`
 }
 
 // UpdateUserGitRepoRequest is the structure for repository update requests
@@ -101,9 +109,11 @@ type UpdateUserGitRepoRequest struct {
 	Name        string       `json:"name"`
 	Description string       `json:"description"`
 	RemoteURL   string       `json:"remote_url"`
+	CloneURL    string       `json:"clone_url"`
 	Branch      string       `json:"branch"`
 	AuthType    string       `json:"auth_type"`
 	AuthData    string       `json:"auth_data"`
 	Status      GitRepoStatus `json:"status"`
 	ErrorMsg    string       `json:"error_msg"`
+	InstallationID int64     `json:"installation_id"`
 }

@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { HttpClientModule } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
@@ -11,15 +10,13 @@ import { AuthModule } from './auth/auth.module';
 import { ComponentsModule } from './components/components.module';
 import { MaterialModule } from './material/material.module';
 import { MarkdownModule } from './markdown/markdown.module';
-import { AppRoutingModule } from './app-routing.module';
 
 @NgModule({
   declarations: [
-    AppComponent
+
   ],
   imports: [
     BrowserModule,
-    HttpClientModule,
     RouterModule,
     FormsModule,
     ReactiveFormsModule,
@@ -28,9 +25,10 @@ import { AppRoutingModule } from './app-routing.module';
     ComponentsModule,
     MaterialModule,
     MarkdownModule,
-    AppRoutingModule
+    AppComponent,
+    HomeComponent
   ],
   providers: [],
-  bootstrap: [AppComponent]
+  bootstrap: []
 })
 export class AppModule { }

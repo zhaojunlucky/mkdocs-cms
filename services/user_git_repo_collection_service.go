@@ -4,21 +4,27 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/zhaojunlucky/mkdocs-cms/database"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
+	"github.com/zhaojunlucky/mkdocs-cms/utils"
 	"gopkg.in/yaml.v3"
 )
 
 // UserGitRepoCollectionService handles business logic for git repository collections
-type UserGitRepoCollectionService struct{}
+type UserGitRepoCollectionService struct {
+	userGitRepoService *UserGitRepoService
+}
 
-// NewUserGitRepoCollectionService creates a new UserGitRepoCollectionService
-func NewUserGitRepoCollectionService() *UserGitRepoCollectionService {
-	return &UserGitRepoCollectionService{}
+// NewUserGitRepoCollectionService creates a new instance of UserGitRepoCollectionService
+func NewUserGitRepoCollectionService(userGitRepoService *UserGitRepoService) *UserGitRepoCollectionService {
+	return &UserGitRepoCollectionService{
+		userGitRepoService: userGitRepoService,
+	}
 }
 
 // VedaConfig represents the structure of veda/config.yml
@@ -447,6 +453,57 @@ func (s *UserGitRepoCollectionService) DeleteFile(repoID uint, collectionName st
 	// Delete the file or directory
 	if err := os.RemoveAll(fullPath); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (s *UserGitRepoCollectionService) GetRepo(repoID uint) (models.UserGitRepo, error) {
+	var repo models.UserGitRepo
+	if err := database.DB.First(&repo, repoID).Error; err != nil {
+		return models.UserGitRepo{}, errors.New("repository not found")
+	}
+	return repo, nil
+}
+
+// CommitWithGithubApp commits changes using GitHub app authentication
+func (s *UserGitRepoCollectionService) CommitWithGithubApp(repo models.UserGitRepo, message string) error {
+	// Get installation token
+	token, err := utils.GetGitHubInstallationToken(
+		s.userGitRepoService.githubAppSettings.AppID,
+		s.userGitRepoService.privateKey,
+		repo.InstallationID,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to get installation token: %v", err)
+	}
+
+	// Set up git config with token
+	cmd := exec.Command("git", "config", "--local", "http.https://github.com/.extraheader", fmt.Sprintf("AUTHORIZATION: token %s", token))
+	cmd.Dir = repo.LocalPath
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to configure git with token: %v", err)
+	}
+
+	// Add all changes
+	cmd = exec.Command("git", "add", ".")
+	cmd.Dir = repo.LocalPath
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to stage changes: %v", err)
+	}
+
+	// Commit changes
+	cmd = exec.Command("git", "commit", "-m", message)
+	cmd.Dir = repo.LocalPath
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to commit changes: %v", err)
+	}
+
+	// Push changes
+	cmd = exec.Command("git", "push", "origin", repo.Branch)
+	cmd.Dir = repo.LocalPath
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to push changes: %v", err)
 	}
 
 	return nil

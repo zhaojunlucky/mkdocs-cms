@@ -8,14 +8,14 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/go-github/v45/github"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
 	"github.com/zhaojunlucky/mkdocs-cms/services"
+	"github.com/zhaojunlucky/mkdocs-cms/utils"
 	"golang.org/x/oauth2"
 )
 
-// GitHubAppController handles GitHub App API endpoints
+// GitHubAppController handles GitHub App related operations
 type GitHubAppController struct {
 	appID             int64
 	privateKey        []byte
@@ -58,7 +58,7 @@ func (c *GitHubAppController) GetInstallations(ctx *gin.Context) {
 	}
 
 	// Generate a JWT for GitHub API authentication
-	token, err := c.generateJWT()
+	token, err := utils.GenerateGitHubAppJWT(c.appID, c.privateKey)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate authentication token"})
 		return
@@ -126,7 +126,7 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 	}
 
 	// Generate a JWT for GitHub API authentication
-	token, err := c.generateJWT()
+	token, err := utils.GenerateGitHubAppJWT(c.appID, c.privateKey)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate authentication token"})
 		return
@@ -258,7 +258,7 @@ func (c *GitHubAppController) CreateRepositoryFromGitHub(ctx *gin.Context) {
 	}
 
 	// Generate a JWT for GitHub API authentication
-	token, err := c.generateJWT()
+	token, err := utils.GenerateGitHubAppJWT(c.appID, c.privateKey)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate authentication token"})
 		return
@@ -366,7 +366,7 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 	request.UserID = authenticatedUserID.(string)
 
 	// Generate a JWT for GitHub API authentication
-	token, err := c.generateJWT()
+	token, err := utils.GenerateGitHubAppJWT(c.appID, c.privateKey)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate authentication token"})
 		return
@@ -484,7 +484,7 @@ func (c *GitHubAppController) CreateWebhook(ctx *gin.Context) {
 	}
 
 	// Generate a JWT for GitHub API authentication
-	token, err := c.generateJWT()
+	token, err := utils.GenerateGitHubAppJWT(c.appID, c.privateKey)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate authentication token"})
 		return
@@ -579,29 +579,4 @@ func (c *GitHubAppController) CreateWebhook(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusCreated, response)
-}
-
-// generateJWT generates a JWT for GitHub App authentication
-func (c *GitHubAppController) generateJWT() (string, error) {
-	// Parse the private key
-	key, err := jwt.ParseRSAPrivateKeyFromPEM(c.privateKey)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse private key: %v", err)
-	}
-
-	// Create the JWT
-	now := time.Now()
-	claims := jwt.RegisteredClaims{
-		IssuedAt:  jwt.NewNumericDate(now),
-		ExpiresAt: jwt.NewNumericDate(now.Add(10 * time.Minute)),
-		Issuer:    strconv.FormatInt(c.appID, 10),
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	signedToken, err := token.SignedString(key)
-	if err != nil {
-		return "", fmt.Errorf("failed to sign JWT: %v", err)
-	}
-
-	return signedToken, nil
 }

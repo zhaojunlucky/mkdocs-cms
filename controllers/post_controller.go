@@ -16,9 +16,9 @@ type PostController struct {
 }
 
 // NewPostController creates a new post controller
-func NewPostController() *PostController {
+func NewPostController(settings *models.GitHubAppSettings) *PostController {
 	return &PostController{
-		postService: services.NewPostService(),
+		postService: services.NewPostService(settings),
 	}
 }
 
@@ -31,7 +31,7 @@ func (c *PostController) RegisterRoutes(router *gin.RouterGroup) {
 		posts.POST("", middleware.RequireAuth(), c.CreatePost)
 		posts.PUT("/:id", middleware.RequireAuth(), c.UpdatePost)
 		posts.DELETE("/:id", middleware.RequireAuth(), c.DeletePost)
-		
+
 		// Collection-specific routes
 		posts.GET("/collection/:collectionId", c.GetPostsByCollection)
 		posts.GET("/collection/:collectionId/file/*filePath", c.GetPostByPath)

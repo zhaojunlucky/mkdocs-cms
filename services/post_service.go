@@ -8,26 +8,57 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/zhaojunlucky/mkdocs-cms/database"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
+	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 )
 
 // PostService handles business logic related to posts
 type PostService struct {
-	collectionService *UserGitRepoCollectionService
-	db                *gorm.DB
+	userGitRepoCollectionService *UserGitRepoCollectionService
+	userGitRepoService           *UserGitRepoService
+	db                           *gorm.DB
 }
 
 // NewPostService creates a new post service
-func NewPostService() *PostService {
+func NewPostService(settings *models.GitHubAppSettings) *PostService {
+	userGitRepoService := NewUserGitRepoService(settings)
 	return &PostService{
-		collectionService: NewUserGitRepoCollectionService(),
-		db:                database.DB,
+		userGitRepoCollectionService: NewUserGitRepoCollectionService(userGitRepoService),
+		userGitRepoService:           userGitRepoService,
+		db:                           database.DB,
 	}
+}
+
+// GetGithubAppSettings retrieves the GitHub app settings
+func (s *PostService) GetGithubAppSettings() (*models.GitHubAppSettings, error) {
+	// Get repository to get the local path
+	repo, err := s.userGitRepoService.GetRepoByID("1")
+	if err != nil {
+		return nil, errors.New("repository not found")
+	}
+
+	// Build the full path to the post file
+	filePath := filepath.Join(repo.LocalPath, "github-app-settings.yaml")
+
+	// Read the file content
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read post file: %v", err)
+	}
+
+	// Unmarshal the YAML content
+	var settings models.GitHubAppSettings
+	if err := yaml.Unmarshal(content, &settings); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal YAML: %v", err)
+	}
+
+	return &settings, nil
 }
 
 // GetAllPosts retrieves all posts from the database
@@ -130,18 +161,18 @@ func (s *PostService) GetPostByPath(collectionID uint, filePath string) (models.
 // getPostContent reads the content of a post from its file
 func (s *PostService) getPostContent(post *models.Post) ([]byte, error) {
 	// Get repository to get the local path
-	var repo models.UserGitRepo
-	if err := s.db.First(&repo, post.Collection.RepoID).Error; err != nil {
+	repo, err := s.userGitRepoService.GetRepoByID(strconv.FormatUint(uint64(post.Collection.RepoID), 10))
+	if err != nil {
 		return nil, errors.New("repository not found")
 	}
 
-	// Create the full path to the file
-	fullPath := filepath.Join(repo.LocalPath, post.Collection.Path, post.FilePath)
+	// Build the full path to the post file
+	filePath := filepath.Join(repo.LocalPath, post.Collection.Name, post.FilePath)
 
 	// Read the file content
-	content, err := ioutil.ReadFile(fullPath)
+	content, err := os.ReadFile(filePath)
 	if err != nil {
-		return nil, errors.New("failed to read file: " + err.Error())
+		return nil, fmt.Errorf("failed to read post file: %v", err)
 	}
 
 	return content, nil
@@ -150,14 +181,14 @@ func (s *PostService) getPostContent(post *models.Post) ([]byte, error) {
 // CreatePost creates a new post
 func (s *PostService) CreatePost(req models.CreatePostRequest) (models.PostResponse, error) {
 	// Get collection to verify it exists and get the repo path
-	collection, err := s.collectionService.GetCollectionByID(req.CollectionID)
+	collection, err := s.userGitRepoCollectionService.GetCollectionByID(req.CollectionID)
 	if err != nil {
 		return models.PostResponse{}, errors.New("collection not found")
 	}
 
 	// Get repository to get the local path
-	var repo models.UserGitRepo
-	if err := s.db.First(&repo, collection.RepoID).Error; err != nil {
+	repo, err := s.userGitRepoService.GetRepoByID(strconv.FormatUint(uint64(collection.RepoID), 10))
+	if err != nil {
 		return models.PostResponse{}, errors.New("repository not found")
 	}
 
@@ -203,14 +234,14 @@ func (s *PostService) CreatePost(req models.CreatePostRequest) (models.PostRespo
 // CreatePostFromFile creates a new post from an existing file
 func (s *PostService) CreatePostFromFile(req models.FilePostRequest) (models.PostResponse, error) {
 	// Get collection to verify it exists and get the repo path
-	collection, err := s.collectionService.GetCollectionByID(req.CollectionID)
+	collection, err := s.userGitRepoCollectionService.GetCollectionByID(req.CollectionID)
 	if err != nil {
 		return models.PostResponse{}, errors.New("collection not found")
 	}
 
 	// Get repository to get the local path
-	var repo models.UserGitRepo
-	if err := s.db.First(&repo, collection.RepoID).Error; err != nil {
+	repo, err := s.userGitRepoService.GetRepoByID(strconv.FormatUint(uint64(collection.RepoID), 10))
+	if err != nil {
 		return models.PostResponse{}, errors.New("repository not found")
 	}
 
@@ -267,8 +298,8 @@ func (s *PostService) UpdatePost(id uint, req models.UpdatePostRequest) (models.
 	}
 
 	// Get repository to get the local path
-	var repo models.UserGitRepo
-	if err := s.db.First(&repo, post.Collection.RepoID).Error; err != nil {
+	repo, err := s.userGitRepoService.GetRepoByID(strconv.FormatUint(uint64(post.Collection.RepoID), 10))
+	if err != nil {
 		return models.PostResponse{}, errors.New("repository not found")
 	}
 
@@ -353,8 +384,8 @@ func (s *PostService) DeletePost(id uint) error {
 	}
 
 	// Get repository to get the local path
-	var repo models.UserGitRepo
-	if err := s.db.First(&repo, post.Collection.RepoID).Error; err != nil {
+	repo, err := s.userGitRepoService.GetRepoByID(strconv.FormatUint(uint64(post.Collection.RepoID), 10))
+	if err != nil {
 		return errors.New("repository not found")
 	}
 
@@ -374,19 +405,19 @@ func (s *PostService) DeletePost(id uint) error {
 // SyncPostsFromCollection synchronizes posts from files in a collection
 func (s *PostService) SyncPostsFromCollection(collectionID uint, userID string) (int, error) {
 	// Get collection
-	collection, err := s.collectionService.GetCollectionByID(collectionID)
+	collection, err := s.userGitRepoCollectionService.GetCollectionByID(collectionID)
 	if err != nil {
 		return 0, errors.New("collection not found")
 	}
 
 	// Get repository
-	var repo models.UserGitRepo
-	if err := s.db.First(&repo, collection.RepoID).Error; err != nil {
+	_, err = s.userGitRepoService.GetRepoByID(strconv.FormatUint(uint64(collection.RepoID), 10))
+	if err != nil {
 		return 0, errors.New("repository not found")
 	}
 
 	// Get all files in the collection
-	files, err := s.collectionService.ListFilesInCollection(collection.RepoID, collection.Name)
+	files, err := s.userGitRepoCollectionService.ListFilesInCollection(collection.RepoID, collection.Name)
 	if err != nil {
 		return 0, err
 	}

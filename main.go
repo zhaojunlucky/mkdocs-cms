@@ -84,6 +84,8 @@ func setupRoutes(r *gin.Engine, appConfig *config.Config) {
 		PrivateKeyPath: appConfig.GitHub.App.PrivateKeyPath,
 	}
 
+	controllers.InitUserGitRepoCollectionController(githubAppSettings)
+
 	// Read private key
 	bytes, err := os.ReadFile(appConfig.GitHub.App.PrivateKeyPath)
 	if err != nil {
@@ -98,7 +100,7 @@ func setupRoutes(r *gin.Engine, appConfig *config.Config) {
 	// Initialize controllers
 	siteConfigController := controllers.NewSiteConfigController()
 	authController := controllers.NewAuthController(userService, appConfig)
-	postController := controllers.NewPostController()
+	postController := controllers.NewPostController(githubAppSettings)
 	asyncTaskController := controllers.NewAsyncTaskController()
 	userGitRepoController := controllers.NewUserGitRepoController(userGitRepoService)
 
@@ -163,7 +165,7 @@ func setupRoutes(r *gin.Engine, appConfig *config.Config) {
 		v1.GET("/collections/:collection_id", controllers.GetCollection)
 		// Removed collection create/update/delete endpoints as collections are now read-only from veda/config.yml
 		v1.GET("/repos/collections/by-path/:repo_id", controllers.GetCollectionByPath)
-		
+
 		// Updated file browser routes to use repo_id and collection_name instead of collection_id
 		v1.GET("/repos-collections/:repo_id/collections/:collection_name/files", controllers.GetCollectionFiles)
 		v1.GET("/repos-collections/:repo_id/collections/:collection_name/browse", controllers.GetCollectionFilesInPath)

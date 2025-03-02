@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"encoding/base64"
-	"github.com/zhaojunlucky/mkdocs-cms/database"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -10,11 +10,17 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/zhaojunlucky/mkdocs-cms/database"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
 	"github.com/zhaojunlucky/mkdocs-cms/services"
 )
 
-var userGitRepoCollectionService = services.NewUserGitRepoCollectionService()
+var userGitRepoCollectionService *services.UserGitRepoCollectionService
+
+// InitUserGitRepoCollectionController initializes the controller with GitHub app settings
+func InitUserGitRepoCollectionController(settings *models.GitHubAppSettings) {
+	userGitRepoCollectionService = services.NewUserGitRepoCollectionService(services.NewUserGitRepoService(settings))
+}
 
 // GetCollections returns all collections
 func GetCollections(c *gin.Context) {
@@ -244,7 +250,21 @@ func UpdateFileContent(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "File updated successfully"})
+	// Get repository info for GitHub commit
+	repo, err := userGitRepoCollectionService.GetRepo(uint(repoID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to get repository: %v", err)})
+		return
+	}
+
+	// Commit changes using GitHub app
+	commitMsg := fmt.Sprintf("Update file: %s", req.Path)
+	if err := userGitRepoCollectionService.CommitWithGithubApp(repo, commitMsg); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to commit changes: %v", err)})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "File updated and changes committed successfully"})
 }
 
 // DeleteFile deletes a file or directory within a collection
