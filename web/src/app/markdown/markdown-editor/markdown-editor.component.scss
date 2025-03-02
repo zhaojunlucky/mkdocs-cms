@@ -27,9 +27,26 @@
     min-height: 400px;
   }
 
-  .EasyMDEContainer {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
+  .editor-preview-side {
+    z-index: 1000;
+  }
+
+  .CodeMirror-fullscreen {
+    z-index: 1000;
+    height: 100vh !important;
+  }
+
+  .editor-toolbar.fullscreen {
+    z-index: 1001;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    background: white;
+  }
+
+  .editor-preview-full {
+    z-index: 1002;
   }
 }

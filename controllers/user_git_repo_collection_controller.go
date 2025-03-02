@@ -213,6 +213,11 @@ func GetFileContent(c *gin.Context) {
 	c.Data(http.StatusOK, contentType, content)
 }
 
+type UpdateFileRequest struct {
+	Path    string `json:"path" binding:"required"`
+	Content string `json:"content" binding:"required"`
+}
+
 // UpdateFileContent updates the content of a file within a collection
 func UpdateFileContent(c *gin.Context) {
 	repoID, err := strconv.ParseUint(c.Param("repo_id"), 10, 32)
@@ -227,20 +232,14 @@ func UpdateFileContent(c *gin.Context) {
 		return
 	}
 
-	filePath := c.Query("path")
-	if filePath == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "File path is required"})
+	// Get file path and content from request body
+	var req UpdateFileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Read the request body
-	content, err := c.GetRawData()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to read request body"})
-		return
-	}
-
-	if err := userGitRepoCollectionService.UpdateFileContent(uint(repoID), collectionName, filePath, content); err != nil {
+	if err := userGitRepoCollectionService.UpdateFileContent(uint(repoID), collectionName, req.Path, []byte(req.Content)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

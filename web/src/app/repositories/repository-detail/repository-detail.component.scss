@@ -17,7 +17,7 @@
 
 .error-message {
   color: #f44336;
-  
+
   .back-btn {
     display: inline-block;
     margin-top: 20px;
@@ -26,7 +26,7 @@
     color: white;
     text-decoration: none;
     border-radius: 4px;
-    
+
     &:hover {
       background-color: #303f9f;
     }
@@ -37,23 +37,23 @@
   margin-bottom: 30px;
   padding-bottom: 20px;
   border-bottom: 1px solid #eee;
-  
+
   .back-link {
     display: inline-block;
     margin-bottom: 15px;
     color: #3f51b5;
     text-decoration: none;
-    
+
     &:hover {
       text-decoration: underline;
     }
   }
-  
+
   h1 {
     margin: 0 0 10px 0;
     color: #333;
   }
-  
+
   .repo-path {
     font-family: monospace;
     background-color: #f9f9f9;
@@ -75,12 +75,12 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  
+
   h2 {
     margin: 0;
     color: #333;
   }
-  
+
   .add-collection-btn {
     padding: 8px 16px;
     background-color: #4caf50;
@@ -88,7 +88,7 @@
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    
+
     &:hover {
       background-color: #388e3c;
     }
@@ -121,27 +121,27 @@
   border-radius: 6px;
   overflow: hidden;
   transition: transform 0.2s, box-shadow 0.2s;
-  
+
   &:hover {
     transform: translateY(-3px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
-  
+
   .collection-header {
     background-color: #f5f5f5;
     padding: 15px;
     border-bottom: 1px solid #e0e0e0;
-    
+
     h3 {
       margin: 0;
       font-size: 18px;
       color: #333;
     }
   }
-  
+
   .collection-details {
     padding: 15px;
-    
+
     .collection-path {
       font-family: monospace;
       background-color: #f9f9f9;
@@ -152,19 +152,19 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    
+
     .collection-date {
       color: #777;
       font-size: 14px;
     }
   }
-  
+
   .collection-actions {
     display: flex;
     padding: 10px 15px;
     background-color: #fafafa;
     border-top: 1px solid #e0e0e0;
-    
+
     a, button {
       flex: 1;
       padding: 8px;
@@ -177,29 +177,29 @@
       border: none;
       transition: background-color 0.2s;
     }
-    
+
     .view-btn {
       background-color: #3f51b5;
       color: white;
-      
+
       &:hover {
         background-color: #303f9f;
       }
     }
-    
+
     .edit-btn {
       background-color: #ff9800;
       color: white;
-      
+
       &:hover {
         background-color: #f57c00;
       }
     }
-    
+
     .delete-btn {
       background-color: #f44336;
       color: white;
-      
+
       &:hover {
         background-color: #d32f2f;
       }
@@ -213,12 +213,12 @@
   padding: 30px;
   text-align: center;
   margin-bottom: 30px;
-  
+
   p {
     margin: 0 0 15px 0;
     color: #666;
   }
-  
+
   p:last-child {
     margin-bottom: 0;
   }
@@ -247,7 +247,7 @@
   padding: 15px;
   border-bottom: 1px solid #e0e0e0;
   background-color: #eeeeee;
-  
+
   h3 {
     margin: 0;
     font-size: 16px;
@@ -270,23 +270,23 @@
   list-style: none;
   padding: 0;
   margin: 0;
-  
+
   li {
     padding: 12px 15px;
     border-bottom: 1px solid #e0e0e0;
     cursor: pointer;
     transition: background-color 0.2s;
-    
+
     &:hover {
       background-color: #e3f2fd;
     }
-    
+
     &.active {
       background-color: #bbdefb;
       border-left: 4px solid #2196f3;
     }
   }
-  
+
   .collection-name {
     font-weight: 500;
   }
@@ -320,7 +320,7 @@
 
 .file-browser-header {
   margin-bottom: 20px;
-  
+
   h2 {
     margin: 0 0 10px 0;
   }
@@ -333,16 +333,16 @@
   padding: 8px 0;
   background-color: #f5f5f5;
   border-radius: 4px;
-  
+
   .breadcrumb-item {
     color: #2196f3;
     cursor: pointer;
-    
+
     &:hover {
       text-decoration: underline;
     }
   }
-  
+
   .breadcrumb-separator {
     margin: 0 5px;
     color: #757575;
@@ -362,36 +362,36 @@
   border: 1px solid #e0e0e0;
   border-radius: 4px;
   transition: background-color 0.2s;
-  
+
   &.is-folder {
     cursor: pointer;
-    
+
     &:hover {
       background-color: #e3f2fd;
     }
   }
-  
+
   .file-icon {
     margin-right: 15px;
-    
+
     .material-icons {
       font-size: 24px;
       color: #757575;
     }
   }
-  
+
   &.is-folder .file-icon .material-icons {
     color: #ffc107;
   }
-  
+
   .file-details {
     flex: 1;
-    
+
     .file-name {
       font-weight: 500;
       margin-bottom: 5px;
     }
-    
+
     .file-meta {
       font-size: 12px;
       color: #757575;
@@ -421,7 +421,7 @@
   color: #007bff;
   text-decoration: none;
   font-size: 14px;
-  
+
   &:hover {
     text-decoration: underline;
   }
@@ -461,16 +461,16 @@
   list-style: none;
   padding: 0;
   margin: 0;
-  
+
   li {
     padding: 10px 15px;
     cursor: pointer;
     transition: background-color 0.2s;
-    
+
     &:hover {
       background-color: #e9ecef;
     }
-    
+
     &.active {
       background-color: #007bff;
       color: white;
@@ -530,7 +530,7 @@
 .breadcrumb-item {
   cursor: pointer;
   color: #007bff;
-  
+
   &:hover {
     text-decoration: underline;
   }
@@ -554,11 +554,11 @@
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.2s;
-  
+
   &:hover {
     background-color: #f1f3f5;
   }
-  
+
   &.is-folder {
     color: #007bff;
   }
@@ -567,7 +567,7 @@
 .file-icon {
   margin-right: 10px;
   color: #6c757d;
-  
+
   .is-folder & {
     color: #ffc107;
   }
@@ -585,7 +585,7 @@
   font-size: 12px;
   color: #6c757d;
   margin-top: 3px;
-  
+
   span {
     margin-right: 10px;
   }
@@ -620,7 +620,7 @@
   color: white;
   text-decoration: none;
   border-radius: 4px;
-  
+
   &:hover {
     background-color: #0069d9;
   }
@@ -645,7 +645,7 @@
 
 .file-editor-title {
   flex: 1;
-  
+
   h2 {
     margin: 0 0 10px 0;
   }
@@ -668,11 +668,11 @@
 .save-btn {
   background-color: #28a745;
   color: white;
-  
+
   &:hover:not([disabled]) {
     background-color: #218838;
   }
-  
+
   &[disabled] {
     opacity: 0.7;
     cursor: not-allowed;
@@ -682,7 +682,7 @@
 .cancel-btn {
   background-color: #6c757d;
   color: white;
-  
+
   &:hover {
     background-color: #5a6268;
   }
@@ -705,7 +705,7 @@
 }
 
 .markdown-editor-wrapper {
-  height: calc(100vh - 300px);
+  height: 100%;
   min-height: 500px;
   display: flex;
   flex-direction: column;
@@ -720,22 +720,13 @@
   }
 }
 
-/* Make the SimpleMDE editor take the full available height */
-:host ::ng-deep .CodeMirror {
-  height: calc(100vh - 450px) !important;
-  min-height: 300px;
-}
-
-:host ::ng-deep .editor-toolbar {
-  border-radius: 0;
-}
 
 /* Active breadcrumb item */
 .breadcrumb-item.active {
   color: #212529;
   font-weight: 500;
   cursor: default;
-  
+
   &:hover {
     text-decoration: none;
   }
@@ -746,12 +737,12 @@
     flex-direction: column;
     height: auto;
   }
-  
+
   .sidenav {
     width: 100%;
     height: 200px;
   }
-  
+
   :host ::ng-deep .CodeMirror {
     height: 300px !important;
   }
