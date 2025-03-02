@@ -13,6 +13,24 @@ export interface FileInfo {
   content?: string;
 }
 
+export interface CollectionField {
+  type: 'string' | 'datetime' | 'boolean' | 'number';
+  name: string;
+  label: string;
+  required?: boolean;
+  format?: string;
+  list?: boolean;
+  default?: any;
+}
+
+export interface CollectionConfig {
+  name: string;
+  label: string;
+  path: string;
+  format: string;
+  fields?: CollectionField[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -35,6 +53,11 @@ export class CollectionService {
   // Get files in a specific path within a collection
   getCollectionFilesInPath(repoId: number, collectionName: string, path: string): Observable<FileInfo[]> {
     return this.http.get<FileInfo[]>(`${this.apiUrl}/v1/repos-collections/${repoId}/collections/${collectionName}/browse?path=${path}`, this.getAuthHeaders());
+  }
+
+  // Get collection configuration
+  getCollectionConfig(repoId: number, collectionName: string): Observable<CollectionConfig> {
+    return this.http.get<CollectionConfig>(`${this.apiUrl}/v1/repos-collections/${repoId}/collections/${collectionName}/config`, this.getAuthHeaders());
   }
 
   // Get file content

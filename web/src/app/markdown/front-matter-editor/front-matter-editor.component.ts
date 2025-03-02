@@ -1,15 +1,23 @@
-import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
-import { MatCardModule } from '@angular/material/card';
-import { MatDividerModule } from '@angular/material/divider';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import {MatChipsModule } from '@angular/material/chips';
+import { COMMA, ENTER } from '@angular/cdk/keycodes';
+import { CollectionFieldDefinition } from '../../services/repository.service';
+import { MatCard, MatCardContent, MatCardHeader, MatCardSubtitle, MatCardTitle } from '@angular/material/card';
+import { MatChipInputEvent } from '@angular/material/chips';
 
 @Component({
   selector: 'app-front-matter-editor',
+  templateUrl: './front-matter-editor.component.html',
+  styleUrls: ['./front-matter-editor.component.scss'],
   standalone: true,
   imports: [
     CommonModule,
@@ -18,104 +26,120 @@ import { MatDividerModule } from '@angular/material/divider';
     MatFormFieldModule,
     MatInputModule,
     MatIconModule,
-    MatCardModule,
-    MatDividerModule
-  ],
-  templateUrl: './front-matter-editor.component.html',
-  styleUrls: ['./front-matter-editor.component.scss']
+    MatDatepickerModule,
+    MatNativeDateModule,
+    MatSlideToggleModule,
+    MatCardContent,
+    MatCardSubtitle,
+    MatCardTitle,
+    MatCard,
+    MatCardHeader,
+    MatChipsModule
+  ]
 })
 export class FrontMatterEditorComponent implements OnInit, OnChanges {
   @Input() frontMatter: Record<string, any> = {};
+  @Input() fields: CollectionFieldDefinition[] = [];
   @Output() frontMatterChange = new EventEmitter<Record<string, any>>();
-  
+
   frontMatterForm!: FormGroup;
-  
+  readonly separatorKeysCodes = [ENTER, COMMA] as const;
+  tags: string[] = [];
+
   constructor(private fb: FormBuilder) {}
-  
+
   ngOnInit(): void {
     this.initForm();
   }
-  
+
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['frontMatter'] && !this.isEqual(changes['frontMatter'].previousValue, changes['frontMatter'].currentValue)) {
+    if (changes['frontMatter'] && !changes['frontMatter'].firstChange) {
       this.initForm();
     }
   }
-  
-  private initForm(): void {
+
+  initForm(): void {
+    this.tags = this.getTagsValue();
     this.frontMatterForm = this.fb.group({
-      fields: this.fb.array([])
+      fields: this.fb.array([]),
+      date: [this.getDateValue()],
+      draft: [this.getDraftValue()]
     });
-    
+
     const fieldsArray = this.frontMatterForm.get('fields') as FormArray;
-    
-    // Clear existing fields
-    while (fieldsArray.length > 0) {
-      fieldsArray.removeAt(0);
-    }
-    
-    // Add fields from frontMatter
-    Object.entries(this.frontMatter).forEach(([key, value]) => {
-      fieldsArray.push(
-        this.fb.group({
-          key: [key],
-          value: [value]
-        })
-      );
+    this.fields.forEach(field => {
+      const defaultValue = this.frontMatter[field.name] !== undefined ? this.frontMatter[field.name] : field.default;
+      const control = this.fb.control(defaultValue, this.getValidators(field));
+      fieldsArray.push(control);
     });
-    
-    // Add an empty field if there are no fields
-    if (fieldsArray.length === 0) {
-      this.addField();
+
+    // Listen for changes to update front matter
+    this.frontMatterForm.valueChanges.subscribe(() => {
+      this.updateFrontMatter();
+    });
+  }
+
+  addTag(event: MatChipInputEvent): void {
+    const value = (event.value || '').trim();
+    if (value) {
+      this.tags.push(value);
+      this.updateFrontMatter();
+    }
+    event.chipInput!.clear();
+  }
+
+  removeTag(tag: string): void {
+    const index = this.tags.indexOf(tag);
+    if (index >= 0) {
+      this.tags.splice(index, 1);
+      this.updateFrontMatter();
     }
   }
-  
-  get fields(): FormArray {
-    return this.frontMatterForm.get('fields') as FormArray;
-  }
-  
-  addField(): void {
-    this.fields.push(
-      this.fb.group({
-        key: [''],
-        value: ['']
-      })
-    );
-  }
-  
-  removeField(index: number): void {
-    this.fields.removeAt(index);
-    this.updateFrontMatter();
-  }
-  
+
   updateFrontMatter(): void {
-    const updatedFrontMatter: Record<string, any> = {};
-    
-    this.fields.controls.forEach(control => {
-      const key = control.get('key')?.value;
-      const value = control.get('value')?.value;
-      
-      if (key && key.trim() !== '') {
-        updatedFrontMatter[key] = value;
-      }
+    if (!this.frontMatterForm.valid) return;
+
+    const formValue = this.frontMatterForm.value;
+    const updatedFrontMatter: Record<string, any> = { ...this.frontMatter };
+
+    const fieldsArray = formValue.fields;
+    this.fields.forEach((field, index) => {
+      updatedFrontMatter[field.name] = fieldsArray[index];
     });
-    
+
+    if (formValue.date) {
+      updatedFrontMatter['date'] = formValue.date;
+    }
+    if (formValue.draft !== undefined) {
+      updatedFrontMatter['draft'] = formValue.draft;
+    }
+    updatedFrontMatter['tags'] = this.tags;
+
     this.frontMatterChange.emit(updatedFrontMatter);
   }
-  
-  private isEqual(obj1: any, obj2: any): boolean {
-    if (obj1 === obj2) return true;
-    if (!obj1 || !obj2) return false;
-    
-    const keys1 = Object.keys(obj1);
-    const keys2 = Object.keys(obj2);
-    
-    if (keys1.length !== keys2.length) return false;
-    
-    for (const key of keys1) {
-      if (obj1[key] !== obj2[key]) return false;
+
+  getDateValue(): Date | null {
+    const dateStr = this.frontMatter['date'];
+    if (!dateStr) {
+      return new Date();
     }
-    
-    return true;
+    const date = new Date(dateStr);
+    return isNaN(date.getTime()) ? new Date() : date;
+  }
+
+  getDraftValue(): boolean {
+    return this.frontMatter['draft'] === true;
+  }
+
+  getTagsValue(): string[] {
+    return this.frontMatter['tags'] || [];
+  }
+
+  getValidators(field: CollectionFieldDefinition) {
+    const validators = [];
+    if (field.required) {
+      validators.push(Validators.required);
+    }
+    return validators;
   }
 }

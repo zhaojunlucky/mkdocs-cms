@@ -20,6 +20,15 @@ const (
 	FormatText ContentFormat = "txt"
 )
 
+type Field struct {
+	Type     string `yaml:"type"`
+	Name     string `yaml:"name"`
+	Label    string `yaml:"label"`
+	Required bool   `yaml:"required,omitempty"`
+	Format   string `yaml:"format,omitempty"`
+	List     bool   `yaml:"list,omitempty"`
+}
+
 // UserGitRepoCollection represents a collection of content within a git repository
 type UserGitRepoCollection struct {
 	ID          uint          `json:"id" gorm:"primaryKey"`
@@ -32,20 +41,22 @@ type UserGitRepoCollection struct {
 	Repo        UserGitRepo   `json:"repo" gorm:"foreignKey:RepoID"`
 	CreatedAt   time.Time     `json:"created_at"`
 	UpdatedAt   time.Time     `json:"updated_at"`
+	Fields      []Field       `json:"fields" gorm:"foreignKey:CollectionID"`
 }
 
 // UserGitRepoCollectionResponse is the structure returned to clients
 type UserGitRepoCollectionResponse struct {
-	ID          uint                 `json:"id"`
-	Name        string               `json:"name"`
-	Label       string               `json:"label"`
-	Path        string               `json:"path"`
-	Format      ContentFormat        `json:"format"`
-	Description string               `json:"description,omitempty"`
-	RepoID      uint                 `json:"repo_id"`
-	Repo        UserGitRepoResponse  `json:"repo,omitempty"`
-	CreatedAt   time.Time            `json:"created_at"`
-	UpdatedAt   time.Time            `json:"updated_at"`
+	ID          uint                `json:"id"`
+	Name        string              `json:"name"`
+	Label       string              `json:"label"`
+	Path        string              `json:"path"`
+	Format      ContentFormat       `json:"format"`
+	Description string              `json:"description,omitempty"`
+	RepoID      uint                `json:"repo_id"`
+	Repo        UserGitRepoResponse `json:"repo,omitempty"`
+	CreatedAt   time.Time           `json:"created_at"`
+	UpdatedAt   time.Time           `json:"updated_at"`
+	Fields      []Field             `json:"fields,omitempty"`
 }
 
 // ToResponse converts a UserGitRepoCollection to a UserGitRepoCollectionResponse
@@ -60,6 +71,7 @@ func (c *UserGitRepoCollection) ToResponse(includeRepo bool) UserGitRepoCollecti
 		RepoID:      c.RepoID,
 		CreatedAt:   c.CreatedAt,
 		UpdatedAt:   c.UpdatedAt,
+		Fields:      c.Fields,
 	}
 
 	if includeRepo {

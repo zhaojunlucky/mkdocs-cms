@@ -95,6 +95,18 @@ func (s *UserGitRepoCollectionService) readCollectionsFromConfig(repo models.Use
 		// Resolve the path relative to the repository
 		fullPath := filepath.Join(repo.LocalPath, col.Path)
 
+		var modelFields []models.Field
+		for _, f := range col.Fields {
+			modelFields = append(modelFields, models.Field{
+				Type:     f.Type,
+				Name:     f.Name,
+				Label:    f.Label,
+				Required: f.Required,
+				Format:   f.Format,
+				List:     f.List,
+			})
+		}
+
 		collection := models.UserGitRepoCollection{
 			Name:        col.Name,
 			Label:       col.Label,
@@ -102,6 +114,7 @@ func (s *UserGitRepoCollectionService) readCollectionsFromConfig(repo models.Use
 			Format:      models.ContentFormat(col.Format),
 			Description: "", // No description in veda/config.yml
 			RepoID:      repo.ID,
+			Fields:      modelFields,
 		}
 		collections = append(collections, collection)
 	}

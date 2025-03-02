@@ -1,19 +1,26 @@
 .front-matter-card {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
-.field-row {
+.front-matter-form {
   display: flex;
-  align-items: center;
-  margin-bottom: 8px;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.key-field {
-  flex: 1;
-  margin-right: 8px;
+.full-width {
+  width: 100%;
 }
 
-.value-field {
-  flex: 2;
-  margin-right: 8px;
+.draft-toggle-container {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+  
+  .draft-hint {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.6);
+    margin-top: 4px;
+    margin-left: 2px;
+  }
 }

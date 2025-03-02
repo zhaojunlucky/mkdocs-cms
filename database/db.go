@@ -42,7 +42,7 @@ func Initialize() {
 	fmt.Println("Connected to database")
 
 	// Auto migrate the schema
-	err = DB.AutoMigrate(&models.User{}, &models.Post{}, &models.UserGitRepo{}, &models.Event{}, &models.UserGitRepoCollection{}, &models.SiteConfig{}, &models.AsyncTask{})
+	err = DB.AutoMigrate(&models.User{}, &models.UserGitRepo{}, &models.Event{}, &models.SiteConfig{}, &models.AsyncTask{})
 	if err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
