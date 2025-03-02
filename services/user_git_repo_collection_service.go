@@ -474,6 +474,7 @@ func (s *UserGitRepoCollectionService) CommitWithGithubApp(repo models.UserGitRe
 		RepositoryIDs: []int64{repo.GitRepoID},
 		Permissions: &github.InstallationPermissions{
 			Contents: github.String("write"),
+			Metadata: github.String("read"),
 		},
 	}
 
@@ -488,7 +489,6 @@ func (s *UserGitRepoCollectionService) CommitWithGithubApp(repo models.UserGitRe
 	}
 
 	// Set up git config with token
-
 	remoteURL := fmt.Sprintf("https://x-access-token:%s@%s", token, repo.RemoteURL[8:])
 	cmd := exec.Command("git", "-C", repo.LocalPath, "remote", "set-url", "origin", remoteURL)
 
