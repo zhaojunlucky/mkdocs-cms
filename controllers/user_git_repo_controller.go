@@ -256,3 +256,38 @@ func (c *UserGitRepoController) SyncRepo(ctx *gin.Context) {
 		"task_id": task.ID,
 	})
 }
+
+// GetRepoBranches returns all branches for a specific git repository
+func (c *UserGitRepoController) GetRepoBranches(ctx *gin.Context) {
+	// Get the authenticated user ID from the context
+	authenticatedUserID, exists := ctx.Get("userId")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	// Get the repository ID from the URL
+	repoID := ctx.Param("id")
+
+	// Get the repository to verify ownership
+	repo, err := c.userGitRepoService.GetRepoByID(repoID)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Repository not found"})
+		return
+	}
+
+	// Verify that the repository belongs to the authenticated user
+	if repo.UserID != authenticatedUserID.(string) {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "You do not have permission to access this repository"})
+		return
+	}
+
+	// Get the branches
+	branches, err := c.userGitRepoService.GetRepoBranches(repoID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, branches)
+}

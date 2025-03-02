@@ -9,6 +9,7 @@ import { ComponentsModule } from '../components/components.module';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-home',
@@ -25,7 +26,8 @@ export class HomeComponent implements OnInit {
   
   constructor(
     private repositoryService: RepositoryService,
-    private authService: AuthService
+    private authService: AuthService,
+    private router: Router
   ) {}
   
   ngOnInit(): void {
@@ -124,8 +126,7 @@ export class HomeComponent implements OnInit {
 
   editRepository(repo: Repository): void {
     repo.showMenu = false; // Close the menu
-    // Implement edit functionality or navigation
-    console.log('Edit repository:', repo.id);
+    this.router.navigate(['/repositories', repo.id, 'edit']);
   }
 
   deleteRepository(repo: Repository): void {

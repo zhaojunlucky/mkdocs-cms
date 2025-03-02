@@ -76,31 +76,37 @@ export class RepositoryService {
   // Get a specific repository by ID
   getRepository(id: number): Observable<Repository> {
     const headers = this.getAuthHeaders();
-    return this.http.get<Repository>(`${this.apiUrl}/repos/${id}`, { headers });
+    return this.http.get<Repository>(`${this.apiUrl}/v1/repos/${id}`, { headers });
+  }
+
+  // Get branches for a repository
+  getRepositoryBranches(id: number): Observable<string[]> {
+    const headers = this.getAuthHeaders();
+    return this.http.get<string[]>(`${this.apiUrl}/v1/repos/${id}/branches`, { headers });
   }
 
   // Get collections for a repository
   getRepositoryCollections(repoId: number): Observable<Collection[]> {
     const headers = this.getAuthHeaders();
-    return this.http.get<Collection[]>(`${this.apiUrl}/repos/${repoId}/collections`, { headers });
+    return this.http.get<Collection[]>(`${this.apiUrl}/v1/repos/collections/${repoId}`, { headers });
   }
 
   // Create a new repository
   createRepository(repository: Partial<Repository>): Observable<Repository> {
     const headers = this.getAuthHeaders();
-    return this.http.post<Repository>(`${this.apiUrl}/repos`, repository, { headers });
+    return this.http.post<Repository>(`${this.apiUrl}/v1/repos`, repository, { headers });
   }
 
   // Update a repository
   updateRepository(id: number, repository: Partial<Repository>): Observable<Repository> {
     const headers = this.getAuthHeaders();
-    return this.http.put<Repository>(`${this.apiUrl}/repos/${id}`, repository, { headers });
+    return this.http.put<Repository>(`${this.apiUrl}/v1/repos/${id}`, repository, { headers });
   }
 
   // Delete a repository
   deleteRepository(id: number): Observable<void> {
     const headers = this.getAuthHeaders();
-    return this.http.delete<void>(`${this.apiUrl}/repos/${id}`, { headers });
+    return this.http.delete<void>(`${this.apiUrl}/v1/repos/${id}`, { headers });
   }
 
   // Sync a repository

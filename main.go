@@ -139,6 +139,7 @@ func setupRoutes(r *gin.Engine, appConfig *config.Config) {
 			repos.PUT("/:id", userGitRepoController.UpdateRepo)
 			repos.DELETE("/:id", userGitRepoController.DeleteRepo)
 			repos.POST("/:id/sync", userGitRepoController.SyncRepo)
+			repos.GET("/:id/branches", userGitRepoController.GetRepoBranches)
 		}
 
 		// User repositories route

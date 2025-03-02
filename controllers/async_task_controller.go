@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhaojunlucky/mkdocs-cms/middleware"
 	"github.com/zhaojunlucky/mkdocs-cms/services"
 )
 
@@ -23,7 +22,7 @@ func NewAsyncTaskController() *AsyncTaskController {
 // GetTask returns a specific task by ID
 func (c *AsyncTaskController) GetTask(ctx *gin.Context) {
 	// Get authenticated user ID from context
-	authenticatedUserID, exists := ctx.Get("userID")
+	authenticatedUserID, exists := ctx.Get("userId")
 	if !exists {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
 		return
@@ -55,7 +54,7 @@ func (c *AsyncTaskController) GetTask(ctx *gin.Context) {
 // GetUserTasks returns all tasks for the authenticated user
 func (c *AsyncTaskController) GetUserTasks(ctx *gin.Context) {
 	// Get authenticated user ID from context
-	authenticatedUserID, exists := ctx.Get("userID")
+	authenticatedUserID, exists := ctx.Get("userId")
 	if !exists {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
 		return
@@ -74,7 +73,7 @@ func (c *AsyncTaskController) GetUserTasks(ctx *gin.Context) {
 // GetResourceTasks returns all tasks for a specific resource
 func (c *AsyncTaskController) GetResourceTasks(ctx *gin.Context) {
 	// Get authenticated user ID from context
-	authenticatedUserID, exists := ctx.Get("userID")
+	authenticatedUserID, exists := ctx.Get("userId")
 	if !exists {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
 		return
@@ -108,7 +107,7 @@ func (c *AsyncTaskController) GetResourceTasks(ctx *gin.Context) {
 // RegisterRoutes registers the routes for the AsyncTaskController
 func (c *AsyncTaskController) RegisterRoutes(router *gin.RouterGroup) {
 	tasks := router.Group("/tasks")
-	tasks.Use(middleware.RequireAuth())
+	//tasks.Use(middleware.RequireAuth())
 	{
 		tasks.GET("", c.GetUserTasks)
 		tasks.GET("/:id", c.GetTask)

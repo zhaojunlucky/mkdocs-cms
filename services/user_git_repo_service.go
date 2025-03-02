@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -124,6 +125,9 @@ func (s *UserGitRepoService) UpdateRepo(id string, request models.UpdateUserGitR
 		return models.UserGitRepo{}, err
 	}
 
+	// Check if branch is being changed
+	branchChanged := request.Branch != "" && request.Branch != repo.Branch
+
 	// Update fields if provided
 	if request.Name != "" {
 		repo.Name = request.Name
@@ -152,7 +156,24 @@ func (s *UserGitRepoService) UpdateRepo(id string, request models.UpdateUserGitR
 
 	repo.UpdatedAt = time.Now()
 	result := database.DB.Save(&repo)
-	return repo, result.Error
+	if result.Error != nil {
+		return repo, result.Error
+	}
+
+	// If branch was changed, sync the repo and checkout the new branch
+	if branchChanged {
+		// First sync the repository to ensure we have the latest changes
+		if err := s.SyncRepo(id); err != nil {
+			return repo, fmt.Errorf("failed to sync repository after branch change: %v", err)
+		}
+
+		// Then checkout the new branch
+		if err := s.checkoutBranch(repo); err != nil {
+			return repo, fmt.Errorf("failed to checkout new branch: %v", err)
+		}
+	}
+
+	return repo, nil
 }
 
 // DeleteRepo deletes a git repository
@@ -169,9 +190,9 @@ func (s *UserGitRepoService) DeleteRepo(id string) error {
 
 	// Optionally, delete the local repository files
 	// This is commented out for safety - uncomment if you want to delete files
-	// if err := os.RemoveAll(repo.LocalPath); err != nil {
-	//     return err
-	// }
+	if err := os.RemoveAll(repo.LocalPath); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -313,6 +334,101 @@ func (s *UserGitRepoService) syncWithGitHubApp(repo models.UserGitRepo) error {
 // SyncRepository is an alias for SyncRepo for compatibility with the webhook controller
 func (s *UserGitRepoService) SyncRepository(id string) error {
 	return s.SyncRepo(id)
+}
+
+// GetRepoBranches returns all branches for a specific git repository
+func (s *UserGitRepoService) GetRepoBranches(id string) ([]string, error) {
+	// Get the repository
+	repo, err := s.GetRepoByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if the repository exists locally
+	if _, err := os.Stat(repo.LocalPath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("repository not found locally")
+	}
+
+	// Run git branch -r to get remote branches
+	cmd := exec.Command("git", "-C", repo.LocalPath, "branch", "-r")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get branches: %v", err)
+	}
+
+	// Parse the output to extract branch names
+	branches := []string{}
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		// Remove "origin/" prefix
+		if strings.HasPrefix(line, "origin/") {
+			branch := strings.TrimPrefix(line, "origin/")
+			// Skip HEAD and other special refs
+			if branch != "HEAD" && !strings.Contains(branch, "->") {
+				branches = append(branches, branch)
+			}
+		}
+	}
+
+	return branches, nil
+}
+
+// checkoutBranch checks out the specified branch in the repository
+func (s *UserGitRepoService) checkoutBranch(repo models.UserGitRepo) error {
+	// Check if repository directory exists
+	if _, err := os.Stat(repo.LocalPath); os.IsNotExist(err) {
+		return fmt.Errorf("repository directory does not exist")
+	}
+
+	// Fetch all branches to ensure the branch exists locally
+	fetchCmd := exec.Command("git", "-C", repo.LocalPath, "fetch", "origin")
+	if err := fetchCmd.Run(); err != nil {
+		return fmt.Errorf("failed to fetch from remote: %v", err)
+	}
+
+	// Check if the branch exists
+	checkBranchCmd := exec.Command("git", "-C", repo.LocalPath, "branch", "-r")
+	output, err := checkBranchCmd.Output()
+	if err != nil {
+		return fmt.Errorf("failed to list remote branches: %v", err)
+	}
+
+	branchExists := false
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasSuffix(line, "/"+repo.Branch) {
+			branchExists = true
+			break
+		}
+	}
+
+	if !branchExists {
+		return fmt.Errorf("branch '%s' does not exist in the remote repository", repo.Branch)
+	}
+
+	// Checkout the branch
+	checkoutCmd := exec.Command("git", "-C", repo.LocalPath, "checkout", repo.Branch)
+	if err := checkoutCmd.Run(); err != nil {
+		// Try to create and checkout the branch if it doesn't exist locally
+		createCmd := exec.Command("git", "-C", repo.LocalPath, "checkout", "-b", repo.Branch, "origin/"+repo.Branch)
+		if err := createCmd.Run(); err != nil {
+			return fmt.Errorf("failed to checkout branch '%s': %v", repo.Branch, err)
+		}
+	}
+
+	// Pull the latest changes for this branch
+	pullCmd := exec.Command("git", "-C", repo.LocalPath, "pull", "origin", repo.Branch)
+	if err := pullCmd.Run(); err != nil {
+		return fmt.Errorf("failed to pull latest changes for branch '%s': %v", repo.Branch, err)
+	}
+
+	return nil
 }
 
 // generateJWT generates a JWT for GitHub App authentication
