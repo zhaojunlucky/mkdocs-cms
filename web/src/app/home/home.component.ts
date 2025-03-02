@@ -156,6 +156,8 @@ export class HomeComponent implements OnInit {
         return 'status-failed';
       case 'pending':
         return 'status-pending';
+      case 'warning':
+        return 'status-warning';
       default:
         return '';
     }

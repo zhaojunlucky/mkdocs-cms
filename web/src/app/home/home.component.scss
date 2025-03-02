@@ -131,6 +131,10 @@ h1 {
         color: #FF9800;
       }
       
+      &.status-warning {
+        color: #FFC107;
+      }
+      
       .error-tooltip {
         visibility: hidden;
         background-color: #333;
@@ -153,6 +157,39 @@ h1 {
       &:hover .error-tooltip {
         visibility: visible;
         opacity: 1;
+      }
+    }
+    
+    .warning-message {
+      margin-top: 15px;
+      padding: 10px;
+      background-color: #FFF8E1;
+      border: 1px solid #FFECB3;
+      border-radius: 4px;
+      
+      p {
+        color: #FF8F00;
+        margin-bottom: 10px;
+        font-size: 14px;
+        
+        i {
+          margin-right: 5px;
+        }
+      }
+      
+      .fix-config-btn {
+        background-color: #FFC107;
+        color: #212121;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: background-color 0.3s;
+        
+        &:hover {
+          background-color: #FFB300;
+        }
       }
     }
   }

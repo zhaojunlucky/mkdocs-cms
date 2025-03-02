@@ -18,6 +18,7 @@ import (
 	"github.com/zhaojunlucky/mkdocs-cms/database"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
 	"golang.org/x/oauth2"
+	"gopkg.in/yaml.v3"
 )
 
 // UserGitRepoService handles business logic for git repositories
@@ -239,8 +240,18 @@ func (s *UserGitRepoService) SyncRepo(id string) error {
 		return err
 	}
 
-	// Update status to synced
-	return s.UpdateRepoStatus(id, models.StatusSynced, "")
+	// Check if veda/config.yml exists and has valid format
+	if err := s.checkVedaConfig(repo); err != nil {
+		// Set error message but don't fail the sync
+		s.UpdateRepoStatus(id, models.StatusWarning, err.Error())
+	} else {
+		// Update status to synced
+		if err := s.UpdateRepoStatus(id, models.StatusSynced, ""); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // syncWithGitCommand uses git command line to sync a repository
@@ -316,7 +327,7 @@ func (s *UserGitRepoService) syncWithGitHubApp(repo models.UserGitRepo) error {
 		}
 
 		// Pull the latest changes
-		pullCmd := exec.Command("git", "-C", repo.LocalPath, "pull", "origin", repo.Branch)
+		pullCmd := exec.Command("git", "-C", repo.LocalPath, "pull", "origin") //, repo.Branch
 		if err := pullCmd.Run(); err != nil {
 			return fmt.Errorf("failed to pull repository: %v", err)
 		}
@@ -413,7 +424,7 @@ func (s *UserGitRepoService) checkoutBranch(repo models.UserGitRepo) error {
 	}
 
 	// Checkout the branch
-	checkoutCmd := exec.Command("git", "-C", repo.LocalPath, "checkout", repo.Branch)
+	checkoutCmd := exec.Command("git", "-C", repo.LocalPath, "switch", repo.Branch)
 	if err := checkoutCmd.Run(); err != nil {
 		// Try to create and checkout the branch if it doesn't exist locally
 		createCmd := exec.Command("git", "-C", repo.LocalPath, "checkout", "-b", repo.Branch, "origin/"+repo.Branch)
@@ -428,7 +439,88 @@ func (s *UserGitRepoService) checkoutBranch(repo models.UserGitRepo) error {
 		return fmt.Errorf("failed to pull latest changes for branch '%s': %v", repo.Branch, err)
 	}
 
+	// Check if veda/config.yml exists and has valid format
+	if err := s.checkVedaConfig(repo); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+// checkVedaConfig checks if veda/config.yml exists and has a valid format
+func (s *UserGitRepoService) checkVedaConfig(repo models.UserGitRepo) error {
+	configPath := filepath.Join(repo.LocalPath, "veda", "config.yml")
+
+	// Check if the config file exists
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		return fmt.Errorf("veda/config.yml not found. Please create this file with proper configuration")
+	}
+
+	// Read the config file
+	configData, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to read veda/config.yml: %v", err)
+	}
+
+	// Parse the YAML to validate its structure
+	var config map[string]interface{}
+	if err := yaml.Unmarshal(configData, &config); err != nil {
+		return fmt.Errorf("invalid YAML format in veda/config.yml: %v", err)
+	}
+
+	// Check for required fields
+	collections, ok := config["collections"]
+	if !ok {
+		return fmt.Errorf("veda/config.yml is missing required 'collections' field")
+	}
+
+	// Validate collections structure
+	collectionsList, ok := collections.([]interface{})
+	if !ok {
+		return fmt.Errorf("'collections' field in veda/config.yml must be an array")
+	}
+
+	if len(collectionsList) == 0 {
+		return fmt.Errorf("veda/config.yml must contain at least one collection")
+	}
+
+	// Validate each collection
+	for i, col := range collectionsList {
+		collection, ok := col.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("collection #%d in veda/config.yml has invalid format", i+1)
+		}
+
+		// Check for required collection fields
+		if _, ok := collection["name"]; !ok {
+			return fmt.Errorf("collection #%d in veda/config.yml is missing required 'name' field", i+1)
+		}
+		if _, ok := collection["label"]; !ok {
+			return fmt.Errorf("collection #%d in veda/config.yml is missing required 'label' field", i+1)
+		}
+		if _, ok := collection["path"]; !ok {
+			return fmt.Errorf("collection #%d in veda/config.yml is missing required 'path' field", i+1)
+		}
+		if _, ok := collection["format"]; !ok {
+			return fmt.Errorf("collection #%d in veda/config.yml is missing required 'format' field", i+1)
+		}
+	}
+
+	return nil
+}
+
+// ensureVedaConfig checks if veda/config.yml exists and creates it if it doesn't
+func (s *UserGitRepoService) ensureVedaConfig(repo models.UserGitRepo) error {
+	configPath := filepath.Join(repo.LocalPath, "veda", "config.yml")
+
+	// Check if the config file already exists
+	if _, err := os.Stat(configPath); err == nil {
+		// File exists, validate its format
+		return s.checkVedaConfig(repo)
+	}
+
+	// If file doesn't exist, return an error
+	return fmt.Errorf("veda/config.yml not found. Please create this file with proper configuration")
 }
 
 // generateJWT generates a JWT for GitHub App authentication

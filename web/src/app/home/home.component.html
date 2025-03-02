@@ -40,8 +40,15 @@
             Status: {{ repo.syncing ? 'Syncing...' : (repo.status | titlecase) }}
             <span *ngIf="repo.error_msg" class="error-tooltip">{{ repo.error_msg }}</span>
           </p>
+          <p class="repo-branch">Branch: {{ repo.branch || 'default' }}</p>
           <p class="repo-date">Last synced: {{ repo.last_sync_at ? (repo.last_sync_at | date) : 'Never' }}</p>
           <p class="repo-date">Added: {{ repo.created_at | date }}</p>
+          
+          <!-- Show warning message directly if status is warning -->
+          <div *ngIf="repo.status === 'warning'" class="warning-message">
+            <p><i class="fas fa-exclamation-triangle"></i> {{ repo.error_msg }}</p>
+            <button class="fix-config-btn" (click)="syncRepository(repo)">Retry Sync</button>
+          </div>
         </div>
         
         <!-- Task Status Component -->

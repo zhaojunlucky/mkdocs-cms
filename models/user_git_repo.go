@@ -16,6 +16,8 @@ const (
 	StatusFailed GitRepoStatus = "failed"
 	// StatusPending indicates the repository is pending for sync
 	StatusPending GitRepoStatus = "pending"
+	// StatusWarning indicates the repository has a warning (e.g., missing config)
+	StatusWarning GitRepoStatus = "warning"
 )
 
 // UserGitRepo represents a git repository associated with a user

@@ -246,8 +246,19 @@ func (c *UserGitRepoController) SyncRepo(ctx *gin.Context) {
 			c.userGitRepoService.UpdateRepoStatus(id, models.StatusFailed, err.Error())
 			asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusFailed, err.Error())
 		} else {
-			c.userGitRepoService.UpdateRepoStatus(id, models.StatusSynced, "")
-			asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusCompleted, "Repository sync completed successfully")
+			// The SyncRepo method now handles setting the status (synced or warning)
+			// so we don't need to set it here again
+			
+			// Get the updated repository to check its status
+			updatedRepo, _ := c.userGitRepoService.GetRepoByID(id)
+			
+			if updatedRepo.Status == models.StatusWarning {
+				asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusCompleted, 
+					"Repository sync completed with warnings: " + updatedRepo.ErrorMsg)
+			} else {
+				asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusCompleted, 
+					"Repository sync completed successfully")
+			}
 		}
 	}()
 
