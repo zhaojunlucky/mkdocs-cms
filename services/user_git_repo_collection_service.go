@@ -180,9 +180,9 @@ type FileInfo struct {
 }
 
 // ListFilesInCollection lists all files under a collection path
-func (s *UserGitRepoCollectionService) ListFilesInCollection(collectionID uint) ([]FileInfo, error) {
+func (s *UserGitRepoCollectionService) ListFilesInCollection(repoID uint, collectionName string) ([]FileInfo, error) {
 	// Get the collection
-	collection, err := s.GetCollectionByID(collectionID)
+	collection, err := s.GetCollectionByName(repoID, collectionName)
 	if err != nil {
 		return nil, err
 	}
@@ -226,9 +226,9 @@ func (s *UserGitRepoCollectionService) ListFilesInCollection(collectionID uint) 
 }
 
 // ListFilesInPath lists all files under a specific path within a collection
-func (s *UserGitRepoCollectionService) ListFilesInPath(collectionID uint, subPath string) ([]FileInfo, error) {
+func (s *UserGitRepoCollectionService) ListFilesInPath(repoID uint, collectionName string, subPath string) ([]FileInfo, error) {
 	// Get the collection
-	collection, err := s.GetCollectionByID(collectionID)
+	collection, err := s.GetCollectionByName(repoID, collectionName)
 	if err != nil {
 		return nil, err
 	}
@@ -282,9 +282,9 @@ func (s *UserGitRepoCollectionService) ListFilesInPath(collectionID uint, subPat
 }
 
 // GetFileContent retrieves the content of a file within a collection
-func (s *UserGitRepoCollectionService) GetFileContent(collectionID uint, filePath string) ([]byte, string, error) {
+func (s *UserGitRepoCollectionService) GetFileContent(repoID uint, collectionName string, filePath string) ([]byte, string, error) {
 	// Get the collection
-	collection, err := s.GetCollectionByID(collectionID)
+	collection, err := s.GetCollectionByName(repoID, collectionName)
 	if err != nil {
 		return nil, "", err
 	}
@@ -348,9 +348,9 @@ func (s *UserGitRepoCollectionService) GetFileContent(collectionID uint, filePat
 }
 
 // UpdateFileContent updates the content of a file within a collection
-func (s *UserGitRepoCollectionService) UpdateFileContent(collectionID uint, filePath string, content []byte) error {
+func (s *UserGitRepoCollectionService) UpdateFileContent(repoID uint, collectionName string, filePath string, content []byte) error {
 	// Get the collection
-	collection, err := s.GetCollectionByID(collectionID)
+	collection, err := s.GetCollectionByName(repoID, collectionName)
 	if err != nil {
 		return err
 	}
@@ -390,9 +390,9 @@ func (s *UserGitRepoCollectionService) UpdateFileContent(collectionID uint, file
 }
 
 // DeleteFile deletes a file or directory within a collection
-func (s *UserGitRepoCollectionService) DeleteFile(collectionID uint, filePath string) error {
+func (s *UserGitRepoCollectionService) DeleteFile(repoID uint, collectionName string, filePath string) error {
 	// Get the collection
-	collection, err := s.GetCollectionByID(collectionID)
+	collection, err := s.GetCollectionByName(repoID, collectionName)
 	if err != nil {
 		return err
 	}

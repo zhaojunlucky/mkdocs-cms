@@ -160,16 +160,18 @@ func setupRoutes(r *gin.Engine, appConfig *config.Config) {
 		// Collection routes
 		v1.GET("/collections", controllers.GetCollections)
 		v1.GET("/repos/collections/:repo_id", controllers.GetCollectionsByRepo)
-		v1.GET("/collections/:id", controllers.GetCollection)
+		v1.GET("/collections/:collection_id", controllers.GetCollection)
 		// Removed collection create/update/delete endpoints as collections are now read-only from veda/config.yml
 		v1.GET("/repos/collections/by-path/:repo_id", controllers.GetCollectionByPath)
-		v1.GET("/collections/files/:id", controllers.GetCollectionFiles)
-		v1.GET("/collections/browse/:id", controllers.GetCollectionFilesInPath)
-		v1.GET("/collections/file/:id", controllers.GetFileContent)
-		v1.PUT("/collections/file/:id", controllers.UpdateFileContent)
-		v1.DELETE("/collections/file/:id", controllers.DeleteFile)
-		v1.GET("/collections/file/json/:id", controllers.GetFileContentJSON)
-		v1.POST("/collections/file/:id", controllers.UploadFile)
+		
+		// Updated file browser routes to use repo_id and collection_name instead of collection_id
+		v1.GET("/repos-collections/:repo_id/collections/:collection_name/files", controllers.GetCollectionFiles)
+		v1.GET("/repos-collections/:repo_id/collections/:collection_name/browse", controllers.GetCollectionFilesInPath)
+		v1.GET("/repos-collections/:repo_id/collections/:collection_name/file", controllers.GetFileContent)
+		v1.PUT("/repos-collections/:repo_id/collections/:collection_name/file", controllers.UpdateFileContent)
+		v1.DELETE("/repos-collections/:repo_id/collections/:collection_name/file", controllers.DeleteFile)
+		v1.GET("/repos-collections/:repo_id/collections/:collection_name/file/json", controllers.GetFileContentJSON)
+		v1.POST("/repos-collections/:repo_id/collections/:collection_name/file", controllers.UploadFile)
 
 		// Site Configuration routes
 		v1.GET("/site-configs", siteConfigController.GetAllSiteConfigs)

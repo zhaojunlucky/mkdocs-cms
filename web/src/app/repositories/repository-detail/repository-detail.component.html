@@ -2,43 +2,83 @@
   <div *ngIf="loading" class="loading-indicator">
     <p>Loading repository details...</p>
   </div>
-  
+
   <div *ngIf="error" class="error-message">
     <p>{{ error }}</p>
     <a routerLink="/home" class="back-btn">Back to Home</a>
   </div>
-  
+
   <div *ngIf="!loading && !error && repository">
     <div class="repository-header">
       <a routerLink="/home" class="back-link">← Back to Repositories</a>
       <h1>{{ repository.name }}</h1>
       <p class="repo-path">{{ repository.local_path }}</p>
     </div>
-    
-    <div class="collections-section">
-      <div class="section-header">
-        <h2>Collections</h2>
-        <div class="info-message">
-          <p>Collections are defined in veda/config.yml file in the repository.</p>
+
+    <div class="content-layout">
+      <!-- Sidenav for collections -->
+      <div class="sidenav">
+        <div class="sidenav-header">
+          <h3>Collections</h3>
+        </div>
+        <div class="sidenav-content">
+          <div *ngIf="collections.length === 0" class="empty-state-sidenav">
+            <p>No collections found</p>
+          </div>
+          <ul class="collection-list">
+            <li *ngFor="let collection of collections"
+                [class.active]="selectedCollection?.name === collection.name"
+                (click)="selectCollection(collection)">
+              <span class="collection-name">{{ collection.name }}</span>
+            </li>
+          </ul>
         </div>
       </div>
-      
-      <div *ngIf="collections.length === 0" class="empty-state">
-        <p>This repository doesn't have any collections defined in veda/config.yml.</p>
-        <p>Add collections by editing the veda/config.yml file in your repository.</p>
-      </div>
-      
-      <div *ngIf="collections.length > 0" class="collections-list">
-        <div *ngFor="let collection of collections" class="collection-card">
-          <div class="collection-header">
-            <h3>{{ collection.name }}</h3>
+
+      <!-- Main content area -->
+      <div class="main-content">
+        <!-- Show info message if no collection is selected -->
+        <div *ngIf="!selectedCollection" class="info-message-large">
+          <p>Select a collection from the sidebar to browse its files.</p>
+        </div>
+
+        <!-- Show files and folders when a collection is selected -->
+        <div *ngIf="selectedCollection" class="file-browser">
+          <div class="file-browser-header">
+            <h2>{{ selectedCollection.name }}</h2>
+            <div class="breadcrumbs">
+              <span class="breadcrumb-item" (click)="navigateToBreadcrumb({name: 'Root', path: ''})">Root</span>
+              <span *ngFor="let breadcrumb of breadcrumbs.slice(1)">
+                <span class="breadcrumb-separator">/</span>
+                <span class="breadcrumb-item" (click)="navigateToBreadcrumb(breadcrumb)">{{ breadcrumb.name }}</span>
+              </span>
+            </div>
           </div>
-          <div class="collection-details">
-            <p class="collection-path">{{ collection.path }}</p>
-            <p class="collection-date">Added: {{ collection.created_at | date }}</p>
+
+          <div *ngIf="loadingFiles" class="loading-indicator">
+            <p>Loading files...</p>
           </div>
-          <div class="collection-actions">
-            <a [routerLink]="['/collections', collection.id]" class="view-btn">View Posts</a>
+
+          <div *ngIf="!loadingFiles && files.length === 0" class="empty-state">
+            <p>This folder is empty.</p>
+          </div>
+
+          <div *ngIf="!loadingFiles && files.length > 0" class="file-list">
+            <div *ngFor="let file of files" class="file-item"
+                 [class.is-folder]="file.is_dir"
+                 (click)="file.is_dir ? navigateToFolder(file) : null">
+              <div class="file-icon">
+                <span *ngIf="file.is_dir" class="material-icons">folder</span>
+                <span *ngIf="!file.is_dir" class="material-icons">insert_drive_file</span>
+              </div>
+              <div class="file-details">
+                <div class="file-name">{{ file.name }}</div>
+                <div class="file-meta">
+                  <span *ngIf="!file.is_dir">{{ file.size | number }} bytes</span>
+                  <span>{{ file.mod_time | date:'medium' }}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

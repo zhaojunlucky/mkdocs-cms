@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/base64"
+	"github.com/zhaojunlucky/mkdocs-cms/database"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -55,7 +56,7 @@ func GetCollectionsByRepo(c *gin.Context) {
 
 // GetCollection returns a specific collection
 func GetCollection(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := strconv.ParseUint(c.Param("collection_id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
 		return
@@ -122,13 +123,19 @@ func GetCollectionByPath(c *gin.Context) {
 
 // GetCollectionFiles returns all files in a collection
 func GetCollectionFiles(c *gin.Context) {
-	collectionID, err := strconv.ParseUint(c.Param("collection_id"), 10, 32)
+	repoID, err := strconv.ParseUint(c.Param("repo_id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid collection ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid repository ID"})
 		return
 	}
 
-	files, err := userGitRepoCollectionService.ListFilesInCollection(uint(collectionID))
+	collectionName := c.Param("collection_name")
+	if collectionName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Collection name is required"})
+		return
+	}
+
+	files, err := userGitRepoCollectionService.ListFilesInCollection(uint(repoID), collectionName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -139,16 +146,22 @@ func GetCollectionFiles(c *gin.Context) {
 
 // GetCollectionFilesInPath returns all files in a specific path within a collection
 func GetCollectionFilesInPath(c *gin.Context) {
-	collectionID, err := strconv.ParseUint(c.Param("collection_id"), 10, 32)
+	repoID, err := strconv.ParseUint(c.Param("repo_id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid collection ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid repository ID"})
+		return
+	}
+
+	collectionName := c.Param("collection_name")
+	if collectionName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Collection name is required"})
 		return
 	}
 
 	path := c.Query("path")
 	if path == "" {
 		// If no path is provided, return files at the root of the collection
-		files, err := userGitRepoCollectionService.ListFilesInCollection(uint(collectionID))
+		files, err := userGitRepoCollectionService.ListFilesInCollection(uint(repoID), collectionName)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -157,7 +170,7 @@ func GetCollectionFilesInPath(c *gin.Context) {
 		return
 	}
 
-	files, err := userGitRepoCollectionService.ListFilesInPath(uint(collectionID), path)
+	files, err := userGitRepoCollectionService.ListFilesInPath(uint(repoID), collectionName, path)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -168,9 +181,15 @@ func GetCollectionFilesInPath(c *gin.Context) {
 
 // GetFileContent returns the content of a file within a collection
 func GetFileContent(c *gin.Context) {
-	collectionID, err := strconv.ParseUint(c.Param("collection_id"), 10, 32)
+	repoID, err := strconv.ParseUint(c.Param("repo_id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid collection ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid repository ID"})
+		return
+	}
+
+	collectionName := c.Param("collection_name")
+	if collectionName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Collection name is required"})
 		return
 	}
 
@@ -180,7 +199,7 @@ func GetFileContent(c *gin.Context) {
 		return
 	}
 
-	content, contentType, err := userGitRepoCollectionService.GetFileContent(uint(collectionID), filePath)
+	content, contentType, err := userGitRepoCollectionService.GetFileContent(uint(repoID), collectionName, filePath)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -193,9 +212,15 @@ func GetFileContent(c *gin.Context) {
 
 // UpdateFileContent updates the content of a file within a collection
 func UpdateFileContent(c *gin.Context) {
-	collectionID, err := strconv.ParseUint(c.Param("collection_id"), 10, 32)
+	repoID, err := strconv.ParseUint(c.Param("repo_id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid collection ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid repository ID"})
+		return
+	}
+
+	collectionName := c.Param("collection_name")
+	if collectionName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Collection name is required"})
 		return
 	}
 
@@ -212,7 +237,7 @@ func UpdateFileContent(c *gin.Context) {
 		return
 	}
 
-	if err := userGitRepoCollectionService.UpdateFileContent(uint(collectionID), filePath, content); err != nil {
+	if err := userGitRepoCollectionService.UpdateFileContent(uint(repoID), collectionName, filePath, content); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -222,9 +247,15 @@ func UpdateFileContent(c *gin.Context) {
 
 // DeleteFile deletes a file or directory within a collection
 func DeleteFile(c *gin.Context) {
-	collectionID, err := strconv.ParseUint(c.Param("collection_id"), 10, 32)
+	repoID, err := strconv.ParseUint(c.Param("repo_id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid collection ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid repository ID"})
+		return
+	}
+
+	collectionName := c.Param("collection_name")
+	if collectionName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Collection name is required"})
 		return
 	}
 
@@ -234,7 +265,7 @@ func DeleteFile(c *gin.Context) {
 		return
 	}
 
-	if err := userGitRepoCollectionService.DeleteFile(uint(collectionID), filePath); err != nil {
+	if err := userGitRepoCollectionService.DeleteFile(uint(repoID), collectionName, filePath); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -244,9 +275,15 @@ func DeleteFile(c *gin.Context) {
 
 // UploadFile uploads a file to a collection using JSON request
 func UploadFile(c *gin.Context) {
-	collectionID, err := strconv.ParseUint(c.Param("collection_id"), 10, 32)
+	repoID, err := strconv.ParseUint(c.Param("repo_id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid collection ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid repository ID"})
+		return
+	}
+
+	collectionName := c.Param("collection_name")
+	if collectionName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Collection name is required"})
 		return
 	}
 
@@ -266,7 +303,7 @@ func UploadFile(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid base64 content format"})
 			return
 		}
-		
+
 		// Decode base64
 		var err error
 		content, err = base64.StdEncoding.DecodeString(parts[1])
@@ -279,7 +316,7 @@ func UploadFile(c *gin.Context) {
 		content = []byte(request.Content)
 	}
 
-	if err := userGitRepoCollectionService.UpdateFileContent(uint(collectionID), request.Path, content); err != nil {
+	if err := userGitRepoCollectionService.UpdateFileContent(uint(repoID), collectionName, request.Path, content); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -289,9 +326,15 @@ func UploadFile(c *gin.Context) {
 
 // GetFileContentJSON returns the content of a file within a collection as JSON
 func GetFileContentJSON(c *gin.Context) {
-	collectionID, err := strconv.ParseUint(c.Param("collection_id"), 10, 32)
+	repoID, err := strconv.ParseUint(c.Param("repo_id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid collection ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid repository ID"})
+		return
+	}
+
+	collectionName := c.Param("collection_name")
+	if collectionName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Collection name is required"})
 		return
 	}
 
@@ -301,14 +344,21 @@ func GetFileContentJSON(c *gin.Context) {
 		return
 	}
 
-	content, contentType, err := userGitRepoCollectionService.GetFileContent(uint(collectionID), filePath)
+	content, contentType, err := userGitRepoCollectionService.GetFileContent(uint(repoID), collectionName, filePath)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Get file info
-	collection, err := userGitRepoCollectionService.GetCollectionByID(uint(collectionID))
+	// Get repository to find its local path
+	var repo models.UserGitRepo
+	if err := database.DB.First(&repo, repoID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Repository not found"})
+		return
+	}
+
+	// Get collection to find its path
+	collection, err := userGitRepoCollectionService.GetCollectionByName(uint(repoID), collectionName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

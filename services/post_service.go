@@ -386,7 +386,7 @@ func (s *PostService) SyncPostsFromCollection(collectionID uint, userID string) 
 	}
 
 	// Get all files in the collection
-	files, err := s.collectionService.ListFilesInCollection(collectionID)
+	files, err := s.collectionService.ListFilesInCollection(collection.RepoID, collection.Name)
 	if err != nil {
 		return 0, err
 	}
