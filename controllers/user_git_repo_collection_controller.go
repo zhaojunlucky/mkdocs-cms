@@ -169,6 +169,9 @@ func GetCollectionFilesInPath(c *gin.Context) {
 		c.JSON(http.StatusOK, files)
 		return
 	}
+	path = strings.ReplaceAll(path, ".", "")
+	path = strings.Trim(path, "/")
+	path = strings.Trim(path, "\\")
 
 	files, err := userGitRepoCollectionService.ListFilesInPath(uint(repoID), collectionName, path)
 	if err != nil {

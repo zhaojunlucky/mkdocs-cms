@@ -94,7 +94,7 @@ func (s *UserGitRepoCollectionService) readCollectionsFromConfig(repo models.Use
 	for _, col := range config.Collections {
 		// Resolve the path relative to the repository
 		fullPath := filepath.Join(repo.LocalPath, col.Path)
-		
+
 		collection := models.UserGitRepoCollection{
 			Name:        col.Name,
 			Label:       col.Label,
@@ -119,21 +119,21 @@ func (s *UserGitRepoCollectionService) GetCollectionByID(id uint) (models.UserGi
 		if err := database.DB.First(&repo, "id = ?", id).Error; err != nil {
 			return models.UserGitRepoCollection{}, errors.New("repository not found")
 		}
-		
+
 		// Read collections from veda/config.yml
 		collections, err := s.readCollectionsFromConfig(repo)
 		if err != nil {
 			return models.UserGitRepoCollection{}, err
 		}
-		
+
 		// Find the collection by ID (which is now just an index)
 		if int(id) < len(collections) {
 			return collections[id], nil
 		}
-		
+
 		return models.UserGitRepoCollection{}, errors.New("collection not found")
 	}
-	
+
 	return collection, nil
 }
 
@@ -206,9 +206,17 @@ func (s *UserGitRepoCollectionService) ListFilesInCollection(repoID uint, collec
 			continue
 		}
 
+		if strings.HasPrefix(entry.Name(), ".") {
+			continue
+		}
+
+		if !entry.IsDir() && filepath.Ext(entry.Name()) != fmt.Sprintf(".%s", collection.Format) {
+			continue
+		}
+
 		fileInfo := FileInfo{
 			Name:    entry.Name(),
-			Path:    filepath.Join(collection.Path, entry.Name()),
+			Path:    entry.Name(),
 			IsDir:   entry.IsDir(),
 			Size:    info.Size(),
 			ModTime: info.ModTime(),
@@ -258,6 +266,14 @@ func (s *UserGitRepoCollectionService) ListFilesInPath(repoID uint, collectionNa
 	for _, entry := range entries {
 		info, err := entry.Info()
 		if err != nil {
+			continue
+		}
+
+		if strings.HasPrefix(entry.Name(), ".") {
+			continue
+		}
+
+		if !entry.IsDir() && filepath.Ext(entry.Name()) != fmt.Sprintf(".%s", collection.Format) {
 			continue
 		}
 
