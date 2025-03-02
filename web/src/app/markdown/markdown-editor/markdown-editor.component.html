@@ -1,0 +1,7 @@
+<div class="markdown-editor-container">
+  <simplemde #simplemde 
+    [(ngModel)]="markdownContent" 
+    [disabled]="disabled"
+    (change)="onContentChange()">
+  </simplemde>
+</div>

@@ -9,6 +9,9 @@ import { AppComponent } from './app.component';
 import { HomeComponent } from './home/home.component';
 import { AuthModule } from './auth/auth.module';
 import { ComponentsModule } from './components/components.module';
+import { MaterialModule } from './material/material.module';
+import { MarkdownModule } from './markdown/markdown.module';
+import { AppRoutingModule } from './app-routing.module';
 
 @NgModule({
   declarations: [
@@ -22,7 +25,10 @@ import { ComponentsModule } from './components/components.module';
     ReactiveFormsModule,
     BrowserAnimationsModule,
     AuthModule,
-    ComponentsModule
+    ComponentsModule,
+    MaterialModule,
+    MarkdownModule,
+    AppRoutingModule
   ],
   providers: [],
   bootstrap: [AppComponent]

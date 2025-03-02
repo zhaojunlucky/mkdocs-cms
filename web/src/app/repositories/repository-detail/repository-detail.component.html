@@ -1,5 +1,5 @@
 <div class="repository-detail-container">
-  <div *ngIf="loading" class="loading-indicator">
+  <div *ngIf="loadingRepo || loadingCollections" class="loading-indicator">
     <p>Loading repository details...</p>
   </div>
 
@@ -8,7 +8,7 @@
     <a routerLink="/home" class="back-btn">Back to Home</a>
   </div>
 
-  <div *ngIf="!loading && !error && repository">
+  <div *ngIf="!loadingRepo && !loadingCollections && !error && repository">
     <div class="repository-header">
       <a routerLink="/home" class="back-link">← Back to Repositories</a>
       <h1>{{ repository.name }}</h1>
@@ -37,19 +37,19 @@
       <!-- Main content area -->
       <div class="main-content">
         <!-- Show info message if no collection is selected -->
-        <div *ngIf="!selectedCollection" class="info-message-large">
+        <div *ngIf="!selectedCollection && !isEditingFile" class="info-message-large">
           <p>Select a collection from the sidebar to browse its files.</p>
         </div>
 
-        <!-- Show files and folders when a collection is selected -->
-        <div *ngIf="selectedCollection" class="file-browser">
+        <!-- Show files and folders when a collection is selected and not editing a file -->
+        <div *ngIf="selectedCollection && !isEditingFile" class="file-browser">
           <div class="file-browser-header">
             <h2>{{ selectedCollection.name }}</h2>
             <div class="breadcrumbs">
-              <span class="breadcrumb-item" (click)="navigateToBreadcrumb({name: 'Root', path: ''})">Root</span>
-              <span *ngFor="let breadcrumb of breadcrumbs.slice(1)">
+              <span class="breadcrumb-item" (click)="navigateToBreadcrumb('')">Root</span>
+              <span *ngFor="let segment of pathSegments">
                 <span class="breadcrumb-separator">/</span>
-                <span class="breadcrumb-item" (click)="navigateToBreadcrumb(breadcrumb)">{{ breadcrumb.name }}</span>
+                <span class="breadcrumb-item" (click)="navigateToBreadcrumb(segment.path)">{{ segment.name }}</span>
               </span>
             </div>
           </div>
@@ -65,7 +65,7 @@
           <div *ngIf="!loadingFiles && files.length > 0" class="file-list">
             <div *ngFor="let file of files" class="file-item"
                  [class.is-folder]="file.is_dir"
-                 (click)="file.is_dir ? navigateToFolder(file) : null">
+                 (click)="file.is_dir ? navigateToFolder(file) : openFile(file)">
               <div class="file-icon">
                 <span *ngIf="file.is_dir" class="material-icons">folder</span>
                 <span *ngIf="!file.is_dir" class="material-icons">insert_drive_file</span>
@@ -77,6 +77,56 @@
                   <span>{{ file.mod_time | date:'medium' }}</span>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- File Editor (Inline) -->
+        <div *ngIf="isEditingFile && selectedFile" class="file-editor">
+          <div class="file-editor-header">
+            <div class="file-editor-title">
+              <h2>Editing: {{ selectedFile.name }}</h2>
+              <div class="breadcrumbs">
+                <span class="breadcrumb-item" (click)="navigateToBreadcrumb('')">Root</span>
+                <span *ngFor="let segment of pathSegments">
+                  <span class="breadcrumb-separator">/</span>
+                  <span class="breadcrumb-item" (click)="navigateToBreadcrumb(segment.path)">{{ segment.name }}</span>
+                </span>
+                <span class="breadcrumb-separator">/</span>
+                <span class="breadcrumb-item active">{{ selectedFile.name }}</span>
+              </div>
+            </div>
+            <div class="file-editor-actions">
+              <button (click)="saveFile()" [disabled]="savingFile" class="save-btn">
+                <span *ngIf="!savingFile">Save</span>
+                <span *ngIf="savingFile">Saving...</span>
+              </button>
+              <button (click)="cancelEditing()" class="cancel-btn">Cancel</button>
+            </div>
+          </div>
+
+          <div *ngIf="fileError" class="file-error-message">
+            <p>{{ fileError }}</p>
+          </div>
+
+          <div *ngIf="loadingFileContent" class="loading-indicator">
+            <p>Loading file content...</p>
+          </div>
+
+          <div *ngIf="!loadingFileContent && !fileError" class="file-editor-content">
+            <!-- Front Matter Editor -->
+            <app-front-matter-editor 
+              [frontMatter]="frontMatter" 
+              (frontMatterChange)="onFrontMatterChange($event)">
+            </app-front-matter-editor>
+
+            <!-- Markdown Editor -->
+            <div class="markdown-editor-wrapper">
+              <h3>Content</h3>
+              <app-markdown-editor 
+                [(ngModel)]="markdownContent" 
+                (ngModelChange)="onMarkdownChange($event)">
+              </app-markdown-editor>
             </div>
           </div>
         </div>

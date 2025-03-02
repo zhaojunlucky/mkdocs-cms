@@ -1,0 +1,19 @@
+<div class="file-preview-container">
+  <div class="file-header">
+    <h3 class="file-name">{{ fileName }}</h3>
+    <span class="file-extension" *ngIf="fileExtension">{{ fileExtension }}</span>
+  </div>
+  
+  <mat-card *ngIf="frontMatter && (fileExtension === 'md' || fileExtension === 'markdown')" class="front-matter-card">
+    <mat-card-header>
+      <mat-card-title>Front Matter</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="front-matter-content">
+        <pre class="hljs"><code>{{ frontMatter | json }}</code></pre>
+      </div>
+    </mat-card-content>
+  </mat-card>
+  
+  <div class="content-preview" [innerHTML]="renderedContent"></div>
+</div>

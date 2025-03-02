@@ -1,0 +1,18 @@
+.markdown-editor-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  ::ng-deep .CodeMirror {
+    height: 500px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+
+  ::ng-deep .editor-toolbar {
+    border: 1px solid #ddd;
+    border-radius: 4px 4px 0 0;
+    border-bottom: none;
+  }
+}

@@ -25,18 +25,24 @@ export class CollectionService {
   ) { }
 
   // Get all files in a collection
-  getCollectionFiles(repoId: number, collectionName: string): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/v1/repos-collections/${repoId}/collections/${collectionName}/files`, this.getAuthHeaders());
+  getCollectionFiles(repoId: number, collectionName: string, path: string = ''): Observable<FileInfo[]> {
+    if (path) {
+      return this.getCollectionFilesInPath(repoId, collectionName, path);
+    }
+    return this.http.get<FileInfo[]>(`${this.apiUrl}/v1/repos-collections/${repoId}/collections/${collectionName}/files`, this.getAuthHeaders());
   }
 
   // Get files in a specific path within a collection
-  getCollectionFilesInPath(repoId: number, collectionName: string, path: string): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/v1/repos-collections/${repoId}/collections/${collectionName}/browse?path=${path}`, this.getAuthHeaders());
+  getCollectionFilesInPath(repoId: number, collectionName: string, path: string): Observable<FileInfo[]> {
+    return this.http.get<FileInfo[]>(`${this.apiUrl}/v1/repos-collections/${repoId}/collections/${collectionName}/browse?path=${path}`, this.getAuthHeaders());
   }
 
   // Get file content
-  getFileContent(repoId: number, collectionName: string, path: string): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/v1/repos-collections/${repoId}/collections/${collectionName}/file?path=${path}`, this.getAuthHeaders());
+  getFileContent(repoId: number, collectionName: string, path: string): Observable<string> {
+    return this.http.get(`${this.apiUrl}/v1/repos-collections/${repoId}/collections/${collectionName}/file?path=${path}`, {
+      ...this.getAuthHeaders(),
+      responseType: 'text'
+    });
   }
 
   // Update file content
