@@ -52,7 +52,23 @@ export class AuthService {
   }
 
   get isLoggedIn(): boolean {
-    return !!this.userSubject.value && !!this.tokenSubject.value;
+    const token = this.tokenSubject.value;
+    if (!this.userSubject.value || !token) {
+      return false;
+    }
+    
+    try {
+      const tokenParts = token.split('.');
+      if (tokenParts.length !== 3) {
+        return false;
+      }
+      
+      const payload = JSON.parse(atob(tokenParts[1]));
+      const expirationTime = payload.exp * 1000; // Convert to milliseconds
+      return Date.now() < expirationTime;
+    } catch {
+      return false;
+    }
   }
 
   loginWithGithub(): void {
