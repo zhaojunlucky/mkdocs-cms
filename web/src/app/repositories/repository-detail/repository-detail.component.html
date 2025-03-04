@@ -71,7 +71,25 @@
                 <span *ngIf="!file.is_dir" class="material-icons">insert_drive_file</span>
               </div>
               <div class="file-details">
-                <div class="file-name">{{ file.name }}</div>
+                <div class="file-name" style="display: flex; justify-content: space-between; align-items: center;">
+                  <span>{{ file.name }}</span>
+                  <button *ngIf="!file.is_dir" 
+                          mat-icon-button 
+                          [matMenuTriggerFor]="fileMenu"
+                          (click)="$event.stopPropagation()">
+                    <mat-icon>more_vert</mat-icon>
+                  </button>
+                  <mat-menu #fileMenu="matMenu">
+                    <button mat-menu-item (click)="renameFile(file)">
+                      <mat-icon>edit</mat-icon>
+                      <span>Rename</span>
+                    </button>
+                    <button mat-menu-item (click)="deleteFile(file)">
+                      <mat-icon>delete</mat-icon>
+                      <span>Delete</span>
+                    </button>
+                  </mat-menu>
+                </div>
                 <div class="file-meta">
                   <span *ngIf="!file.is_dir">{{ file.size | number }} bytes</span>
                   <span>{{ file.mod_time | date:'medium' }}</span>
