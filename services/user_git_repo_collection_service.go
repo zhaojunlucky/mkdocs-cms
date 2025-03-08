@@ -456,6 +456,17 @@ func (s *UserGitRepoCollectionService) DeleteFile(repoID uint, collectionName st
 		return err
 	}
 
+	// Get repository information
+	repo, err := s.GetRepo(repoID)
+	if err != nil {
+		return fmt.Errorf("failed to get repository info: %v", err)
+	}
+
+	// Commit the changes
+	if err := s.CommitWithGithubApp(repo, fmt.Sprintf("Delete %s from collection %s", filePath, collectionName)); err != nil {
+		return fmt.Errorf("failed to commit changes: %v", err)
+	}
+
 	return nil
 }
 

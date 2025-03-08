@@ -302,6 +302,20 @@ export class RepositoryDetailComponent implements OnInit {
   }
 
   deleteFile(file: FileInfo) {
-    
+    if (!this.repository || !this.selectedCollection) return;
+
+    if (confirm(`Are you sure you want to delete ${file.name}?`)) {
+      this.collectionService.deleteFile(this.repository.id, this.selectedCollection.name, file.path)
+        .subscribe({
+          next: () => {
+            // Refresh the file list after successful deletion
+            this.loadCollectionFiles();
+          },
+          error: (error) => {
+            console.error('Error deleting file:', error);
+            this.error = 'Failed to delete file. Please try again later.';
+          }
+        });
+    }
   }
 }
