@@ -47,22 +47,17 @@ export class CollectionService {
     if (path) {
       return this.getCollectionFilesInPath(repoId, collectionName, path);
     }
-    return this.http.get<FileInfo[]>(`${this.apiUrl}/v1/repos-collections/${repoId}/collections/${collectionName}/files`, this.getAuthHeaders());
+    return this.http.get<FileInfo[]>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files`, this.getAuthHeaders());
   }
 
   // Get files in a specific path within a collection
   getCollectionFilesInPath(repoId: number, collectionName: string, path: string): Observable<FileInfo[]> {
-    return this.http.get<FileInfo[]>(`${this.apiUrl}/v1/repos-collections/${repoId}/collections/${collectionName}/browse?path=${path}`, this.getAuthHeaders());
-  }
-
-  // Get collection configuration
-  getCollectionConfig(repoId: number, collectionName: string): Observable<CollectionConfig> {
-    return this.http.get<CollectionConfig>(`${this.apiUrl}/v1/repos-collections/${repoId}/collections/${collectionName}/config`, this.getAuthHeaders());
+    return this.http.get<FileInfo[]>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files/path?path=${path}`, this.getAuthHeaders());
   }
 
   // Get file content
   getFileContent(repoId: number, collectionName: string, path: string): Observable<string> {
-    return this.http.get(`${this.apiUrl}/v1/repos-collections/${repoId}/collections/${collectionName}/file?path=${path}`, {
+    return this.http.get(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files/content?path=${path}`, {
       ...this.getAuthHeaders(),
       responseType: 'text'
     });
@@ -70,7 +65,7 @@ export class CollectionService {
 
   // Update file content
   updateFileContent(repoId: number, collectionName: string, path: string, content: string): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/v1/repos-collections/${repoId}/collections/${collectionName}/file`, {
+    return this.http.put<any>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files/content`, {
       path: path,
       content: content
     }, this.getAuthHeaders());
@@ -78,21 +73,25 @@ export class CollectionService {
 
   // Delete file
   deleteFile(repoId: number, collectionName: string, path: string): Observable<any> {
-    return this.http.delete<any>(`${this.apiUrl}/v1/repos-collections/${repoId}/collections/${collectionName}/file?path=${path}`, this.getAuthHeaders());
+    return this.http.delete<any>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files?path=${path}`, this.getAuthHeaders());
+  }
+
+  // Rename file
+  renameFile(repoId: number, collectionName: string, oldPath: string, newPath: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files/rename`, {
+      oldPath: oldPath,
+      newPath: newPath
+    }, this.getAuthHeaders());
   }
 
   // Upload file
   uploadFile(repoId: number, collectionName: string, path: string, content: string): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/v1/repos-collections/${repoId}/collections/${collectionName}/file`, {
+    return this.http.post<any>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files/upload`, {
       path: path,
       content: content
     }, this.getAuthHeaders());
   }
 
-  // Get file content as JSON
-  getFileContentJSON(repoId: number, collectionName: string, path: string): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/v1/repos-collections/${repoId}/collections/${collectionName}/file/json?path=${path}`, this.getAuthHeaders());
-  }
 
   // Helper method to get authentication headers
   private getAuthHeaders() {

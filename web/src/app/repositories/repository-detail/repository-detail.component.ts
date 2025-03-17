@@ -54,11 +54,13 @@ export class RepositoryDetailComponent implements OnInit {
 
   // File editing properties
   isEditingFile = false;
+  isCreatingFile = false;
   selectedFile: FileInfo | null = null;
   fileContent = '';
   loadingFileContent = false;
   savingFile = false;
   fileError = '';
+  newFileName = '';
 
   // Front matter and markdown content
   frontMatter: Record<string, any> = {};
@@ -127,9 +129,9 @@ export class RepositoryDetailComponent implements OnInit {
   // Load files for the selected collection
   loadCollectionFiles() {
     if (!this.repository || !this.selectedCollection) return;
-    
+
     this.loadingFiles = true;
-    
+
     this.collectionService.getCollectionFiles(this.repository.id, this.selectedCollection.name, this.currentPath)
       .subscribe({
         next: (files) => {
@@ -146,9 +148,9 @@ export class RepositoryDetailComponent implements OnInit {
   // Navigate to a specific path in the collection
   navigateToPath(path: string) {
     if (!this.repository || !this.selectedCollection) return;
-    
+
     this.loadingFiles = true;
-    
+
     this.collectionService.getCollectionFiles(this.repository.id, this.selectedCollection.name, path)
       .subscribe({
         next: (files) => {
@@ -198,10 +200,10 @@ export class RepositoryDetailComponent implements OnInit {
   // Open a file for editing
   openFile(file: FileInfo): void {
     if (!this.repository || !this.selectedCollection) return;
-    
+
     this.loadingFileContent = true;
     this.fileError = '';
-    
+
     this.collectionService.getFileContent(this.repository.id, this.selectedCollection.name, file.path)
       .subscribe({
         next: (content) => {
@@ -209,7 +211,7 @@ export class RepositoryDetailComponent implements OnInit {
           this.selectedFile = file;
           this.isEditingFile = true;
           this.loadingFileContent = false;
-          
+
           // Parse YAML front matter if it exists
           this.parseYamlFrontMatter(content);
         },
@@ -226,17 +228,17 @@ export class RepositoryDetailComponent implements OnInit {
     // Reset metadata
     this.frontMatter = {};
     this.markdownContent = content;
-    
+
     // Check if content has YAML front matter
     const yamlMatch = content.match(/^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/);
-    
+
     if (yamlMatch) {
       try {
         const yamlContent = yamlMatch[1];
         this.markdownContent = yamlMatch[2] || '';
-        
+
         const metadata = jsYaml.load(yamlContent) as Record<string, any>;
-        
+
         // Set front matter
         if (metadata) {
           this.frontMatter = metadata;
@@ -260,18 +262,18 @@ export class RepositoryDetailComponent implements OnInit {
   // Save file with updated content and metadata
   saveFile(): void {
     if (!this.repository || !this.selectedCollection || !this.selectedFile) return;
-    
+
     this.savingFile = true;
     this.fileError = '';
-    
+
     // Build YAML front matter
     const yamlFrontMatter = `---\n${jsYaml.dump(this.frontMatter)}---\n`;
     const updatedContent = `${yamlFrontMatter}${this.markdownContent}`;
-    
+
     this.collectionService.updateFileContent(
-      this.repository.id, 
-      this.selectedCollection.name, 
-      this.selectedFile.path, 
+      this.repository.id,
+      this.selectedCollection.name,
+      this.selectedFile.path,
       updatedContent
     ).subscribe({
       next: () => {
@@ -288,17 +290,107 @@ export class RepositoryDetailComponent implements OnInit {
     });
   }
 
+  // Create a new file in the current path
+  createNewFile() {
+    if (!this.repository || !this.selectedCollection) return;
+
+    // Initialize front matter with default values from fields
+    this.frontMatter = {};
+    if (this.selectedCollection.fields) {
+      this.selectedCollection.fields.forEach(field => {
+        this.frontMatter[field.name] = null
+      });
+    }
+
+    // Reset markdown content
+    this.markdownContent = '';
+
+    // Set creation mode
+    this.isCreatingFile = true;
+    this.isEditingFile = true;
+    this.selectedFile = null;
+    this.fileError = '';
+  }
+
+  // Save the new file
+  saveNewFile() {
+    if (!this.repository || !this.selectedCollection) return;
+    if (!this.newFileName.trim()) {
+      this.fileError = 'Please enter a file name';
+      return;
+    }
+
+    // Add .md extension if not present
+    const fileName = this.newFileName.trim().endsWith('.md') ?
+      this.newFileName.trim() : `${this.newFileName.trim()}.md`;
+
+    // Combine front matter and content
+    const yamlFrontMatter = jsYaml.dump(this.frontMatter);
+    const fileContent = `---\n${yamlFrontMatter}---\n\n${this.markdownContent}`;
+
+    this.savingFile = true;
+    this.fileError = '';
+
+    // Create the file
+    this.collectionService.uploadFile(
+      this.repository.id,
+      this.selectedCollection.name,
+      this.currentPath ? `${this.currentPath}/${fileName}` : fileName,
+      fileContent
+    ).subscribe({
+      next: () => {
+        // Reset creation state
+        this.isCreatingFile = false;
+        this.isEditingFile = false;
+        this.frontMatter = {};
+        this.markdownContent = '';
+        this.newFileName = '';
+        this.savingFile = false;
+        // Refresh the file list
+        this.loadCollectionFiles();
+      },
+      error: (error) => {
+        console.error('Error creating file:', error);
+        this.fileError = 'Failed to create file. Please try again later.';
+        this.savingFile = false;
+      }
+    });
+  }
+
   // Cancel editing and close the editor
-  cancelEditing(): void {
+  cancelEditing() {
     this.isEditingFile = false;
+    this.isCreatingFile = false;
     this.selectedFile = null;
     this.fileContent = '';
-    this.markdownContent = '';
     this.frontMatter = {};
+    this.markdownContent = '';
+    this.fileError = '';
   }
 
   renameFile(file: FileInfo) {
-    
+    if (!this.repository || !this.selectedCollection) return;
+
+    const newName = prompt(`Enter new name for ${file.name}:`, file.name);
+    if (!newName || newName === file.name) return;
+
+    // Construct the new path by replacing just the filename part
+    const oldPath = file.path;
+    const pathParts = oldPath.split('/');
+    pathParts[pathParts.length - 1] = newName;
+    const newPath = pathParts.join('/');
+
+    this.collectionService.renameFile(this.repository.id, this.selectedCollection.name, oldPath, newPath)
+      .subscribe({
+        next: () => {
+          // Reload the files to reflect the change
+          this.loadCollectionFiles();
+        },
+        error: (error) => {
+          console.error('Error renaming file:', error);
+          alert(`Failed to rename file: ${error.error?.error || 'Unknown error'}`);
+        }
+      });
   }
 
   deleteFile(file: FileInfo) {

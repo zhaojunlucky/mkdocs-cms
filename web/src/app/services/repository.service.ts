@@ -129,7 +129,7 @@ export class RepositoryService {
   // Get collections for a repository
   getRepositoryCollections(repoId: number): Observable<Collection[]> {
     const headers = this.getAuthHeaders();
-    return this.http.get<Collection[]>(`${this.apiUrl}/v1/repos/collections/${repoId}`, { headers });
+    return this.http.get<Collection[]>(`${this.apiUrl}/v1/collections/repo/${repoId}`, { headers });
   }
 
   // Create a new repository

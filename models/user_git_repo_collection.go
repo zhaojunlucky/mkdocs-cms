@@ -21,12 +21,12 @@ const (
 )
 
 type Field struct {
-	Type     string `yaml:"type"`
-	Name     string `yaml:"name"`
-	Label    string `yaml:"label"`
-	Required bool   `yaml:"required,omitempty"`
-	Format   string `yaml:"format,omitempty"`
-	List     bool   `yaml:"list,omitempty"`
+	Type     string `yaml:"type" json:"type"`
+	Name     string `yaml:"name" json:"name"`
+	Label    string `yaml:"label" json:"label"`
+	Required bool   `yaml:"required,omitempty" json:"required"`
+	Format   string `yaml:"format,omitempty" json:"format"`
+	List     bool   `yaml:"list,omitempty" json:"list"`
 }
 
 // UserGitRepoCollection represents a collection of content within a git repository

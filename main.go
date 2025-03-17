@@ -103,6 +103,7 @@ func setupRoutes(r *gin.Engine, appConfig *config.Config) {
 	postController := controllers.NewPostController(githubAppSettings)
 	asyncTaskController := controllers.NewAsyncTaskController()
 	userGitRepoController := controllers.NewUserGitRepoController(userGitRepoService)
+	collectionController := controllers.NewUserGitRepoCollectionController()
 
 	// Initialize GitHub App controllers
 	githubAppController := controllers.NewGitHubAppController(
@@ -160,20 +161,23 @@ func setupRoutes(r *gin.Engine, appConfig *config.Config) {
 		v1.DELETE("/events/:id", controllers.DeleteEvent)
 
 		// Collection routes
-		v1.GET("/collections", controllers.GetCollections)
-		v1.GET("/repos/collections/:repo_id", controllers.GetCollectionsByRepo)
-		v1.GET("/collections/:collection_id", controllers.GetCollection)
-		// Removed collection create/update/delete endpoints as collections are now read-only from veda/config.yml
-		v1.GET("/repos/collections/by-path/:repo_id", controllers.GetCollectionByPath)
+		collections := v1.Group("/collections")
+		{
+			collections.GET("", collectionController.GetCollections)
+			collections.GET("/repo/:repoId", collectionController.GetCollectionsByRepo)
+			collections.GET("/:collectionId", collectionController.GetCollection)
+			collections.GET("/path/:repoId", collectionController.GetCollectionByPath)
 
-		// Updated file browser routes to use repo_id and collection_name instead of collection_id
-		v1.GET("/repos-collections/:repo_id/collections/:collection_name/files", controllers.GetCollectionFiles)
-		v1.GET("/repos-collections/:repo_id/collections/:collection_name/browse", controllers.GetCollectionFilesInPath)
-		v1.GET("/repos-collections/:repo_id/collections/:collection_name/file", controllers.GetFileContent)
-		v1.PUT("/repos-collections/:repo_id/collections/:collection_name/file", controllers.UpdateFileContent)
-		v1.DELETE("/repos-collections/:repo_id/collections/:collection_name/file", controllers.DeleteFile)
-		v1.GET("/repos-collections/:repo_id/collections/:collection_name/file/json", controllers.GetFileContentJSON)
-		v1.POST("/repos-collections/:repo_id/collections/:collection_name/file", controllers.UploadFile)
+			// Collection file routes
+			collections.GET("/repo/:repoId/:collectionName/files", collectionController.GetCollectionFiles)
+			collections.GET("/repo/:repoId/:collectionName/files/path", collectionController.GetCollectionFilesInPath)
+			collections.GET("/repo/:repoId/:collectionName/files/content", collectionController.GetFileContent)
+			collections.PUT("/repo/:repoId/:collectionName/files/content", collectionController.UpdateFileContent)
+			collections.DELETE("/repo/:repoId/:collectionName/files", collectionController.DeleteFile)
+			collections.GET("/repo/:repoId/:collectionName/files/content/json", collectionController.GetFileContentJSON)
+			collections.POST("/repo/:repoId/:collectionName/files/upload", collectionController.UploadFile)
+			collections.PUT("/repo/:repoId/:collectionName/files/rename", collectionController.RenameFile)
+		}
 
 		// Site Configuration routes
 		v1.GET("/site-configs", siteConfigController.GetAllSiteConfigs)

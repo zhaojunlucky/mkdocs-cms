@@ -44,12 +44,12 @@ type Collection struct {
 
 // Field represents a field in a collection
 type Field struct {
-	Type     string `yaml:"type"`
-	Name     string `yaml:"name"`
-	Label    string `yaml:"label"`
-	Required bool   `yaml:"required,omitempty"`
-	Format   string `yaml:"format,omitempty"`
-	List     bool   `yaml:"list,omitempty"`
+	Type     string `yaml:"type" json:"type"`
+	Name     string `yaml:"name" json:"name"`
+	Label    string `yaml:"label" json:"label"`
+	Required bool   `yaml:"required,omitempty" json:"required"`
+	Format   string `yaml:"format,omitempty" json:"format"`
+	List     bool   `yaml:"list,omitempty" json:"list"`
 }
 
 // GetAllCollections returns all collections
@@ -400,8 +400,9 @@ func (s *UserGitRepoCollectionService) UpdateFileContent(repoID uint, collection
 	// Construct the full path
 	fullPath := filepath.Join(collection.Path, cleanFilePath)
 
-	// Check if the file exists
+	// Check if the file exists and validate
 	fileInfo, err := os.Stat(fullPath)
+	isNewFile := err != nil && os.IsNotExist(err)
 	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
@@ -420,6 +421,23 @@ func (s *UserGitRepoCollectionService) UpdateFileContent(repoID uint, collection
 	// Write the content to the file
 	if err := os.WriteFile(fullPath, content, 0644); err != nil {
 		return err
+	}
+
+	// Get repository information
+	repo, err := s.GetRepo(repoID)
+	if err != nil {
+		return fmt.Errorf("failed to get repository info: %v", err)
+	}
+
+	// Commit message based on whether it's a new file or update
+	commitMsg := fmt.Sprintf("Update file %s in collection %s", cleanFilePath, collectionName)
+	if isNewFile {
+		commitMsg = fmt.Sprintf("Create new file %s in collection %s", cleanFilePath, collectionName)
+	}
+
+	// Commit the changes
+	if err := s.CommitWithGithubApp(repo, commitMsg); err != nil {
+		return fmt.Errorf("failed to commit changes: %v", err)
 	}
 
 	return nil
@@ -534,6 +552,67 @@ func (s *UserGitRepoCollectionService) CommitWithGithubApp(repo models.UserGitRe
 	cmd = exec.Command("git", "-C", repo.LocalPath, "push", "origin", repo.Branch)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to push changes: %v", err)
+	}
+
+	return nil
+}
+
+// RenameFile renames a file in a collection
+func (s *UserGitRepoCollectionService) RenameFile(repoID uint, collectionName string, oldPath string, newPath string) error {
+	// Get collection info
+	collection, err := s.GetCollectionByName(repoID, collectionName)
+	if err != nil {
+		return err
+	}
+
+	// Clean and validate paths
+	cleanOldPath := filepath.Clean(oldPath)
+	cleanNewPath := filepath.Clean(newPath)
+
+	// Ensure paths are within collection directory
+	//if !strings.HasPrefix(cleanOldPath, collectionName+"/") || !strings.HasPrefix(cleanNewPath, collectionName+"/") {
+	//	return errors.New("invalid file path")
+	//}
+
+	// Construct full paths
+	oldFullPath := filepath.Join(collection.Path, cleanOldPath)
+	newFullPath := filepath.Join(collection.Path, cleanNewPath)
+
+	// Check if source file exists and is not a directory
+	fileInfo, err := os.Stat(oldFullPath)
+	if err != nil {
+		return err
+	}
+	if fileInfo.IsDir() {
+		return errors.New("cannot rename a directory")
+	}
+
+	// Check if target path doesn't exist
+	if _, err := os.Stat(newFullPath); err == nil {
+		return errors.New("destination file already exists")
+	}
+
+	// Create parent directories for the new path if they don't exist
+	parentDir := filepath.Dir(newFullPath)
+	if err := os.MkdirAll(parentDir, 0755); err != nil {
+		return err
+	}
+
+	// Rename the file
+	if err := os.Rename(oldFullPath, newFullPath); err != nil {
+		return err
+	}
+
+	// Get repository information
+	repo, err := s.GetRepo(repoID)
+	if err != nil {
+		return fmt.Errorf("failed to get repository info: %v", err)
+	}
+
+	// Commit the changes
+	commitMsg := fmt.Sprintf("Rename file from %s to %s in collection %s", cleanOldPath, cleanNewPath, collectionName)
+	if err := s.CommitWithGithubApp(repo, commitMsg); err != nil {
+		return fmt.Errorf("failed to commit changes: %v", err)
 	}
 
 	return nil

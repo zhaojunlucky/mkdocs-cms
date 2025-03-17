@@ -45,12 +45,18 @@
         <div *ngIf="selectedCollection && !isEditingFile" class="file-browser">
           <div class="file-browser-header">
             <h2>{{ selectedCollection.name }}</h2>
-            <div class="breadcrumbs">
-              <span class="breadcrumb-item" (click)="navigateToBreadcrumb('')">Root</span>
-              <span *ngFor="let segment of pathSegments">
-                <span class="breadcrumb-separator">/</span>
-                <span class="breadcrumb-item" (click)="navigateToBreadcrumb(segment.path)">{{ segment.name }}</span>
-              </span>
+            <div class="breadcrumbs-container" style="display: flex; justify-content: space-between; align-items: center;">
+              <div class="breadcrumbs">
+                <span class="breadcrumb-item" (click)="navigateToBreadcrumb('')">Root</span>
+                <span *ngFor="let segment of pathSegments">
+                  <span class="breadcrumb-separator">/</span>
+                  <span class="breadcrumb-item" (click)="navigateToBreadcrumb(segment.path)">{{ segment.name }}</span>
+                </span>
+              </div>
+              <button mat-raised-button color="primary" *ngIf="!isEditingFile" (click)="createNewFile()">
+                <mat-icon>add</mat-icon>
+                New File
+              </button>
             </div>
           </div>
 
@@ -100,24 +106,28 @@
         </div>
 
         <!-- File Editor (Inline) -->
-        <div *ngIf="isEditingFile && selectedFile" class="file-editor">
+        <div *ngIf="isEditingFile" class="file-editor">
           <div class="file-editor-header">
             <div class="file-editor-title">
-              <h2>Editing: {{ selectedFile.name }}</h2>
-              <div class="breadcrumbs">
-                <span class="breadcrumb-item" (click)="navigateToBreadcrumb('')">Root</span>
-                <span *ngFor="let segment of pathSegments">
-                  <span class="breadcrumb-separator">/</span>
-                  <span class="breadcrumb-item" (click)="navigateToBreadcrumb(segment.path)">{{ segment.name }}</span>
-                </span>
-                <span class="breadcrumb-separator">/</span>
-                <span class="breadcrumb-item active">{{ selectedFile.name }}</span>
+              <h2>{{ isCreatingFile ? 'Create New File' : 'Editing: ' + selectedFile?.name }}</h2>
+              <div class="breadcrumbs-container" style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="breadcrumbs">
+                  <span class="breadcrumb-item" (click)="navigateToBreadcrumb('')">Root</span>
+                  <span *ngFor="let segment of pathSegments">
+                    <span class="breadcrumb-separator">/</span>
+                    <span class="breadcrumb-item" (click)="navigateToBreadcrumb(segment.path)">{{ segment.name }}</span>
+                  </span>
+                  <span *ngIf="selectedFile">
+                    <span class="breadcrumb-separator">/</span>
+                    <span class="breadcrumb-item active">{{ selectedFile.name }}</span>
+                  </span>
+                </div>
               </div>
             </div>
             <div class="file-editor-actions">
-              <button (click)="saveFile()" [disabled]="savingFile" class="save-btn">
-                <span *ngIf="!savingFile">Save</span>
-                <span *ngIf="savingFile">Saving...</span>
+              <button (click)="isCreatingFile ? saveNewFile() : saveFile()" [disabled]="savingFile" class="save-btn">
+                <span *ngIf="!savingFile">{{ isCreatingFile ? 'Create' : 'Save' }}</span>
+                <span *ngIf="savingFile">{{ isCreatingFile ? 'Creating...' : 'Saving...' }}</span>
               </button>
               <button (click)="cancelEditing()" class="cancel-btn">Cancel</button>
             </div>
@@ -132,6 +142,20 @@
           </div>
 
           <div *ngIf="!loadingFileContent && !fileError" class="file-editor-content">
+            <!-- File Name Input (when creating) -->
+            <div *ngIf="isCreatingFile" style="margin-bottom: 20px;">
+              <h3>File Name</h3>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <input [(ngModel)]="newFileName" placeholder="Enter file name" 
+                  style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;"
+                  [class.error]="fileError && !newFileName.trim()">
+                <span style="font-size: 14px; color: #666;">.md</span>
+              </div>
+              <div *ngIf="fileError && !newFileName.trim()" style="color: #f44336; font-size: 12px; margin-top: 4px;">
+                {{ fileError }}
+              </div>
+            </div>
+
             <!-- Front Matter Editor -->
             <app-front-matter-editor 
               [frontMatter]="frontMatter" 
