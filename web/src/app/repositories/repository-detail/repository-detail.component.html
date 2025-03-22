@@ -1,6 +1,10 @@
 <div class="repository-detail-container">
-  <div *ngIf="loadingRepo || loadingCollections" class="loading-indicator">
-    <p>Loading repository details...</p>
+  <!-- Loading overlay that blocks user interaction -->
+  <div *ngIf="isLoading" class="loading-overlay">
+    <div class="spinner-container">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p>Loading...</p>
+    </div>
   </div>
 
   <div *ngIf="error" class="error-message">
@@ -8,7 +12,7 @@
     <a routerLink="/home" class="back-btn">Back to Home</a>
   </div>
 
-  <div *ngIf="!loadingRepo && !loadingCollections && !error && repository">
+  <div *ngIf="!isLoading && !error && repository">
     <div class="repository-header">
       <a routerLink="/home" class="back-link"><h1>{{ repository.name }}</h1></a>
     </div>
@@ -65,15 +69,15 @@
             </div>
           </div>
 
-          <div *ngIf="loadingFiles" class="loading-indicator">
+          <div *ngIf="isLoading" class="loading-indicator">
             <p>Loading files...</p>
           </div>
 
-          <div *ngIf="!loadingFiles && files.length === 0" class="empty-state">
+          <div *ngIf="!isLoading && files.length === 0" class="empty-state">
             <p>This folder is empty.</p>
           </div>
 
-          <div *ngIf="!loadingFiles && files.length > 0" class="file-list">
+          <div *ngIf="!isLoading && files.length > 0" class="file-list">
             <div *ngFor="let file of files" class="file-item"
                  [class.is-folder]="file.is_dir"
                  (click)="file.is_dir ? navigateToFolder(file) : openFile(file)">
@@ -132,7 +136,7 @@
                     <span *ngIf="!savingFile">{{ isCreatingFile ? 'Create' : 'Save' }}</span>
                     <span *ngIf="savingFile">{{ isCreatingFile ? 'Creating...' : 'Saving...' }}</span>
                   </button>
-                  <button (click)="cancelEditing()" class="cancel-btn">Cancel</button>
+                  <button (click)="cancelEditing()" [disabled]="savingFile" class="cancel-btn">Cancel</button>
                 </div>
               </div>
             </div>
@@ -140,15 +144,13 @@
             </div>
           </div>
 
+          <!-- File Error Message -->
           <div *ngIf="fileError" class="file-error-message">
             <p>{{ fileError }}</p>
           </div>
 
-          <div *ngIf="loadingFileContent" class="loading-indicator">
-            <p>Loading file content...</p>
-          </div>
-
-          <div *ngIf="!loadingFileContent && !fileError" class="file-editor-content">
+          <!-- Editor Content (only show when not loading) -->
+          <div *ngIf="!isLoading && !fileError" class="file-editor-content">
             <!-- File Name Input (when creating) -->
             <div *ngIf="isCreatingFile" style="margin-bottom: 20px;">
               <h3>File Name</h3>

@@ -13,6 +13,7 @@ import { MarkdownEditorComponent } from '../../markdown/markdown-editor/markdown
 import { FrontMatterEditorComponent } from '../../markdown/front-matter-editor/front-matter-editor.component';
 import {MatMenuModule} from '@angular/material/menu';
 import {MatIcon} from '@angular/material/icon';
+import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 
 @Component({
   selector: 'app-repository-detail',
@@ -31,7 +32,8 @@ import {MatIcon} from '@angular/material/icon';
     MarkdownEditorComponent,
     FrontMatterEditorComponent,
     MatIcon,
-    MatMenuModule
+    MatMenuModule,
+    MatProgressSpinnerModule
   ],
   templateUrl: './repository-detail.component.html',
   styleUrls: ['./repository-detail.component.scss']
@@ -39,8 +41,6 @@ import {MatIcon} from '@angular/material/icon';
 export class RepositoryDetailComponent implements OnInit {
   repository: Repository | null = null;
   collections: Collection[] = [];
-  loadingRepo = true;
-  loadingCollections = false;
   error = '';
 
   // New properties for sidenav and file browsing
@@ -48,21 +48,22 @@ export class RepositoryDetailComponent implements OnInit {
   currentPath: string = '';
   files: FileInfo[] = [];
   pathSegments: { name: string; path: string }[] = [];
-  loadingFiles = false;
 
   // File editing properties
   isEditingFile = false;
   isCreatingFile = false;
   selectedFile: FileInfo | null = null;
   fileContent = '';
-  loadingFileContent = false;
-  savingFile = false;
   fileError = '';
   newFileName = '';
+  savingFile = false;
 
   // Front matter and markdown content
   frontMatter: Record<string, any> = {};
   markdownContent = '';
+
+  // Global loading state for spinner overlay
+  isLoading = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -77,13 +78,12 @@ export class RepositoryDetailComponent implements OnInit {
         this.loadRepository(repoId);
       } else {
         this.error = 'Invalid repository ID';
-        this.loadingRepo = false;
       }
     });
   }
 
   loadRepository(id: string): void {
-    this.loadingRepo = true;
+    this.isLoading = true;
     this.error = '';
 
     this.repositoryService.getRepository(Number(id)).subscribe({
@@ -94,30 +94,39 @@ export class RepositoryDetailComponent implements OnInit {
       error: (err) => {
         console.error('Error loading repository:', err);
         this.error = 'Failed to load repository. Please try again later.';
-        this.loadingRepo = false;
+        this.isLoading = false;
       }
     });
   }
 
   loadCollections(repoId: string): void {
-    this.loadingCollections = true;
     this.repositoryService.getRepositoryCollections(Number(repoId)).subscribe({
       next: (collections) => {
         this.collections = collections;
-        this.loadingRepo = false;
-        this.loadingCollections = false;
+        this.isLoading = false;
       },
       error: (err) => {
         console.error('Error loading collections:', err);
         this.error = 'Failed to load collections. Please try again later.';
-        this.loadingRepo = false;
-        this.loadingCollections = false;
+        this.isLoading = false;
       }
     });
   }
 
   // Select a collection and load its files
   selectCollection(collection: Collection): void {
+    if (this.isCreatingFile || this.isEditingFile) {
+      if (confirm("Cancel Edit?")) {
+        this.isCreatingFile = false;
+        this.isEditingFile = false;
+        this.selectedFile = null;
+        this.fileContent = '';
+        this.frontMatter = {};
+        this.markdownContent = '';
+      } else {
+        return
+      }
+    }
     this.selectedCollection = collection;
     this.currentPath = '';
     this.loadCollectionFiles();
@@ -128,17 +137,17 @@ export class RepositoryDetailComponent implements OnInit {
   loadCollectionFiles() {
     if (!this.repository || !this.selectedCollection) return;
 
-    this.loadingFiles = true;
+    this.isLoading = true;
 
     this.collectionService.getCollectionFiles(this.repository.id, this.selectedCollection.name, this.currentPath)
       .subscribe({
         next: (files) => {
           this.files = files;
-          this.loadingFiles = false;
+          this.isLoading = false;
         },
         error: (error) => {
           console.error('Error loading collection files', error);
-          this.loadingFiles = false;
+          this.isLoading = false;
         }
       });
   }
@@ -147,7 +156,7 @@ export class RepositoryDetailComponent implements OnInit {
   navigateToPath(path: string) {
     if (!this.repository || !this.selectedCollection) return;
 
-    this.loadingFiles = true;
+    this.isLoading = true;
 
     this.collectionService.getCollectionFiles(this.repository.id, this.selectedCollection.name, path)
       .subscribe({
@@ -155,11 +164,11 @@ export class RepositoryDetailComponent implements OnInit {
           this.files = files;
           this.currentPath = path;
           this.updatePathSegments();
-          this.loadingFiles = false;
+          this.isLoading = false;
         },
         error: (error) => {
           console.error('Error loading files for path', error);
-          this.loadingFiles = false;
+          this.isLoading = false;
         }
       });
   }
@@ -199,7 +208,7 @@ export class RepositoryDetailComponent implements OnInit {
   openFile(file: FileInfo): void {
     if (!this.repository || !this.selectedCollection) return;
 
-    this.loadingFileContent = true;
+    this.isLoading = true;
     this.fileError = '';
 
     this.collectionService.getFileContent(this.repository.id, this.selectedCollection.name, file.path)
@@ -208,7 +217,7 @@ export class RepositoryDetailComponent implements OnInit {
           this.fileContent = content;
           this.selectedFile = file;
           this.isEditingFile = true;
-          this.loadingFileContent = false;
+          this.isLoading = false;
 
           // Parse YAML front matter if it exists
           this.parseYamlFrontMatter(content);
@@ -216,7 +225,7 @@ export class RepositoryDetailComponent implements OnInit {
         error: (error) => {
           console.error('Error loading file content', error);
           this.fileError = 'Failed to load file content. Please try again later.';
-          this.loadingFileContent = false;
+          this.isLoading = false;
         }
       });
   }
@@ -261,6 +270,7 @@ export class RepositoryDetailComponent implements OnInit {
   saveFile(): void {
     if (!this.repository || !this.selectedCollection || !this.selectedFile) return;
 
+    this.isLoading = true;
     this.savingFile = true;
     this.fileError = '';
 
@@ -275,6 +285,7 @@ export class RepositoryDetailComponent implements OnInit {
       updatedContent
     ).subscribe({
       next: () => {
+        this.isLoading = false;
         this.savingFile = false;
         this.isEditingFile = false;
         this.selectedFile = null;
@@ -283,6 +294,7 @@ export class RepositoryDetailComponent implements OnInit {
       error: (error) => {
         console.error('Error saving file', error);
         this.fileError = 'Failed to save file. Please try again later.';
+        this.isLoading = false;
         this.savingFile = false;
       }
     });
@@ -302,12 +314,17 @@ export class RepositoryDetailComponent implements OnInit {
 
     // Reset markdown content
     this.markdownContent = '';
+    let body = this.selectedCollection.fields?.find(f=>f.name === 'body')
+    if (body) {
+      this.markdownContent = body.default?? ''
+    }
 
     // Set creation mode
     this.isCreatingFile = true;
     this.isEditingFile = true;
     this.selectedFile = null;
     this.fileError = '';
+    this.newFileName = `${new Date().toISOString().substring(0, 10)}-`;
   }
 
   // Save the new file
@@ -326,6 +343,7 @@ export class RepositoryDetailComponent implements OnInit {
     const yamlFrontMatter = jsYaml.dump(this.frontMatter);
     const fileContent = `---\n${yamlFrontMatter}---\n\n${this.markdownContent}`;
 
+    this.isLoading = true;
     this.savingFile = true;
     this.fileError = '';
 
@@ -344,12 +362,14 @@ export class RepositoryDetailComponent implements OnInit {
         this.markdownContent = '';
         this.newFileName = '';
         this.savingFile = false;
+        this.isLoading = false;
         // Refresh the file list
         this.loadCollectionFiles();
       },
       error: (error) => {
         console.error('Error creating file:', error);
         this.fileError = 'Failed to create file. Please try again later.';
+        this.isLoading = false;
         this.savingFile = false;
       }
     });
@@ -378,15 +398,18 @@ export class RepositoryDetailComponent implements OnInit {
     pathParts[pathParts.length - 1] = newName;
     const newPath = pathParts.join('/');
 
+    this.isLoading = true;
     this.collectionService.renameFile(this.repository.id, this.selectedCollection.name, oldPath, newPath)
       .subscribe({
         next: () => {
           // Reload the files to reflect the change
           this.loadCollectionFiles();
+          this.isLoading = false;
         },
         error: (error) => {
           console.error('Error renaming file:', error);
           alert(`Failed to rename file: ${error.error?.error || 'Unknown error'}`);
+          this.isLoading = false;
         }
       });
   }
@@ -395,15 +418,18 @@ export class RepositoryDetailComponent implements OnInit {
     if (!this.repository || !this.selectedCollection) return;
 
     if (confirm(`Are you sure you want to delete ${file.name}?`)) {
+      this.isLoading = true;
       this.collectionService.deleteFile(this.repository.id, this.selectedCollection.name, file.path)
         .subscribe({
           next: () => {
             // Refresh the file list after successful deletion
             this.loadCollectionFiles();
+            this.isLoading = false;
           },
           error: (error) => {
             console.error('Error deleting file:', error);
             this.error = 'Failed to delete file. Please try again later.';
+            this.isLoading = false;
           }
         });
     }
@@ -415,15 +441,18 @@ export class RepositoryDetailComponent implements OnInit {
     const folderName = prompt('Enter folder name:');
     if (!folderName) return;
 
+    this.isLoading = true;
     this.collectionService.createFolder(this.repository.id, this.selectedCollection.name, this.currentPath, folderName)
       .subscribe({
         next: () => {
           // Refresh the file list after successful folder creation
           this.loadCollectionFiles();
+          this.isLoading = false;
         },
         error: (error) => {
           console.error('Error creating folder:', error);
           this.error = 'Failed to create folder. ' + error.error?.error || 'Please try again later.';
+          this.isLoading = false;
         }
       });
   }

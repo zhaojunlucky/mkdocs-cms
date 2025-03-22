@@ -52,6 +52,7 @@ type Field struct {
 	Required bool   `yaml:"required,omitempty" json:"required"`
 	Format   string `yaml:"format,omitempty" json:"format"`
 	List     bool   `yaml:"list,omitempty" json:"list"`
+	Default  string `yaml:"default,omitempty" json:"default"`
 }
 
 // GetAllCollections returns all collections
@@ -113,6 +114,7 @@ func (s *UserGitRepoCollectionService) readCollectionsFromConfig(repo models.Use
 				Required: f.Required,
 				Format:   f.Format,
 				List:     f.List,
+				Default:  f.Default,
 			})
 		}
 

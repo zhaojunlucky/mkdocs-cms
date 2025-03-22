@@ -61,22 +61,23 @@ export class FrontMatterEditorComponent implements OnInit, OnChanges {
   initForm(): void {
     this.frontMatterForm = this.fb.group({
     });
+    this.fields = this.fields.filter(f=>f.name !== 'body')
 
     this.fields.forEach(field => {
       this.frontMatterForm.addControl(field.name, this.fb.control('', field.required?[Validators.required]:[]));
-      let defaultValue = this.frontMatter[field.name] !== undefined ? this.frontMatter[field.name] : field.default;
+      let defaultValue = this.frontMatter[field.name] !== undefined && this.frontMatter[field.name] !== null ? this.frontMatter[field.name] : field.default;
       switch (field.type) {
-        case 'date': defaultValue = defaultValue ?? new Date(); break
+        case 'date': defaultValue = defaultValue instanceof Date? defaultValue: new Date(); break
         case 'string':  {
           if (field.list) {
-            defaultValue = defaultValue?? []
+            defaultValue = defaultValue instanceof Array? defaultValue: []
             this.listValues[field.name] = defaultValue
           } else {
             defaultValue = ''
           }
           break;
         }
-        case 'boolean': defaultValue = defaultValue ?? false; break
+        case 'boolean': defaultValue = defaultValue == 'true'; break
         default: break;
       }
 

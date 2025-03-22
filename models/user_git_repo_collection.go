@@ -27,6 +27,7 @@ type Field struct {
 	Required bool   `yaml:"required,omitempty" json:"required"`
 	Format   string `yaml:"format,omitempty" json:"format"`
 	List     bool   `yaml:"list,omitempty" json:"list"`
+	Default  string `yaml:"default,omitempty" json:"default"`
 }
 
 // UserGitRepoCollection represents a collection of content within a git repository
