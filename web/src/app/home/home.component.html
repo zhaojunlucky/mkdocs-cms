@@ -1,25 +1,25 @@
 <div class="home-container">
   <h1>Welcome to MkDocs CMS</h1>
-  
+
   <div class="repositories-section">
     <div class="section-header">
       <h2>Your Repositories</h2>
       <button class="add-repo-btn" routerLink="/repositories/import">Add Repository</button>
     </div>
-    
+
     <div *ngIf="loading" class="loading-indicator">
       <p>Loading repositories...</p>
     </div>
-    
+
     <div *ngIf="error" class="error-message">
       <p>{{ error }}</p>
     </div>
-    
+
     <div *ngIf="!loading && !error && repositories.length === 0" class="empty-state">
       <p>You don't have any repositories yet.</p>
       <button class="add-repo-btn" routerLink="/repositories/import">Add Your First Repository</button>
     </div>
-    
+
     <div *ngIf="!loading && repositories.length > 0" class="repositories-list">
       <div *ngFor="let repo of repositories" class="repository-card">
         <div class="repo-header">
@@ -41,23 +41,23 @@
             <span *ngIf="repo.error_msg" class="error-tooltip">{{ repo.error_msg }}</span>
           </p>
           <p class="repo-branch">Branch: {{ repo.branch || 'default' }}</p>
-          <p class="repo-date">Last synced: {{ repo.last_sync_at ? (repo.last_sync_at | date) : 'Never' }}</p>
+          <p class="repo-date">Last synced: {{ repo.last_sync_at ? (repo.last_sync_at | date:'yyyy-MM-dd HH:mm:ssZ') : 'Never' }}</p>
           <p class="repo-date">Added: {{ repo.created_at | date }}</p>
-          
+
           <!-- Show warning message directly if status is warning -->
           <div *ngIf="repo.status === 'warning'" class="warning-message">
             <p><i class="fas fa-exclamation-triangle"></i> {{ repo.error_msg }}</p>
             <button class="fix-config-btn" (click)="syncRepository(repo)">Retry Sync</button>
           </div>
         </div>
-        
+
         <!-- Task Status Component -->
-        <app-task-status 
-          *ngIf="activeTasks.has(repo.id.toString())" 
-          [task]="activeTasks.get(repo.id.toString())" 
+        <app-task-status
+          *ngIf="activeTasks.has(repo.id.toString())"
+          [task]="activeTasks.get(repo.id.toString())"
           [autoRefresh]="true">
         </app-task-status>
-        
+
         <div class="repo-actions">
           <a [routerLink]="['/repositories', repo.id]" class="view-btn">View Collections</a>
         </div>

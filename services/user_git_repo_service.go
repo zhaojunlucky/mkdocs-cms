@@ -618,3 +618,91 @@ func (s *UserGitRepoService) GetInstallationToken(installationID int64) (*github
 	}
 	return token, nil
 }
+
+func (s *UserGitRepoService) CheckWebHooks(id string) error {
+	var repo models.UserGitRepo
+	if err := database.DB.First(&repo, id).Error; err != nil {
+		return err
+	}
+
+	// Update status to syncing
+	if err := s.UpdateRepoStatus(id, models.StatusSyncing, ""); err != nil {
+		return err
+	}
+
+	// Get installation token for GitHub API access
+	token, err := s.GetInstallationToken(repo.InstallationID)
+	if err != nil {
+		s.UpdateRepoStatus(id, models.StatusFailed, fmt.Sprintf("Failed to get installation token: %v", err))
+		return err
+	}
+
+	// Create GitHub client with installation token
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: *token.Token},
+	)
+	tc := oauth2.NewClient(context.Background(), ts)
+	client := github.NewClient(tc)
+
+	// Extract owner and repository name from the remote URL
+	// Example: https://github.com/owner/repo.git
+	parts := strings.Split(repo.RemoteURL, "/")
+	owner := parts[len(parts)-2]
+	repoName := strings.TrimSuffix(parts[len(parts)-1], ".git")
+
+	// List webhooks for the repository
+	hooks, _, err := client.Repositories.ListHooks(context.Background(), owner, repoName, nil)
+	if err != nil {
+		s.UpdateRepoStatus(id, models.StatusFailed, fmt.Sprintf("Failed to list webhooks: %v", err))
+		return err
+	}
+
+	// Log webhook information
+	fmt.Printf("Found %d webhooks for repository %s/%s\n", len(hooks), owner, repoName)
+	var repoHook *github.Hook
+	for i, hook := range hooks {
+		fmt.Printf("Webhook %d: ID=%d, URL=%s, Active=%t\n", i+1, hook.GetID(), hook.GetURL(), hook.GetActive())
+		if *hook.URL == s.githubAppSettings.WebhookURL {
+			repoHook = hook
+			break
+		}
+	}
+
+	if repoHook == nil {
+		// create hook
+		hook := &github.Hook{
+			Config: map[string]interface{}{
+				"url":          s.githubAppSettings.WebhookURL,
+				"content_type": "json",
+				"secret":       s.githubAppSettings.WebhookSecret,
+			},
+			Events: []string{"push"},
+			Active: github.Bool(true),
+		}
+
+		createdHook, _, err := client.Repositories.CreateHook(context.Background(), owner, repoName, hook)
+		if err != nil {
+			s.UpdateRepoStatus(id, models.StatusFailed, fmt.Sprintf("Failed to create webhook: %v", err))
+			return err
+		} else {
+			s.UpdateRepoStatus(id, models.StatusSynced, fmt.Sprintf("created wehbook: %d", createdHook.ID))
+		}
+	} else if !*repoHook.Active {
+		// enable hook
+		_, resp, err := client.Repositories.EditHook(context.Background(), owner, repoName, repoHook.GetID(), &github.Hook{
+			Active: github.Bool(true),
+		})
+		if err != nil {
+			s.UpdateRepoStatus(id, models.StatusFailed, fmt.Sprintf("Failed to update webhook: %v", err))
+			return err
+		}
+		resp.Body.Close()
+	}
+
+	// Update status to synced
+	if err := s.UpdateRepoStatus(id, models.StatusSynced, ""); err != nil {
+		return err
+	}
+
+	return nil
+}

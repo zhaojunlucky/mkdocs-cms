@@ -65,8 +65,8 @@ func (c *GitHubWebhookController) HandleWebhook(ctx *gin.Context) {
 			return
 		}
 		c.handlePushEvent(ctx, &event, body)
-	case "pull_request":
-		c.handlePullRequestEvent(ctx, body)
+	//case "pull_request":
+	//	c.handlePullRequestEvent(ctx, body)
 	case "installation":
 		c.handleInstallationEvent(ctx, body)
 	case "installation_repositories":

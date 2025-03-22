@@ -138,14 +138,14 @@ func (c *UserGitRepoController) UpdateRepo(ctx *gin.Context) {
 	}
 
 	id := ctx.Param("id")
-	
+
 	// First, get the existing repository to check ownership
 	existingRepo, err := c.userGitRepoService.GetRepoByID(id)
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "Repository not found"})
 		return
 	}
-	
+
 	// Check if the authenticated user owns this repository
 	if existingRepo.UserID != authenticatedUserID.(string) {
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "You can only update your own repositories"})
@@ -177,14 +177,14 @@ func (c *UserGitRepoController) DeleteRepo(ctx *gin.Context) {
 	}
 
 	id := ctx.Param("id")
-	
+
 	// First, get the existing repository to check ownership
 	existingRepo, err := c.userGitRepoService.GetRepoByID(id)
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "Repository not found"})
 		return
 	}
-	
+
 	// Check if the authenticated user owns this repository
 	if existingRepo.UserID != authenticatedUserID.(string) {
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "You can only delete your own repositories"})
@@ -209,14 +209,14 @@ func (c *UserGitRepoController) SyncRepo(ctx *gin.Context) {
 	}
 
 	id := ctx.Param("id")
-	
+
 	// First, get the existing repository to check ownership
 	repo, err := c.userGitRepoService.GetRepoByID(id)
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "Repository not found"})
 		return
 	}
-	
+
 	// Check if the authenticated user owns this repository
 	if repo.UserID != authenticatedUserID.(string) {
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "You can only sync your own repositories"})
@@ -241,24 +241,30 @@ func (c *UserGitRepoController) SyncRepo(ctx *gin.Context) {
 	go func() {
 		// Update task status to running
 		asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusRunning, "Repository sync in progress")
-		
+
 		if err := c.userGitRepoService.SyncRepo(id); err != nil {
 			c.userGitRepoService.UpdateRepoStatus(id, models.StatusFailed, err.Error())
 			asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusFailed, err.Error())
+			return
+		}
+		if err := c.userGitRepoService.CheckWebHooks(id); err != nil {
+			c.userGitRepoService.UpdateRepoStatus(id, models.StatusFailed, err.Error())
+			asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusFailed, err.Error())
+			return
+		}
+
+		// The SyncRepo method now handles setting the status (synced or warning)
+		// so we don't need to set it here again
+
+		// Get the updated repository to check its status
+		updatedRepo, _ := c.userGitRepoService.GetRepoByID(id)
+
+		if updatedRepo.Status == models.StatusWarning {
+			asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusCompleted,
+				"Repository sync completed with warnings: "+updatedRepo.ErrorMsg)
 		} else {
-			// The SyncRepo method now handles setting the status (synced or warning)
-			// so we don't need to set it here again
-			
-			// Get the updated repository to check its status
-			updatedRepo, _ := c.userGitRepoService.GetRepoByID(id)
-			
-			if updatedRepo.Status == models.StatusWarning {
-				asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusCompleted, 
-					"Repository sync completed with warnings: " + updatedRepo.ErrorMsg)
-			} else {
-				asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusCompleted, 
-					"Repository sync completed successfully")
-			}
+			asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusCompleted,
+				"Repository sync completed successfully")
 		}
 	}()
 

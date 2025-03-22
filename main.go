@@ -196,7 +196,6 @@ func setupRoutes(r *gin.Engine, appConfig *config.Config) {
 			github.GET("/installations", githubAppController.GetInstallations)
 			github.GET("/installations/:installation_id/repositories", githubAppController.GetInstallationRepositories)
 			github.POST("/installations/:installation_id/import", githubAppController.ImportRepositories)
-			github.POST("/installations/:installation_id/webhooks", githubAppController.CreateWebhook)
 		}
 
 		// AsyncTask routes

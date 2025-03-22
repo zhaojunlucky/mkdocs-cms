@@ -178,6 +178,7 @@ func shouldSkipAuth(path string) bool {
 		"/api/auth/github/callback",
 		"/api/auth/google",
 		"/api/auth/google/callback",
+		"/api/webhooks/github",
 	}
 
 	for _, skipPath := range skipPaths {
