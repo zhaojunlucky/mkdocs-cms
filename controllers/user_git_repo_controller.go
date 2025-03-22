@@ -102,32 +102,6 @@ func (c *UserGitRepoController) GetRepo(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, repo.ToResponse(true))
 }
 
-// CreateRepo creates a new git repository
-func (c *UserGitRepoController) CreateRepo(ctx *gin.Context) {
-	// Get the authenticated user ID from the context
-	authenticatedUserID, exists := ctx.Get("userId")
-	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
-		return
-	}
-
-	var repo models.UserGitRepo
-	if err := ctx.ShouldBindJSON(&repo); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Set the user ID to the authenticated user
-	repo.UserID = authenticatedUserID.(string)
-
-	if err := c.userGitRepoService.CreateRepo(&repo); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	ctx.JSON(http.StatusCreated, repo.ToResponse(false))
-}
-
 // UpdateRepo updates an existing git repository
 func (c *UserGitRepoController) UpdateRepo(ctx *gin.Context) {
 	// Get the authenticated user ID from the context

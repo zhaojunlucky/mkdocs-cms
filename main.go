@@ -130,9 +130,8 @@ func setupRoutes(r *gin.Engine, appConfig *config.Config) {
 		repos := v1.Group("/repos")
 		repos.Use(middleware.RequireAuth())
 		{
-			repos.GET("", userGitRepoController.GetRepos)
+			//repos.GET("", userGitRepoController.GetRepos)
 			repos.GET("/:id", userGitRepoController.GetRepo)
-			repos.POST("", userGitRepoController.CreateRepo)
 			repos.PUT("/:id", userGitRepoController.UpdateRepo)
 			repos.DELETE("/:id", userGitRepoController.DeleteRepo)
 			repos.POST("/:id/sync", userGitRepoController.SyncRepo)
