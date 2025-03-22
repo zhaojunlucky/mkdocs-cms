@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"net/http"
 	"strconv"
 	"strings"
@@ -17,21 +18,24 @@ import (
 
 // GitHubAppController handles GitHub App related operations
 type GitHubAppController struct {
-	appID             int64
-	privateKey        []byte
-	gitRepoService    *services.UserGitRepoService
-	eventService      *services.EventService
-	githubAppSettings *models.GitHubAppSettings
+	appID              int64
+	privateKey         []byte
+	gitRepoService     *services.UserGitRepoService
+	eventService       *services.EventService
+	githubAppSettings  *models.GitHubAppSettings
+	userGitRepoService *services.UserGitRepoService
 }
 
 // NewGitHubAppController creates a new GitHubAppController
-func NewGitHubAppController(appID int64, privateKey []byte, settings *models.GitHubAppSettings) *GitHubAppController {
+func NewGitHubAppController(appID int64, privateKey []byte, settings *models.GitHubAppSettings,
+	userGitRepoService *services.UserGitRepoService) *GitHubAppController {
 	return &GitHubAppController{
-		appID:             appID,
-		privateKey:        privateKey,
-		gitRepoService:    services.NewUserGitRepoService(settings),
-		eventService:      services.NewEventService(),
-		githubAppSettings: settings,
+		appID:              appID,
+		privateKey:         privateKey,
+		gitRepoService:     services.NewUserGitRepoService(settings),
+		eventService:       services.NewEventService(),
+		githubAppSettings:  settings,
+		userGitRepoService: userGitRepoService,
 	}
 }
 
@@ -196,9 +200,23 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 		return
 	}
 
+	userExistingRepos, err := c.userGitRepoService.GetReposByUser(userID.(string))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	var existingRepoIDs map[int64]string = make(map[int64]string)
+
+	for _, repo := range userExistingRepos {
+		existingRepoIDs[repo.GitRepoID] = repo.Name
+	}
+
 	// Convert to a simpler format for the response
 	var response []map[string]interface{}
 	for _, repo := range repos.Repositories {
+		if existingRepoIDs[repo.GetID()] != "" {
+			continue
+		}
 		repository := map[string]interface{}{
 			"id":             repo.GetID(),
 			"name":           repo.GetName(),
@@ -213,7 +231,7 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 		response = append(response, repository)
 	}
 
-	ctx.JSON(http.StatusOK, response)
+	ctx.JSON(http.StatusOK, core.EnsureNonNilArr(response))
 }
 
 // GetRepositoryByID returns a specific repository by ID

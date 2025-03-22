@@ -110,6 +110,7 @@ func setupRoutes(r *gin.Engine, appConfig *config.Config) {
 		appConfig.GitHub.App.AppID,
 		bytes,
 		githubAppSettings,
+		userGitRepoService,
 	)
 	githubWebhookController := controllers.NewGitHubWebhookController(appConfig.GitHub.App.WebhookSecret, githubAppSettings)
 

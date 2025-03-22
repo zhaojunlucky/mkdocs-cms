@@ -17,3 +17,10 @@ func HandleError(c *gin.Context, err error) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 }
+
+func EnsureNonNilArr[T any](arr []T) []T {
+	if arr == nil {
+		return make([]T, 0)
+	}
+	return arr
+}
