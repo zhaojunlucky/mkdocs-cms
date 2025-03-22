@@ -4,30 +4,30 @@
     <h1>Import GitHub Repositories</h1>
     <p class="description">Select repositories to import from your GitHub account.</p>
   </div>
-  
+
   <div *ngIf="loading" class="loading-indicator">
     <p>Loading...</p>
   </div>
-  
+
   <div *ngIf="error" class="error-message">
     <p>{{ error }}</p>
-    <button *ngIf="installations.length === 0 && githubAppInfo" 
-            class="github-app-install-btn" 
+    <button *ngIf="installations.length === 0 && githubAppInfo"
+            class="github-app-install-btn"
             (click)="navigateToGitHubAppInstallation()">
       Install GitHub App
     </button>
   </div>
-  
+
   <div *ngIf="importSuccess" class="success-message">
     <p>Repositories imported successfully! Redirecting to home page...</p>
   </div>
-  
+
   <div *ngIf="!loading && !importSuccess">
     <!-- Installation Selection -->
     <div class="installation-section" *ngIf="installations.length > 0">
       <h2>Select GitHub Installation</h2>
       <div class="installation-list">
-        <div *ngFor="let installation of installations" 
+        <div *ngFor="let installation of installations"
              class="installation-item"
              [class.selected]="selectedInstallation === installation.id"
              (click)="onInstallationChange(installation.id)">
@@ -36,17 +36,17 @@
         </div>
       </div>
     </div>
-    
+
     <!-- No Installations Message -->
     <div *ngIf="installations.length === 0 && !loading" class="no-installations">
       <p>No GitHub installations found. Please install the GitHub App to your account first.</p>
-      <button *ngIf="githubAppInfo" 
-              class="github-app-install-btn" 
+      <button *ngIf="githubAppInfo"
+              class="github-app-install-btn"
               (click)="navigateToGitHubAppInstallation()">
         Install GitHub App
       </button>
     </div>
-    
+
     <!-- Repository Selection -->
     <div class="repository-section" *ngIf="repositories.length > 0">
       <div class="repository-header">
@@ -56,9 +56,9 @@
           <button class="deselect-all-btn" (click)="selectAll(false)">Deselect All</button>
         </div>
       </div>
-      
+
       <div class="repository-list">
-        <div *ngFor="let repo of repositories" 
+        <div *ngFor="let repo of repositories"
              class="repository-item"
              [class.selected]="repo.selected"
              (click)="toggleSelectRepository(repo)">
@@ -75,17 +75,19 @@
           </div>
         </div>
       </div>
-      
+
       <div class="import-actions">
         <button class="import-btn" (click)="importRepositories()" [disabled]="!hasSelectedRepositories()">
           Import Selected Repositories
         </button>
       </div>
     </div>
-    
+
     <!-- No Repositories Message -->
     <div *ngIf="repositories.length === 0 && selectedInstallation && !loading" class="no-repositories">
       <p>No repositories found for this installation or all repositories have already been imported.</p>
+      <p>Go to <a href="https://github.com/settings/installations" target="_blank">https://github.com/settings/installations</a> to authorize more repositories for
+        mkdocs-cms App. </p>
     </div>
   </div>
 </div>

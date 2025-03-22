@@ -1,7 +1,6 @@
 <div class="edit-repository-container">
   <div class="header">
     <h1>Edit Repository</h1>
-    <button class="cancel-btn" (click)="cancel()">Cancel</button>
   </div>
 
   <div *ngIf="loading" class="loading-indicator">
@@ -29,7 +28,7 @@
     <div class="form-group">
       <label for="branch">Branch</label>
       <div class="branch-input-container">
-        <input type="text" id="branch" formControlName="branch" class="form-control" 
+        <input type="text" id="branch" formControlName="branch" class="form-control"
                [class.error-input]="branchError">
         <div *ngIf="branchesLoading" class="branch-loading">
           <i class="fas fa-spinner fa-spin"></i>
@@ -41,10 +40,10 @@
       <div *ngIf="branches.length > 0" class="branch-suggestions">
         <p>Available branches:</p>
         <div class="branch-list">
-          <button 
-            type="button" 
-            *ngFor="let branch of branches" 
-            class="branch-item" 
+          <button
+            type="button"
+            *ngFor="let branch of branches"
+            class="branch-item"
             [class.active]="repoForm.get('branch')?.value === branch"
             (click)="repoForm.get('branch')?.setValue(branch)">
             {{ branch }}
