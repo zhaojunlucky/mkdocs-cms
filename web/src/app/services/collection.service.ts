@@ -92,6 +92,13 @@ export class CollectionService {
     }, this.getAuthHeaders());
   }
 
+  createFolder(repoId: number, collectionName: string, path: string, folderName: string) {
+    return this.http.post<any>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files/folder`, {
+      path: path,
+      folder: folderName,
+    }, this.getAuthHeaders());
+  }
+
 
   // Helper method to get authentication headers
   private getAuthHeaders() {

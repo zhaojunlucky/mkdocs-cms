@@ -410,4 +410,23 @@ export class RepositoryDetailComponent implements OnInit {
         });
     }
   }
+
+  createNewFolder() {
+    if (!this.repository || !this.selectedCollection) return;
+
+    const folderName = prompt('Enter folder name:');
+    if (!folderName) return;
+
+    this.collectionService.createFolder(this.repository.id, this.selectedCollection.name, this.currentPath, folderName)
+      .subscribe({
+        next: () => {
+          // Refresh the file list after successful folder creation
+          this.loadCollectionFiles();
+        },
+        error: (error) => {
+          console.error('Error creating folder:', error);
+          this.error = 'Failed to create folder. ' + error.error?.error || 'Please try again later.';
+        }
+      });
+  }
 }

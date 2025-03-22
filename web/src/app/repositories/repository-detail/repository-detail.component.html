@@ -53,10 +53,16 @@
                   <span class="breadcrumb-item" (click)="navigateToBreadcrumb(segment.path)">{{ segment.name }}</span>
                 </span>
               </div>
-              <button mat-raised-button color="primary" *ngIf="!isEditingFile" (click)="createNewFile()">
-                <mat-icon>add</mat-icon>
-                New File
-              </button>
+              <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                <button mat-raised-button color="primary" *ngIf="!isEditingFile" (click)="createNewFolder()">
+                  <mat-icon>create_new_folder</mat-icon>
+                  New Folder
+                </button>
+                <button mat-raised-button color="primary" *ngIf="!isEditingFile" (click)="createNewFile()">
+                  <mat-icon>add</mat-icon>
+                  New File
+                </button>
+              </div>
             </div>
           </div>
 
@@ -112,24 +118,26 @@
               <h2>{{ isCreatingFile ? 'Create New File' : 'Editing: ' + selectedFile?.name }}</h2>
               <div class="breadcrumbs-container" style="display: flex; justify-content: space-between; align-items: center;">
                 <div class="breadcrumbs">
-                  <span class="breadcrumb-item" (click)="navigateToBreadcrumb('')">Root</span>
+                  <span >Root</span>
                   <span *ngFor="let segment of pathSegments">
                     <span class="breadcrumb-separator">/</span>
-                    <span class="breadcrumb-item" (click)="navigateToBreadcrumb(segment.path)">{{ segment.name }}</span>
+                    <span >{{ segment.name }}</span>
                   </span>
                   <span *ngIf="selectedFile">
                     <span class="breadcrumb-separator">/</span>
-                    <span class="breadcrumb-item active">{{ selectedFile.name }}</span>
+                    <span class=" active">{{ selectedFile.name }}</span>
                   </span>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                  <button (click)="isCreatingFile ? saveNewFile() : saveFile()" [disabled]="savingFile" class="save-btn">
+                    <span *ngIf="!savingFile">{{ isCreatingFile ? 'Create' : 'Save' }}</span>
+                    <span *ngIf="savingFile">{{ isCreatingFile ? 'Creating...' : 'Saving...' }}</span>
+                  </button>
+                  <button (click)="cancelEditing()" class="cancel-btn">Cancel</button>
                 </div>
               </div>
             </div>
             <div class="file-editor-actions">
-              <button (click)="isCreatingFile ? saveNewFile() : saveFile()" [disabled]="savingFile" class="save-btn">
-                <span *ngIf="!savingFile">{{ isCreatingFile ? 'Create' : 'Save' }}</span>
-                <span *ngIf="savingFile">{{ isCreatingFile ? 'Creating...' : 'Saving...' }}</span>
-              </button>
-              <button (click)="cancelEditing()" class="cancel-btn">Cancel</button>
             </div>
           </div>
 
