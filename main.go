@@ -123,13 +123,6 @@ func setupRoutes(r *gin.Engine, appConfig *config.Config) {
 	// API v1 routes
 	v1 := api.Group("/v1")
 	{
-		// User routes
-		v1.GET("/users", controllers.GetUsers)
-		v1.GET("/users/:id", controllers.GetUser)
-		v1.POST("/users", controllers.CreateUser)
-		v1.PUT("/users/:id", controllers.UpdateUser)
-		v1.DELETE("/users/:id", controllers.DeleteUser)
-
 		// Post routes - Register the post controller
 		postController.RegisterRoutes(v1)
 
