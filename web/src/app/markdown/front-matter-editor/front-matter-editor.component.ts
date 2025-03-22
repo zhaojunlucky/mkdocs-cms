@@ -44,7 +44,7 @@ export class FrontMatterEditorComponent implements OnInit, OnChanges {
 
   frontMatterForm!: FormGroup;
   readonly separatorKeysCodes = [ENTER, COMMA] as const;
-  tags: string[] = [];
+  listValues: Record<string, string[]> = {}
 
   constructor(private fb: FormBuilder) {}
 
@@ -59,18 +59,30 @@ export class FrontMatterEditorComponent implements OnInit, OnChanges {
   }
 
   initForm(): void {
-    this.tags = this.getTagsValue();
     this.frontMatterForm = this.fb.group({
-      fields: this.fb.array([]),
-      date: [this.getDateValue()],
-      draft: [this.getDraftValue()]
     });
 
-    const fieldsArray = this.frontMatterForm.get('fields') as FormArray;
     this.fields.forEach(field => {
-      const defaultValue = this.frontMatter[field.name] !== undefined ? this.frontMatter[field.name] : field.default;
-      const control = this.fb.control(defaultValue, this.getValidators(field));
-      fieldsArray.push(control);
+      this.frontMatterForm.addControl(field.name, this.fb.control('', field.required?[Validators.required]:[]));
+      let defaultValue = this.frontMatter[field.name] !== undefined ? this.frontMatter[field.name] : field.default;
+      switch (field.type) {
+        case 'date': defaultValue = defaultValue ?? new Date(); break
+        case 'string':  {
+          if (field.list) {
+            defaultValue = defaultValue?? []
+            this.listValues[field.name] = defaultValue
+          } else {
+            defaultValue = ''
+          }
+          break;
+        }
+        case 'boolean': defaultValue = defaultValue ?? false; break
+        default: break;
+      }
+
+      this.frontMatterForm.patchValue({
+        [field.name]: defaultValue
+      })
     });
 
     // Listen for changes to update front matter
@@ -79,19 +91,19 @@ export class FrontMatterEditorComponent implements OnInit, OnChanges {
     });
   }
 
-  addTag(event: MatChipInputEvent): void {
+  addTag(event: MatChipInputEvent, name: string): void {
     const value = (event.value || '').trim();
-    if (value) {
-      this.tags.push(value);
+    if (value && this.listValues[name].findIndex(v=> v == value) < 0) {
+      this.listValues[name].push(value);
       this.updateFrontMatter();
     }
     event.chipInput!.clear();
   }
 
-  removeTag(tag: string): void {
-    const index = this.tags.indexOf(tag);
+  removeTag(tag: string, name: string): void {
+    const index = this.listValues[name].indexOf(tag);
     if (index >= 0) {
-      this.tags.splice(index, 1);
+      this.listValues[name].splice(index, 1);
       this.updateFrontMatter();
     }
   }
@@ -101,45 +113,10 @@ export class FrontMatterEditorComponent implements OnInit, OnChanges {
 
     const formValue = this.frontMatterForm.value;
     const updatedFrontMatter: Record<string, any> = { ...this.frontMatter };
-
-    const fieldsArray = formValue.fields;
-    this.fields.forEach((field, index) => {
-      updatedFrontMatter[field.name] = fieldsArray[index];
+    Object.entries(formValue).forEach(([key, value]) => {
+      updatedFrontMatter[key] = value
     });
 
-    if (formValue.date) {
-      updatedFrontMatter['date'] = formValue.date;
-    }
-    if (formValue.draft !== undefined) {
-      updatedFrontMatter['draft'] = formValue.draft;
-    }
-    updatedFrontMatter['tags'] = this.tags;
-
     this.frontMatterChange.emit(updatedFrontMatter);
-  }
-
-  getDateValue(): Date | null {
-    const dateStr = this.frontMatter['date'];
-    if (!dateStr) {
-      return new Date();
-    }
-    const date = new Date(dateStr);
-    return isNaN(date.getTime()) ? new Date() : date;
-  }
-
-  getDraftValue(): boolean {
-    return this.frontMatter['draft'] === true;
-  }
-
-  getTagsValue(): string[] {
-    return this.frontMatter['tags'] || [];
-  }
-
-  getValidators(field: CollectionFieldDefinition) {
-    const validators = [];
-    if (field.required) {
-      validators.push(Validators.required);
-    }
-    return validators;
   }
 }

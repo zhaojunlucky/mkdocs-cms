@@ -30,16 +30,6 @@ export interface CollectionFieldDefinition {
   default?: any;
 }
 
-export interface CollectionField {
-  id: number;
-  name: string;
-  label: string;
-  value: any;
-  field_definition_id: number;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface Collection {
   id: number;
   name: string;
@@ -47,27 +37,7 @@ export interface Collection {
   repo_id: number;
   created_at: string;
   updated_at: string;
-  fields?: CollectionField[];
-}
-
-export interface CollectionFieldDefinitionResponse {
-  id: number;
-  name: string;
-  label: string;
-  required: boolean;
-  format: string;
-  list: boolean;
-  default: any;
-}
-
-export interface CollectionFieldResponse {
-  id: number;
-  name: string;
-  label: string;
-  value: any;
-  field_definition_id: number;
-  created_at: string;
-  updated_at: string;
+  fields?: CollectionFieldDefinition[];
 }
 
 export interface AsyncTask {

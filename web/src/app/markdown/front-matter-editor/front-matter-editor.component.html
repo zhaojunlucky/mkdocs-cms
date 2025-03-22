@@ -6,43 +6,49 @@
 
   <mat-card-content>
     <form [formGroup]="frontMatterForm" class="front-matter-form">
-      <!-- Date field -->
-      <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Date</mat-label>
-        <input matInput [matDatepicker]="picker" formControlName="date">
-        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-        <mat-datepicker #picker></mat-datepicker>
-        <mat-hint>Publication date for this document</mat-hint>
-      </mat-form-field>
+      <ng-container *ngFor="let field of fields">
+        <div [ngSwitch]="field.type">
+          <!-- Date field -->
+          <mat-form-field *ngSwitchCase="'date'" appearance="outline" class="full-width">
+            <mat-label>{{ field.label }}</mat-label>
+            <input matInput [matDatepicker]="picker" [formControlName]="field.name">
+            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+          </mat-form-field>
 
-      <!-- Draft toggle -->
-      <div class="draft-toggle-container">
-        <mat-slide-toggle formControlName="draft" color="primary">
-          Draft
-        </mat-slide-toggle>
-        <div class="draft-hint">
-          Mark this document as a draft to prevent it from being published
+          <!-- String field (non-list) -->
+          <mat-form-field *ngSwitchCase="'string'" appearance="outline" class="full-width">
+            <ng-container *ngIf="!field.list">
+              <mat-label>{{ field.label }}</mat-label>
+              <input matInput [formControlName]="field.name">
+            </ng-container>
+            <ng-container *ngIf="field.list">
+              <mat-label>Tags</mat-label>
+              <mat-chip-grid #chipGrid>
+                <mat-chip-row *ngFor="let tag of listValues[field.name]"
+                              (removed)="removeTag(tag, field.name)">
+                  {{tag}}
+                  <button matChipRemove>
+                    <mat-icon>cancel</mat-icon>
+                  </button>
+                </mat-chip-row>
+                <input matInput placeholder="New tag..."
+                       [matChipInputFor]="chipGrid"
+                       [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+                       (matChipInputTokenEnd)="addTag($event, field.name)">
+              </mat-chip-grid>
+              <mat-hint>Press Enter or comma to add tags</mat-hint>
+            </ng-container>
+          </mat-form-field>
+
+          <!-- Boolean field -->
+          <div *ngSwitchCase="'boolean'" class="boolean-field full-width">
+            <mat-slide-toggle [formControlName]="field.name" color="primary">
+              {{ field.label }}
+            </mat-slide-toggle>
+          </div>
         </div>
-      </div>
-
-      <!-- Tags field with chips -->
-      <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Tags</mat-label>
-        <mat-chip-grid #chipGrid>
-          <mat-chip-row *ngFor="let tag of tags" 
-                       (removed)="removeTag(tag)">
-            {{tag}}
-            <button matChipRemove>
-              <mat-icon>cancel</mat-icon>
-            </button>
-          </mat-chip-row>
-          <input placeholder="New tag..."
-                 [matChipInputFor]="chipGrid"
-                 [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
-                 (matChipInputTokenEnd)="addTag($event)">
-        </mat-chip-grid>
-        <mat-hint>Press Enter or comma to add tags</mat-hint>
-      </mat-form-field>
+      </ng-container>
     </form>
   </mat-card-content>
 </mat-card>

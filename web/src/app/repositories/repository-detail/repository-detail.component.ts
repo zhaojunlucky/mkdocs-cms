@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { RepositoryService, Repository, Collection } from '../../services/repository.service';
+import {RepositoryService, Repository, Collection, CollectionFieldDefinition} from '../../services/repository.service';
 import { CollectionService, FileInfo } from '../../services/collection.service';
 import { FormsModule } from '@angular/forms';
 import { NgIf, NgFor, NgClass, DatePipe, DecimalPipe } from '@angular/common';

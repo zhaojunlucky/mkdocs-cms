@@ -79,8 +79,8 @@
               <div class="file-details">
                 <div class="file-name" style="display: flex; justify-content: space-between; align-items: center;">
                   <span>{{ file.name }}</span>
-                  <button *ngIf="!file.is_dir" 
-                          mat-icon-button 
+                  <button *ngIf="!file.is_dir"
+                          mat-icon-button
                           [matMenuTriggerFor]="fileMenu"
                           (click)="$event.stopPropagation()">
                     <mat-icon>more_vert</mat-icon>
@@ -146,7 +146,7 @@
             <div *ngIf="isCreatingFile" style="margin-bottom: 20px;">
               <h3>File Name</h3>
               <div style="display: flex; align-items: center; gap: 8px;">
-                <input [(ngModel)]="newFileName" placeholder="Enter file name" 
+                <input [(ngModel)]="newFileName" placeholder="Enter file name"
                   style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;"
                   [class.error]="fileError && !newFileName.trim()">
                 <span style="font-size: 14px; color: #666;">.md</span>
@@ -157,16 +157,17 @@
             </div>
 
             <!-- Front Matter Editor -->
-            <app-front-matter-editor 
-              [frontMatter]="frontMatter" 
+            <app-front-matter-editor  *ngIf="selectedCollection?.fields"
+              [frontMatter]="frontMatter"
+              [fields]="selectedCollection?.fields??[]"
               (frontMatterChange)="onFrontMatterChange($event)">
             </app-front-matter-editor>
 
             <!-- Markdown Editor -->
             <div class="markdown-editor-wrapper">
               <h3>Content</h3>
-              <app-markdown-editor 
-                [(ngModel)]="markdownContent" 
+              <app-markdown-editor
+                [(ngModel)]="markdownContent"
                 (ngModelChange)="onMarkdownChange($event)">
               </app-markdown-editor>
             </div>
