@@ -148,10 +148,7 @@ func setupRoutes(r *gin.Engine, appConfig *config.Config) {
 		// Collection routes
 		collections := v1.Group("/collections")
 		{
-			collections.GET("", collectionController.GetCollections)
 			collections.GET("/repo/:repoId", collectionController.GetCollectionsByRepo)
-			collections.GET("/:collectionId", collectionController.GetCollection)
-			collections.GET("/path/:repoId", collectionController.GetCollectionByPath)
 
 			// Collection file routes
 			collections.GET("/repo/:repoId/:collectionName/files", collectionController.GetCollectionFiles)
@@ -160,7 +157,6 @@ func setupRoutes(r *gin.Engine, appConfig *config.Config) {
 			collections.GET("/repo/:repoId/:collectionName/files/content", collectionController.GetFileContent)
 			collections.PUT("/repo/:repoId/:collectionName/files/content", collectionController.UpdateFileContent)
 			collections.DELETE("/repo/:repoId/:collectionName/files", collectionController.DeleteFile)
-			collections.GET("/repo/:repoId/:collectionName/files/content/json", collectionController.GetFileContentJSON)
 			collections.POST("/repo/:repoId/:collectionName/files/upload", collectionController.UploadFile)
 			collections.PUT("/repo/:repoId/:collectionName/files/rename", collectionController.RenameFile)
 		}

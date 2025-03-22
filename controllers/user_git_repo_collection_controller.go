@@ -5,14 +5,11 @@ import (
 	"fmt"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"net/http"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zhaojunlucky/mkdocs-cms/database"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
 	"github.com/zhaojunlucky/mkdocs-cms/services"
 )
@@ -32,22 +29,6 @@ func NewUserGitRepoCollectionController() *UserGitRepoCollectionController {
 	return &UserGitRepoCollectionController{
 		service: userGitRepoCollectionService,
 	}
-}
-
-// GetCollections returns all collections
-func (ctrl *UserGitRepoCollectionController) GetCollections(c *gin.Context) {
-	collections, err := ctrl.service.GetAllCollections()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	var response []models.UserGitRepoCollectionResponse
-	for _, collection := range collections {
-		response = append(response, collection.ToResponse(false))
-	}
-
-	c.JSON(http.StatusOK, response)
 }
 
 // GetCollectionsByRepo returns all collections for a specific repository
@@ -70,23 +51,6 @@ func (ctrl *UserGitRepoCollectionController) GetCollectionsByRepo(c *gin.Context
 	}
 
 	c.JSON(http.StatusOK, response)
-}
-
-// GetCollection returns a specific collection
-func (ctrl *UserGitRepoCollectionController) GetCollection(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("collectionId"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
-		return
-	}
-
-	collection, err := ctrl.service.GetCollectionByID(uint(id))
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Collection not found"})
-		return
-	}
-
-	c.JSON(http.StatusOK, collection.ToResponse(true))
 }
 
 // CreateCollection creates a new collection
@@ -114,29 +78,6 @@ func (ctrl *UserGitRepoCollectionController) DeleteCollection(c *gin.Context) {
 	c.JSON(http.StatusBadRequest, gin.H{
 		"error": "Collections are now defined in veda/config.yml file in the repository. Please edit that file directly.",
 	})
-}
-
-// GetCollectionByPath returns a collection by its path
-func (ctrl *UserGitRepoCollectionController) GetCollectionByPath(c *gin.Context) {
-	repoID, err := strconv.ParseUint(c.Param("repoId"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid repository ID"})
-		return
-	}
-
-	path := c.Query("path")
-	if path == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Path parameter is required"})
-		return
-	}
-
-	collection, err := ctrl.service.GetCollectionByPath(uint(repoID), path)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Collection not found"})
-		return
-	}
-
-	c.JSON(http.StatusOK, collection.ToResponse(true))
 }
 
 // GetCollectionFiles returns all files in a collection
@@ -356,73 +297,6 @@ func (ctrl *UserGitRepoCollectionController) UploadFile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "File uploaded successfully"})
-}
-
-// GetFileContentJSON returns the content of a file within a collection as JSON
-func (ctrl *UserGitRepoCollectionController) GetFileContentJSON(c *gin.Context) {
-	repoID, err := strconv.ParseUint(c.Param("repoId"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid repository ID"})
-		return
-	}
-
-	collectionName := c.Param("collectionName")
-	if collectionName == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Collection name is required"})
-		return
-	}
-
-	filePath := c.Query("path")
-	if filePath == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "File path is required"})
-		return
-	}
-
-	content, contentType, err := ctrl.service.GetFileContent(uint(repoID), collectionName, filePath)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Get repository to find its local path
-	var repo models.UserGitRepo
-	if err := database.DB.First(&repo, repoID).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Repository not found"})
-		return
-	}
-
-	// Get collection to find its path
-	collection, err := ctrl.service.GetCollectionByName(uint(repoID), collectionName)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	fullPath := filepath.Join(collection.Path, filePath)
-	fileInfo, err := os.Stat(fullPath)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Prepare response
-	response := models.FileResponse{
-		Name:      filepath.Base(filePath),
-		Path:      filePath,
-		IsDir:     fileInfo.IsDir(),
-		Size:      fileInfo.Size(),
-		ModTime:   fileInfo.ModTime(),
-		Extension: filepath.Ext(filePath),
-	}
-
-	// For binary files, encode as base64
-	if !strings.HasPrefix(contentType, "text/") && contentType != "application/json" && contentType != "application/xml" {
-		response.Content = "data:" + contentType + ";base64," + base64.StdEncoding.EncodeToString(content)
-	} else {
-		response.Content = string(content)
-	}
-
-	c.JSON(http.StatusOK, response)
 }
 
 // RenameFileRequest represents the request body for renaming a file
