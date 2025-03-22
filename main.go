@@ -145,14 +145,6 @@ func setupRoutes(r *gin.Engine, appConfig *config.Config) {
 			userRepos.GET("/:user_id", userGitRepoController.GetReposByUser)
 		}
 
-		// Event routes
-		v1.GET("/events", controllers.GetEvents)
-		v1.GET("/events/:id", controllers.GetEvent)
-		v1.GET("/events/resources/:resource_type", controllers.GetEventsByResource)
-		v1.POST("/events", controllers.CreateEvent)
-		v1.PUT("/events/:id", controllers.UpdateEvent)
-		v1.DELETE("/events/:id", controllers.DeleteEvent)
-
 		// Collection routes
 		collections := v1.Group("/collections")
 		{
