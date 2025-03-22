@@ -98,7 +98,6 @@ func setupRoutes(r *gin.Engine, appConfig *config.Config) {
 	userGitRepoService := services.NewUserGitRepoService(githubAppSettings)
 
 	// Initialize controllers
-	siteConfigController := controllers.NewSiteConfigController()
 	authController := controllers.NewAuthController(userService, appConfig)
 	postController := controllers.NewPostController(githubAppSettings)
 	asyncTaskController := controllers.NewAsyncTaskController()
@@ -160,13 +159,6 @@ func setupRoutes(r *gin.Engine, appConfig *config.Config) {
 			collections.POST("/repo/:repoId/:collectionName/files/upload", collectionController.UploadFile)
 			collections.PUT("/repo/:repoId/:collectionName/files/rename", collectionController.RenameFile)
 		}
-
-		// Site Configuration routes
-		v1.GET("/site-configs", siteConfigController.GetAllSiteConfigs)
-		v1.GET("/site-configs/:id", siteConfigController.GetSiteConfigByID)
-		v1.POST("/site-configs", siteConfigController.CreateSiteConfig)
-		v1.PUT("/site-configs/:id", siteConfigController.UpdateSiteConfig)
-		v1.DELETE("/site-configs/:id", siteConfigController.DeleteSiteConfig)
 
 		// GitHub App routes
 		github := v1.Group("/github")
