@@ -11,7 +11,7 @@ import * as jsYaml from 'js-yaml';
 import { MarkdownModule } from '../../markdown/markdown.module';
 import { MarkdownEditorComponent } from '../../markdown/markdown-editor/markdown-editor.component';
 import { FrontMatterEditorComponent } from '../../markdown/front-matter-editor/front-matter-editor.component';
-import {MatMenu, MatMenuTrigger} from '@angular/material/menu';
+import {MatMenuModule} from '@angular/material/menu';
 import {MatIcon} from '@angular/material/icon';
 
 @Component({
@@ -22,7 +22,6 @@ import {MatIcon} from '@angular/material/icon';
     FormsModule,
     NgIf,
     NgFor,
-    NgClass,
     DatePipe,
     DecimalPipe,
     RouterLink,
@@ -31,9 +30,8 @@ import {MatIcon} from '@angular/material/icon';
     MarkdownModule,
     MarkdownEditorComponent,
     FrontMatterEditorComponent,
-    MatMenuTrigger,
     MatIcon,
-    MatMenu
+    MatMenuModule
   ],
   templateUrl: './repository-detail.component.html',
   styleUrls: ['./repository-detail.component.scss']

@@ -10,8 +10,7 @@
 
   <div *ngIf="!loadingRepo && !loadingCollections && !error && repository">
     <div class="repository-header">
-      <a routerLink="/home" class="back-link">← Back to Repositories</a>
-      <h1>{{ repository.name }}</h1>
+      <a routerLink="/home" class="back-link"><h1>{{ repository.name }}</h1></a>
     </div>
 
     <div class="content-layout">

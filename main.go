@@ -170,6 +170,7 @@ func setupRoutes(r *gin.Engine, appConfig *config.Config) {
 
 			// Collection file routes
 			collections.GET("/repo/:repoId/:collectionName/files", collectionController.GetCollectionFiles)
+			collections.POST("/repo/:repoId/:collectionName/files/folder", collectionController.CreateFolder)
 			collections.GET("/repo/:repoId/:collectionName/files/path", collectionController.GetCollectionFilesInPath)
 			collections.GET("/repo/:repoId/:collectionName/files/content", collectionController.GetFileContent)
 			collections.PUT("/repo/:repoId/:collectionName/files/content", collectionController.UpdateFileContent)

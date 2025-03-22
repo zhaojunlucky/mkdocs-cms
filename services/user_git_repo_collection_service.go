@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/go-github/v45/github"
+	"github.com/zhaojunlucky/mkdocs-cms/core"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -611,6 +613,61 @@ func (s *UserGitRepoCollectionService) RenameFile(repoID uint, collectionName st
 
 	// Commit the changes
 	commitMsg := fmt.Sprintf("Rename file from %s to %s in collection %s", cleanOldPath, cleanNewPath, collectionName)
+	if err := s.CommitWithGithubApp(repo, commitMsg); err != nil {
+		return fmt.Errorf("failed to commit changes: %v", err)
+	}
+
+	return nil
+}
+
+func (s *UserGitRepoCollectionService) CreateFolder(u uint, name string, path string, folder string) error {
+	// Get the collection
+	collection, err := s.GetCollectionByName(u, name)
+	if err != nil {
+		return err
+	}
+
+	// Ensure the path doesn't try to escape the collection directory
+	cleanPath := filepath.Clean(path)
+	if cleanPath == ".." || filepath.IsAbs(cleanPath) || strings.HasPrefix(cleanPath, "../") {
+		return core.NewHTTPError(http.StatusBadRequest, "invalid path")
+	}
+
+	// Ensure the folder name is valid
+	cleanFolder := filepath.Clean(folder)
+	if cleanFolder == ".." || filepath.IsAbs(cleanFolder) || strings.HasPrefix(cleanFolder, "../") || strings.Contains(cleanFolder, "/") {
+		return core.NewHTTPError(http.StatusBadRequest, "invalid folder name")
+	}
+
+	// Construct the full path
+	fullPath := filepath.Join(collection.Path, cleanPath, cleanFolder)
+
+	// Check if the folder already exists
+	if _, err := os.Stat(fullPath); !os.IsNotExist(err) {
+		if err == nil {
+			return core.NewHTTPError(http.StatusBadRequest, "folder already exists")
+		}
+		return err
+	}
+
+	// Create the folder
+	if err := os.MkdirAll(fullPath, 0755); err != nil {
+		return fmt.Errorf("failed to create folder: %v", err)
+	}
+
+	fi, _ := os.Create(filepath.Join(fullPath, ".gitkeep"))
+	if fi != nil {
+		_ = fi.Close()
+	}
+
+	// Get repository information
+	repo, err := s.GetRepo(u)
+	if err != nil {
+		return fmt.Errorf("failed to get repository info: %v", err)
+	}
+
+	// Commit the changes
+	commitMsg := fmt.Sprintf("Create folder %s in collection %s", filepath.Join(cleanPath, cleanFolder), name)
 	if err := s.CommitWithGithubApp(repo, commitMsg); err != nil {
 		return fmt.Errorf("failed to commit changes: %v", err)
 	}

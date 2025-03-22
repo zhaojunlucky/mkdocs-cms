@@ -3,9 +3,11 @@ package controllers
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -429,6 +431,11 @@ type RenameFileRequest struct {
 	NewPath string `json:"newPath" binding:"required"`
 }
 
+type CreateFolderRequest struct {
+	Path   string `json:"path"`
+	Folder string `json:"folder" binding:"required"`
+}
+
 // RenameFile renames a file in a collection
 func (ctrl *UserGitRepoCollectionController) RenameFile(c *gin.Context) {
 	// Get repository ID and collection name from path
@@ -472,4 +479,40 @@ func (ctrl *UserGitRepoCollectionController) VerifyRepoOwnership(c *gin.Context,
 		return false
 	}
 	return true
+}
+
+func (ctrl *UserGitRepoCollectionController) CreateFolder(c *gin.Context) {
+	repoID, err := strconv.ParseUint(c.Param("repoId"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid repository ID"})
+		return
+	}
+	collectionName := c.Param("collectionName")
+
+	// Parse request body
+	var req CreateFolderRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Verify repository ownership
+	if !ctrl.VerifyRepoOwnership(c, uint(repoID)) {
+		return
+	}
+
+	invalidChars := regexp.MustCompile(`[<>:"/\\|?*]`)
+	if invalidChars.MatchString(req.Folder) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Folder name contains invalid characters"})
+		return
+	}
+
+	// Call service to create folder
+	err = ctrl.service.CreateFolder(uint(repoID), collectionName, req.Path, req.Folder)
+	if err != nil {
+		core.HandleError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Folder created successfully"})
 }
