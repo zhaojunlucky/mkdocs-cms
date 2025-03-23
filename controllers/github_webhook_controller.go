@@ -33,7 +33,7 @@ func (c *GitHubWebhookController) Init(ctx *core.APPContext, router *gin.RouterG
 	c.eventService = ctx.MustGetService("eventService").(*services.EventService)
 	c.webhookSecret = ctx.GithubAppSettings.WebhookSecret
 
-	router.POST("/webhooks/github", c.HandleWebhook)
+	router.POST("/github/webhook", c.HandleWebhook)
 
 }
 
