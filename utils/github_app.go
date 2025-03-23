@@ -2,9 +2,9 @@ package utils
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
-	"log"
 	"net/http"
 	"os"
 	"strconv"

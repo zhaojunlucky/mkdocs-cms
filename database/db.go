@@ -1,10 +1,9 @@
 package database
 
 import (
-	"fmt"
-	"log"
 	"os"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -25,7 +24,7 @@ func Initialize() {
 
 	// Configure GORM logger
 	newLogger := logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags),
+		log.New(),
 		logger.Config{
 			LogLevel: logger.Info,
 		},
@@ -39,7 +38,7 @@ func Initialize() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	fmt.Println("Connected to database")
+	log.Info("Connected to database")
 
 	// Auto migrate the schema
 	err = DB.AutoMigrate(&models.User{}, &models.UserGitRepo{}, &models.Event{}, &models.SiteConfig{}, &models.AsyncTask{})
@@ -47,5 +46,5 @@ func Initialize() {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
 
-	fmt.Println("Database migration completed")
+	log.Info("Database migration completed")
 }

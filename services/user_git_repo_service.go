@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/go-github/v45/github"
+	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"github.com/zhaojunlucky/mkdocs-cms/database"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
@@ -525,11 +526,11 @@ func (s *UserGitRepoService) CheckWebHooks(id string) error {
 	}
 
 	// Log webhook information
-	fmt.Printf("Found %d webhooks for repository %s/%s\n", len(hooks), owner, repoName)
+	log.Infof("Found %d webhooks for repository %s/%s\n", len(hooks), owner, repoName)
 	var repoHook *github.Hook
 	for i, hook := range hooks {
 		url := hook.Config["url"]
-		fmt.Printf("Webhook %d: ID=%d, URL=%s, Active=%t\n", i+1, hook.GetID(), url, hook.GetActive())
+		log.Infof("Webhook %d: ID=%d, URL=%s, Active=%t\n", i+1, hook.GetID(), url, hook.GetActive())
 
 		if url == s.githubAppSettings.WebhookURL {
 			repoHook = hook

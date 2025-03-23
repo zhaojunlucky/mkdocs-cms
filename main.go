@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/config"
 	"github.com/zhaojunlucky/mkdocs-cms/controllers"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
@@ -11,15 +12,20 @@ import (
 	"github.com/zhaojunlucky/mkdocs-cms/models"
 	"github.com/zhaojunlucky/mkdocs-cms/services"
 	"github.com/zhaojunlucky/mkdocs-cms/utils"
-	"log"
+	"io"
 	"os"
+	"path"
+	"path/filepath"
+	"runtime"
+	"strconv"
+	"strings"
 )
 
 func main() {
 	// Parse command line flags
 	configPath := os.Getenv("CONFIG_PATH")
 	if configPath == "" {
-		configPath = "./config/oauth_config.yaml"
+		configPath = "./config/config-dev.yaml"
 	}
 
 	migrate := flag.Bool("migrate", false, "Run database migrations")
@@ -30,27 +36,29 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
+	ctx := createContext(appConfig)
+
+	setupLog(ctx)
 
 	// Debug: Print loaded configuration
-	log.Printf("Loaded configuration:")
-	log.Printf("OAuth Redirect URL: %s", appConfig.OAuth.RedirectURL)
-	log.Printf("GitHub OAuth Client ID: %s", appConfig.GitHub.OAuth.ClientID)
-	log.Printf("GitHub OAuth Client Secret: %s (length: %d)",
+	log.Infof("Loaded configuration:")
+	log.Infof("OAuth Redirect URL: %s", appConfig.OAuth.RedirectURL)
+	log.Infof("GitHub OAuth Client ID: %s", appConfig.GitHub.OAuth.ClientID)
+	log.Debugf("GitHub OAuth Client Secret: %s (length: %d)",
 		appConfig.GitHub.OAuth.ClientSecret[:4]+"...",
 		len(appConfig.GitHub.OAuth.ClientSecret))
-	log.Printf("GitHub App ID: %d", appConfig.GitHub.App.AppID)
+	log.Infof("GitHub App ID: %d", appConfig.GitHub.App.AppID)
 
 	// Initialize database
 	database.Initialize()
 
 	// Run migrations if requested
 	if *migrate {
-		log.Println("Running database migrations...")
+		log.Infof("Running database migrations...")
 		database.MigrateDB()
 		return
 	}
 
-	ctx := createContext(appConfig)
 	// Initialize Gin router
 	router := gin.New()
 
@@ -71,7 +79,7 @@ func main() {
 	setupRoutes(router)
 
 	// Start the server
-	log.Println("Server starting on http://localhost:8080")
+	log.Infof("Server starting on http://localhost:8080")
 	if err := router.Run(":8080"); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
@@ -90,7 +98,8 @@ func createContext(appConfig *config.Config) *core.APPContext {
 	ctx := &core.APPContext{
 		GithubAppSettings: githubAppSettings,
 		Config:            appConfig,
-		RepoBasePath:      appConfig.RepoBasePath,
+		RepoBasePath:      filepath.Join(appConfig.WorkingDir, "repos"),
+		LogDirPath:        filepath.Join(appConfig.WorkingDir, "log"),
 		ServiceMap:        make(map[string]interface{}),
 	}
 	ctx.GithubAppClient = utils.CreateGitHubAppClient(ctx)
@@ -104,4 +113,49 @@ func setupRoutes(r *gin.Engine) {
 	r.NoRoute(func(c *gin.Context) {
 		c.File("./web/dist/web/browser/index.html")
 	})
+}
+
+func setupLog(ctx *core.APPContext) {
+
+	switch strings.ToLower(ctx.Config.LogLevel) {
+	case "debug":
+		log.SetLevel(log.DebugLevel)
+	case "info":
+		log.SetLevel(log.InfoLevel)
+	case "warn":
+		log.SetLevel(log.WarnLevel)
+	case "error":
+		log.SetLevel(log.ErrorLevel)
+	default:
+		log.Fatalf("invalid log level: %s", ctx.Config.LogLevel)
+	}
+	logPath := ctx.LogDirPath
+	log.Infof("log path: %s", logPath)
+
+	fiInfo, err := os.Stat(logPath)
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(logPath, 0755)
+		if err != nil {
+			panic(err)
+		}
+	} else if !fiInfo.IsDir() {
+		log.Fatalf("%s must be a directory", logPath)
+	}
+
+	logFilePath := path.Join(logPath, "mkdocs-cms.log")
+	logFile, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("Failed to log to file, using default stderr")
+	}
+	log.SetReportCaller(true)
+	log.SetFormatter(&log.TextFormatter{
+		CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
+			fileName := path.Base(frame.File) + ":" + strconv.Itoa(frame.Line)
+			//return frame.Function, fileName
+			return "", fileName
+		},
+	})
+
+	log.SetOutput(io.MultiWriter(os.Stdout, logFile))
+
 }

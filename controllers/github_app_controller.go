@@ -3,8 +3,9 @@ package controllers
 import (
 	"context"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
-	"log"
+
 	"net/http"
 	"os"
 	"strconv"

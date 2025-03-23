@@ -27,3 +27,4 @@ go.work.sum
 config/*.yml
 .idea
 .DS_Store
+config/config*.yaml

@@ -6,9 +6,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"io"
-	"log"
+
 	"net/http"
 	"strings"
 
@@ -76,7 +77,7 @@ func (c *GitHubWebhookController) HandleWebhook(ctx *gin.Context) {
 		c.handleInstallationRepositoriesEvent(ctx, body)
 	default:
 		// Log the event but return a success response
-		log.Printf("Received unhandled GitHub event: %s", eventType)
+		log.Warnf("Received unhandled GitHub event: %s", eventType)
 		ctx.JSON(http.StatusOK, gin.H{"message": "Event received but not processed"})
 	}
 }
@@ -119,13 +120,13 @@ func (c *GitHubWebhookController) handlePushEvent(ctx *gin.Context, event *githu
 	remoteURL := "https://github.com/" + repoFullName + ".git"
 	repos, err := c.gitRepoService.GetReposByURL(remoteURL)
 	if err != nil {
-		log.Printf("Failed to find repositories for URL %s: %v", remoteURL, err)
+		log.Errorf("Failed to find repositories for URL %s: %v", remoteURL, err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to find repositories"})
 		return
 	}
 
 	if len(repos) == 0 {
-		log.Printf("No repositories found for URL %s", remoteURL)
+		log.Errorf("No repositories found for URL %s", remoteURL)
 		ctx.JSON(http.StatusOK, gin.H{"message": "No matching repositories found"})
 		return
 	}
@@ -134,7 +135,7 @@ func (c *GitHubWebhookController) handlePushEvent(ctx *gin.Context, event *githu
 	for _, repo := range repos {
 		if repo.Branch == branch {
 			if err := c.gitRepoService.SyncRepository(fmt.Sprintf("%d", repo.ID)); err != nil {
-				log.Printf("Failed to sync repository %d: %v", repo.ID, err)
+				log.Errorf("Failed to sync repository %d: %v", repo.ID, err)
 				continue
 			}
 
@@ -178,13 +179,13 @@ func (c *GitHubWebhookController) handlePullRequestEvent(ctx *gin.Context, body 
 	remoteURL := "https://github.com/" + repoFullName + ".git"
 	repos, err := c.gitRepoService.GetReposByURL(remoteURL)
 	if err != nil {
-		log.Printf("Failed to find repositories for URL %s: %v", remoteURL, err)
+		log.Errorf("Failed to find repositories for URL %s: %v", remoteURL, err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to find repositories"})
 		return
 	}
 
 	if len(repos) == 0 {
-		log.Printf("No repositories found for URL %s", remoteURL)
+		log.Errorf("No repositories found for URL %s", remoteURL)
 		ctx.JSON(http.StatusOK, gin.H{"message": "No matching repositories found"})
 		return
 	}
@@ -193,7 +194,7 @@ func (c *GitHubWebhookController) handlePullRequestEvent(ctx *gin.Context, body 
 	for _, repo := range repos {
 		if repo.Branch == targetBranch {
 			if err := c.gitRepoService.SyncRepository(fmt.Sprintf("%d", repo.ID)); err != nil {
-				log.Printf("Failed to sync repository %d: %v", repo.ID, err)
+				log.Errorf("Failed to sync repository %d: %v", repo.ID, err)
 				continue
 			}
 
