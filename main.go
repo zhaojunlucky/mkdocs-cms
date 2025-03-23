@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/config"
@@ -28,9 +27,6 @@ func main() {
 		configPath = "./config/config-dev.yaml"
 	}
 
-	migrate := flag.Bool("migrate", false, "Run database migrations")
-	flag.Parse()
-
 	// Load configuration
 	appConfig, err := config.LoadConfig(configPath)
 	if err != nil {
@@ -51,13 +47,6 @@ func main() {
 
 	// Initialize database
 	database.Initialize()
-
-	// Run migrations if requested
-	if *migrate {
-		log.Infof("Running database migrations...")
-		database.MigrateDB()
-		return
-	}
 
 	// Initialize Gin router
 	router := gin.New()

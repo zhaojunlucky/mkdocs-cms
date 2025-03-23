@@ -2,9 +2,6 @@ package models
 
 import (
 	"time"
-
-	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 // TaskStatus represents the status of an async task
@@ -43,12 +40,4 @@ type AsyncTask struct {
 	CompletedAt *time.Time `json:"completed_at"`                                  // When the task completed or failed
 	CreatedAt   time.Time  `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt   time.Time  `json:"updated_at" gorm:"autoUpdateTime"`
-}
-
-// BeforeCreate is a GORM hook that generates a UUID for the task before creation
-func (task *AsyncTask) BeforeCreate(tx *gorm.DB) (err error) {
-	if task.ID == "" {
-		task.ID = uuid.New().String()
-	}
-	return nil
 }

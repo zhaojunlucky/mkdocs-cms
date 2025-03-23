@@ -90,21 +90,6 @@ func (r *UserGitRepo) ToResponse(includeUser bool) UserGitRepoResponse {
 	return response
 }
 
-// CreateUserGitRepoRequest is the structure for repository creation requests
-type CreateUserGitRepoRequest struct {
-	Name           string `json:"name" binding:"required"`
-	Description    string `json:"description"`
-	RemoteURL      string `json:"remote_url" binding:"required"`
-	CloneURL       string `json:"clone_url"`
-	Branch         string `json:"branch"`
-	UserID         string `json:"user_id" binding:"required"`
-	AuthType       string `json:"auth_type"`
-	AuthData       string `json:"auth_data"`
-	LocalPath      string `json:"local_path"`
-	Provider       string `json:"provider"`
-	InstallationID int64  `json:"installation_id"`
-}
-
 // UpdateUserGitRepoRequest is the structure for repository update requests
 type UpdateUserGitRepoRequest struct {
 	Name           string        `json:"name"`

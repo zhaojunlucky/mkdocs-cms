@@ -82,38 +82,8 @@ func (c *UserGitRepoCollection) ToResponse(includeRepo bool) UserGitRepoCollecti
 	return response
 }
 
-// CreateUserGitRepoCollectionRequest is the structure for collection creation requests
-type CreateUserGitRepoCollectionRequest struct {
-	Name        string        `json:"name" binding:"required"`
-	Label       string        `json:"label" binding:"required"`
-	Path        string        `json:"path" binding:"required"`
-	Format      ContentFormat `json:"format"`
-	Description string        `json:"description"`
-	RepoID      uint          `json:"repo_id" binding:"required"`
-}
-
-// UpdateUserGitRepoCollectionRequest is the structure for collection update requests
-type UpdateUserGitRepoCollectionRequest struct {
-	Name        string        `json:"name"`
-	Label       string        `json:"label"`
-	Path        string        `json:"path"`
-	Format      ContentFormat `json:"format"`
-	Description string        `json:"description"`
-}
-
 // FileUploadRequest represents a request to upload a file
 type FileUploadRequest struct {
 	Path    string `json:"path" binding:"required"`
 	Content string `json:"content" binding:"required"`
-}
-
-// FileResponse represents a response with file information
-type FileResponse struct {
-	Name      string    `json:"name"`
-	Path      string    `json:"path"`
-	IsDir     bool      `json:"is_dir"`
-	Size      int64     `json:"size"`
-	ModTime   time.Time `json:"mod_time"`
-	Extension string    `json:"extension,omitempty"`
-	Content   string    `json:"content,omitempty"`
 }

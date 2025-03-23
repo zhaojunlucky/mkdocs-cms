@@ -60,33 +60,6 @@ func (ctrl *UserGitRepoCollectionController) GetCollectionsByRepo(c *gin.Context
 	c.JSON(http.StatusOK, response)
 }
 
-// CreateCollection creates a new collection
-// This method is kept for backward compatibility but returns an error message
-// as collections are now read-only from veda/config.yml
-func (ctrl *UserGitRepoCollectionController) CreateCollection(c *gin.Context) {
-	c.JSON(http.StatusBadRequest, gin.H{
-		"error": "Collections are now defined in veda/config.yml file in the repository. Please edit that file directly.",
-	})
-}
-
-// UpdateCollection updates an existing collection
-// This method is kept for backward compatibility but returns an error message
-// as collections are now read-only from veda/config.yml
-func (ctrl *UserGitRepoCollectionController) UpdateCollection(c *gin.Context) {
-	c.JSON(http.StatusBadRequest, gin.H{
-		"error": "Collections are now defined in veda/config.yml file in the repository. Please edit that file directly.",
-	})
-}
-
-// DeleteCollection deletes a collection
-// This method is kept for backward compatibility but returns an error message
-// as collections are now read-only from veda/config.yml
-func (ctrl *UserGitRepoCollectionController) DeleteCollection(c *gin.Context) {
-	c.JSON(http.StatusBadRequest, gin.H{
-		"error": "Collections are now defined in veda/config.yml file in the repository. Please edit that file directly.",
-	})
-}
-
 // GetCollectionFiles returns all files in a collection
 func (ctrl *UserGitRepoCollectionController) GetCollectionFiles(c *gin.Context) {
 	repoID, err := strconv.ParseUint(c.Param("repoId"), 10, 32)
