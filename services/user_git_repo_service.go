@@ -5,116 +5,31 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strconv"
-	"strings"
-	"time"
-
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/go-github/v45/github"
+	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"github.com/zhaojunlucky/mkdocs-cms/database"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
 	"golang.org/x/oauth2"
 	"gopkg.in/yaml.v3"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"time"
 )
 
 // UserGitRepoService handles business logic for git repositories
 type UserGitRepoService struct {
+	BaseService
 	githubAppSettings *models.GitHubAppSettings
-	privateKey        []byte
 	githubAppClient   *github.Client
 }
 
-// NewUserGitRepoService creates a new UserGitRepoService
-func NewUserGitRepoService(settings *models.GitHubAppSettings) *UserGitRepoService {
-	// If settings is nil, try to load from environment variables
-	if settings == nil || settings.AppID == 0 {
-		panic("GitHubAppSettings is nil")
-		return nil
-	}
+func (s *UserGitRepoService) Init(ctx *core.APPContext) {
+	s.InitService("userGitRepoService", ctx, s)
+	s.githubAppSettings = ctx.GithubAppSettings
+	s.githubAppClient = ctx.GithubAppClient
 
-	// Try to load private key if path is provided
-	var privateKey []byte
-	if settings.PrivateKeyPath != "" {
-		var err error
-		privateKey, err = os.ReadFile(settings.PrivateKeyPath)
-		if err != nil {
-			fmt.Printf("Warning: Failed to read GitHub App private key: %v\n", err)
-		}
-	}
-
-	// Create a transport that injects the JWT
-	itr := &jwtTransport{
-		settings:   settings,
-		privateKey: privateKey,
-	}
-
-	// Create a GitHub App client with the JWT transport
-	githubAppClient := github.NewClient(&http.Client{Transport: itr})
-
-	return &UserGitRepoService{
-		githubAppSettings: settings,
-		privateKey:        privateKey,
-		githubAppClient:   githubAppClient,
-	}
-}
-
-// jwtTransport is an http.RoundTripper that adds a JWT to requests
-type jwtTransport struct {
-	settings   *models.GitHubAppSettings
-	privateKey []byte
-	base       http.RoundTripper
-}
-
-func (t *jwtTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	// Generate a new JWT for each request
-	token, err := t.generateJWT()
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate JWT: %v", err)
-	}
-
-	// Clone the request to modify it
-	req2 := req.Clone(req.Context())
-	req2.Header.Set("Authorization", "Bearer "+token)
-	req2.Header.Set("Accept", "application/vnd.github.v3+json")
-
-	// Use the base transport or default if none set
-	transport := t.base
-	if transport == nil {
-		transport = http.DefaultTransport
-	}
-
-	return transport.RoundTrip(req2)
-}
-
-func (t *jwtTransport) generateJWT() (string, error) {
-	// Create the claims for the JWT
-	now := time.Now()
-	claims := jwt.RegisteredClaims{
-		IssuedAt:  jwt.NewNumericDate(now),
-		ExpiresAt: jwt.NewNumericDate(now.Add(10 * time.Minute)),
-		Issuer:    strconv.FormatInt(t.settings.AppID, 10),
-	}
-
-	// Create the token
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-
-	// Parse the private key
-	key, err := jwt.ParseRSAPrivateKeyFromPEM(t.privateKey)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse private key: %v", err)
-	}
-
-	// Sign the token
-	signedToken, err := token.SignedString(key)
-	if err != nil {
-		return "", fmt.Errorf("failed to sign token: %v", err)
-	}
-
-	return signedToken, nil
 }
 
 // GetAllRepos returns all git repositories
@@ -153,16 +68,13 @@ func (s *UserGitRepoService) CreateRepo(repo *models.UserGitRepo) error {
 		return errors.New("user not found")
 	}
 
-	// Generate local path for the repository
-	baseRepoPath := "/Users/jun/Downloads/mkdocs-cms"
-
 	// Create base directory if it doesn't exist
-	if err := os.MkdirAll(baseRepoPath, 0755); err != nil {
+	if err := os.MkdirAll(s.ctx.RepoBasePath, 0755); err != nil {
 		return err
 	}
 
 	// Create a unique local path for this repository
-	repo.LocalPath = filepath.Join(baseRepoPath, user.Username, repo.Name)
+	repo.LocalPath = filepath.Join(s.ctx.RepoBasePath, user.Username, repo.Name)
 
 	// Set default values if not provided
 	if repo.Branch == "" {
@@ -341,25 +253,9 @@ func (s *UserGitRepoService) syncWithGitHubApp(repo models.UserGitRepo) error {
 		return fmt.Errorf("invalid auth data: %v", err)
 	}
 
-	// Generate a JWT for GitHub API authentication
-	token, err := s.generateJWT()
-	if err != nil {
-		return fmt.Errorf("failed to generate authentication token: %v", err)
-	}
-
-	// Create an HTTP client that sends the JWT as a bearer token
-	httpClient := &http.Client{
-		Transport: &oauth2.Transport{
-			Source: oauth2.StaticTokenSource(
-				&oauth2.Token{AccessToken: token},
-			),
-		},
-	}
-	client := github.NewClient(httpClient)
-
 	// Get an installation token
 	ctx := context.Background()
-	installationToken, _, err := client.Apps.CreateInstallationToken(ctx, authData.InstallationID, nil)
+	installationToken, _, err := s.ctx.GithubAppClient.Apps.CreateInstallationToken(ctx, authData.InstallationID, nil)
 	if err != nil {
 		return fmt.Errorf("failed to get installation token: %v", err)
 	}
@@ -581,35 +477,6 @@ func (s *UserGitRepoService) ensureVedaConfig(repo models.UserGitRepo) error {
 	return fmt.Errorf("veda/config.yml not found. Please create this file with proper configuration")
 }
 
-// generateJWT generates a JWT for GitHub App authentication
-func (s *UserGitRepoService) generateJWT() (string, error) {
-	if s.privateKey == nil || s.githubAppSettings.AppID == 0 {
-		return "", errors.New("GitHub App not configured")
-	}
-
-	// Parse the private key
-	key, err := jwt.ParseRSAPrivateKeyFromPEM(s.privateKey)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse private key: %v", err)
-	}
-
-	// Create the JWT
-	now := time.Now()
-	claims := jwt.RegisteredClaims{
-		IssuedAt:  jwt.NewNumericDate(now),
-		ExpiresAt: jwt.NewNumericDate(now.Add(10 * time.Minute)),
-		Issuer:    strconv.FormatInt(s.githubAppSettings.AppID, 10),
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	signedToken, err := token.SignedString(key)
-	if err != nil {
-		return "", fmt.Errorf("failed to sign JWT: %v", err)
-	}
-
-	return signedToken, nil
-}
-
 // GetInstallationToken gets a GitHub app token for the repository
 func (s *UserGitRepoService) GetInstallationToken(installationID int64) (*github.InstallationToken, error) {
 	token, _, err := s.githubAppClient.Apps.CreateInstallationToken(context.Background(), installationID, nil)
@@ -661,8 +528,10 @@ func (s *UserGitRepoService) CheckWebHooks(id string) error {
 	fmt.Printf("Found %d webhooks for repository %s/%s\n", len(hooks), owner, repoName)
 	var repoHook *github.Hook
 	for i, hook := range hooks {
-		fmt.Printf("Webhook %d: ID=%d, URL=%s, Active=%t\n", i+1, hook.GetID(), hook.GetURL(), hook.GetActive())
-		if *hook.URL == s.githubAppSettings.WebhookURL {
+		url := hook.Config["url"]
+		fmt.Printf("Webhook %d: ID=%d, URL=%s, Active=%t\n", i+1, hook.GetID(), url, hook.GetActive())
+
+		if url == s.githubAppSettings.WebhookURL {
 			repoHook = hook
 			break
 		}

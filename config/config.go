@@ -11,11 +11,12 @@ import (
 
 // Config represents the application configuration
 type Config struct {
-	JWT      JWTConfig      `yaml:"jwt"`
-	OAuth    OAuthConfig    `yaml:"oauth"`
-	GitHub   GitHubConfig   `yaml:"github"`
-	Google   GoogleConfig   `yaml:"google"`
-	Security SecurityConfig `yaml:"security"`
+	JWT          JWTConfig      `yaml:"jwt"`
+	OAuth        OAuthConfig    `yaml:"oauth"`
+	GitHub       GitHubConfig   `yaml:"github"`
+	Google       GoogleConfig   `yaml:"google"`
+	Security     SecurityConfig `yaml:"security"`
+	RepoBasePath string         `yaml:"repo_base_path"`
 }
 
 // JWTConfig represents JWT configuration

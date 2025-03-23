@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -10,13 +11,29 @@ import (
 
 // UserGitRepoController handles git repository-related HTTP requests
 type UserGitRepoController struct {
+	BaseController
 	userGitRepoService *services.UserGitRepoService
+	asyncTaskService   *services.AsyncTaskService
 }
 
-// NewUserGitRepoController creates a new UserGitRepoController
-func NewUserGitRepoController(userGitRepoService *services.UserGitRepoService) *UserGitRepoController {
-	return &UserGitRepoController{
-		userGitRepoService: userGitRepoService,
+func (c *UserGitRepoController) Init(ctx *core.APPContext, router *gin.RouterGroup) {
+	c.ctx = ctx
+	c.userGitRepoService = ctx.MustGetService("userGitRepoService").(*services.UserGitRepoService)
+	c.asyncTaskService = ctx.MustGetService("asyncTaskService").(*services.AsyncTaskService)
+	repos := router.Group("/repos")
+	{
+		//repos.GET("", userGitRepoController.GetRepos)
+		repos.GET("/:id", c.GetRepo)
+		repos.PUT("/:id", c.UpdateRepo)
+		repos.DELETE("/:id", c.DeleteRepo)
+		repos.POST("/:id/sync", c.SyncRepo)
+		repos.GET("/:id/branches", c.GetRepoBranches)
+	}
+
+	// User repositories route
+	userRepos := router.Group("/users/repos")
+	{
+		userRepos.GET("/:user_id", c.GetReposByUser)
 	}
 }
 
@@ -198,8 +215,7 @@ func (c *UserGitRepoController) SyncRepo(ctx *gin.Context) {
 	}
 
 	// Create an async task for the sync operation
-	asyncTaskService := services.NewAsyncTaskService()
-	task, err := asyncTaskService.CreateTask(models.TaskTypeSync, id, authenticatedUserID.(string))
+	task, err := c.asyncTaskService.CreateTask(models.TaskTypeSync, id, authenticatedUserID.(string))
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create sync task"})
 		return
@@ -214,16 +230,16 @@ func (c *UserGitRepoController) SyncRepo(ctx *gin.Context) {
 	// Start sync in a goroutine
 	go func() {
 		// Update task status to running
-		asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusRunning, "Repository sync in progress")
+		c.asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusRunning, "Repository sync in progress")
 
 		if err := c.userGitRepoService.SyncRepo(id); err != nil {
 			c.userGitRepoService.UpdateRepoStatus(id, models.StatusFailed, err.Error())
-			asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusFailed, err.Error())
+			c.asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusFailed, err.Error())
 			return
 		}
 		if err := c.userGitRepoService.CheckWebHooks(id); err != nil {
 			c.userGitRepoService.UpdateRepoStatus(id, models.StatusFailed, err.Error())
-			asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusFailed, err.Error())
+			c.asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusFailed, err.Error())
 			return
 		}
 
@@ -234,10 +250,10 @@ func (c *UserGitRepoController) SyncRepo(ctx *gin.Context) {
 		updatedRepo, _ := c.userGitRepoService.GetRepoByID(id)
 
 		if updatedRepo.Status == models.StatusWarning {
-			asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusCompleted,
+			c.asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusCompleted,
 				"Repository sync completed with warnings: "+updatedRepo.ErrorMsg)
 		} else {
-			asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusCompleted,
+			c.asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusCompleted,
 				"Repository sync completed successfully")
 		}
 	}()

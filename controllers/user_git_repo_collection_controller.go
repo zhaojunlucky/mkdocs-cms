@@ -14,20 +14,27 @@ import (
 	"github.com/zhaojunlucky/mkdocs-cms/services"
 )
 
-var userGitRepoCollectionService *services.UserGitRepoCollectionService
-
-// InitUserGitRepoCollectionController initializes the controller with GitHub app settings
-func InitUserGitRepoCollectionController(settings *models.GitHubAppSettings) {
-	userGitRepoCollectionService = services.NewUserGitRepoCollectionService(services.NewUserGitRepoService(settings))
-}
-
 type UserGitRepoCollectionController struct {
+	BaseController
 	service *services.UserGitRepoCollectionService
 }
 
-func NewUserGitRepoCollectionController() *UserGitRepoCollectionController {
-	return &UserGitRepoCollectionController{
-		service: userGitRepoCollectionService,
+func (ctrl *UserGitRepoCollectionController) Init(ctx *core.APPContext, router *gin.RouterGroup) {
+	ctrl.ctx = ctx
+	ctrl.service = ctx.MustGetService("userGitRepoCollectionService").(*services.UserGitRepoCollectionService)
+	collections := router.Group("/collections")
+	{
+		collections.GET("/repo/:repoId", ctrl.GetCollectionsByRepo)
+
+		// Collection file routes
+		collections.GET("/repo/:repoId/:collectionName/files", ctrl.GetCollectionFiles)
+		collections.POST("/repo/:repoId/:collectionName/files/folder", ctrl.CreateFolder)
+		collections.GET("/repo/:repoId/:collectionName/files/path", ctrl.GetCollectionFilesInPath)
+		collections.GET("/repo/:repoId/:collectionName/files/content", ctrl.GetFileContent)
+		collections.PUT("/repo/:repoId/:collectionName/files/content", ctrl.UpdateFileContent)
+		collections.DELETE("/repo/:repoId/:collectionName/files", ctrl.DeleteFile)
+		collections.POST("/repo/:repoId/:collectionName/files/upload", ctrl.UploadFile)
+		collections.PUT("/repo/:repoId/:collectionName/files/rename", ctrl.RenameFile)
 	}
 }
 

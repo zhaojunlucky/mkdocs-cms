@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"io"
 	"net/http"
 	"net/url"
@@ -13,7 +14,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/zhaojunlucky/mkdocs-cms/config"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
 	"github.com/zhaojunlucky/mkdocs-cms/services"
 	"golang.org/x/oauth2"
@@ -22,6 +22,7 @@ import (
 )
 
 type AuthController struct {
+	BaseController
 	userService        *services.UserService
 	githubOAuthConfig  *oauth2.Config
 	googleOAuthConfig  *oauth2.Config
@@ -29,39 +30,42 @@ type AuthController struct {
 	jwtExpirationHours int
 }
 
-func NewAuthController(userService *services.UserService, appConfig *config.Config) *AuthController {
+func (c *AuthController) Init(ctx *core.APPContext, router *gin.RouterGroup) {
+	c.ctx = ctx
+	c.userService = ctx.MustGetService("userService").(*services.UserService)
+	c.initConfig()
+	c.registerRoutes(router)
+}
+
+func (c *AuthController) initConfig() {
 	// Initialize GitHub OAuth config
 	githubConfig := &oauth2.Config{
-		ClientID:     appConfig.GitHub.OAuth.ClientID,
-		ClientSecret: appConfig.GitHub.OAuth.ClientSecret,
-		RedirectURL:  appConfig.OAuth.RedirectURL,
+		ClientID:     c.ctx.Config.GitHub.OAuth.ClientID,
+		ClientSecret: c.ctx.Config.GitHub.OAuth.ClientSecret,
+		RedirectURL:  c.ctx.Config.OAuth.RedirectURL,
 		Scopes:       []string{"user:email", "read:user"},
 		Endpoint:     github.Endpoint,
 	}
+	c.githubOAuthConfig = githubConfig
 
 	// Initialize Google OAuth config
 	googleConfig := &oauth2.Config{
-		ClientID:     appConfig.Google.OAuth.ClientID,
-		ClientSecret: appConfig.Google.OAuth.ClientSecret,
-		RedirectURL:  appConfig.OAuth.RedirectURL,
-		Scopes:       appConfig.Google.OAuth.Scopes,
+		ClientID:     c.ctx.Config.Google.OAuth.ClientID,
+		ClientSecret: c.ctx.Config.Google.OAuth.ClientSecret,
+		RedirectURL:  c.ctx.Config.OAuth.RedirectURL,
+		Scopes:       c.ctx.Config.Google.OAuth.Scopes,
 		Endpoint:     google.Endpoint,
 	}
+	c.googleOAuthConfig = googleConfig
 
 	// Get JWT secret from configuration
-	jwtSecret := []byte(appConfig.JWT.Secret)
-
-	return &AuthController{
-		userService:        userService,
-		githubOAuthConfig:  githubConfig,
-		googleOAuthConfig:  googleConfig,
-		jwtSecret:          jwtSecret,
-		jwtExpirationHours: appConfig.JWT.ExpirationHours,
-	}
+	jwtSecret := []byte(c.ctx.Config.JWT.Secret)
+	c.jwtSecret = jwtSecret
+	c.jwtExpirationHours = c.ctx.Config.JWT.ExpirationHours
 }
 
 // RegisterRoutes registers the auth routes
-func (c *AuthController) RegisterRoutes(router *gin.RouterGroup) {
+func (c *AuthController) registerRoutes(router *gin.RouterGroup) {
 	auth := router.Group("/auth")
 	{
 		auth.GET("/github", c.GithubLogin)

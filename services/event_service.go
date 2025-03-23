@@ -1,6 +1,7 @@
 package services
 
 import (
+	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"time"
 
 	"github.com/zhaojunlucky/mkdocs-cms/database"
@@ -9,11 +10,12 @@ import (
 )
 
 // EventService handles business logic for events
-type EventService struct{}
+type EventService struct {
+	BaseService
+}
 
-// NewEventService creates a new EventService
-func NewEventService() *EventService {
-	return &EventService{}
+func (s *EventService) Init(ctx *core.APPContext) {
+	s.InitService("eventService", ctx, s)
 }
 
 // CreateEvent creates a new event

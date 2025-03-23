@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"io"
 	"log"
 	"net/http"
@@ -19,18 +20,20 @@ import (
 
 // GitHubWebhookController handles webhook events from GitHub
 type GitHubWebhookController struct {
+	BaseController
 	gitRepoService *services.UserGitRepoService
 	eventService   *services.EventService
 	webhookSecret  string
 }
 
-// NewGitHubWebhookController creates a new GitHubWebhookController
-func NewGitHubWebhookController(webhookSecret string, settings *models.GitHubAppSettings) *GitHubWebhookController {
-	return &GitHubWebhookController{
-		gitRepoService: services.NewUserGitRepoService(settings),
-		eventService:   services.NewEventService(),
-		webhookSecret:  webhookSecret,
-	}
+func (c *GitHubWebhookController) Init(ctx *core.APPContext, router *gin.RouterGroup) {
+	c.ctx = ctx
+	c.gitRepoService = ctx.MustGetService("userGitRepoService").(*services.UserGitRepoService)
+	c.eventService = ctx.MustGetService("eventService").(*services.EventService)
+	c.webhookSecret = ctx.GithubAppSettings.WebhookSecret
+
+	router.POST("/webhooks/github", c.HandleWebhook)
+
 }
 
 // HandleWebhook processes incoming GitHub webhook events

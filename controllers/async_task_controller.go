@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -9,13 +10,18 @@ import (
 
 // AsyncTaskController handles async task-related HTTP requests
 type AsyncTaskController struct {
+	BaseController
 	asyncTaskService *services.AsyncTaskService
 }
 
-// NewAsyncTaskController creates a new AsyncTaskController
-func NewAsyncTaskController() *AsyncTaskController {
-	return &AsyncTaskController{
-		asyncTaskService: services.NewAsyncTaskService(),
+func (c *AsyncTaskController) Init(ctx *core.APPContext, router *gin.RouterGroup) {
+	c.ctx = ctx
+	c.asyncTaskService = ctx.MustGetService("asyncTaskService").(*services.AsyncTaskService)
+	tasks := router.Group("/tasks")
+	{
+		tasks.GET("", c.GetUserTasks)
+		tasks.GET("/:id", c.GetTask)
+		tasks.GET("/resource/:resourceId", c.GetResourceTasks)
 	}
 }
 
@@ -102,15 +108,4 @@ func (c *AsyncTaskController) GetResourceTasks(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, userTasks)
-}
-
-// RegisterRoutes registers the routes for the AsyncTaskController
-func (c *AsyncTaskController) RegisterRoutes(router *gin.RouterGroup) {
-	tasks := router.Group("/tasks")
-	//tasks.Use(middleware.RequireAuth())
-	{
-		tasks.GET("", c.GetUserTasks)
-		tasks.GET("/:id", c.GetTask)
-		tasks.GET("/resource/:resourceId", c.GetResourceTasks)
-	}
 }

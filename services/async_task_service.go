@@ -1,7 +1,7 @@
 package services
 
 import (
-	"errors"
+	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"time"
 
 	"github.com/zhaojunlucky/mkdocs-cms/database"
@@ -9,11 +9,12 @@ import (
 )
 
 // AsyncTaskService handles business logic for async tasks
-type AsyncTaskService struct{}
+type AsyncTaskService struct {
+	BaseService
+}
 
-// NewAsyncTaskService creates a new AsyncTaskService
-func NewAsyncTaskService() *AsyncTaskService {
-	return &AsyncTaskService{}
+func (s *AsyncTaskService) Init(ctx *core.APPContext) {
+	s.InitService("asyncTaskService", ctx, s)
 }
 
 // CreateTask creates a new async task
@@ -30,7 +31,6 @@ func (s *AsyncTaskService) CreateTask(taskType models.TaskType, resourceID, user
 	if result.Error != nil {
 		return models.AsyncTask{}, result.Error
 	}
-
 	return task, nil
 }
 
@@ -90,28 +90,5 @@ func (s *AsyncTaskService) UpdateTaskStatus(id string, status models.TaskStatus,
 	}
 
 	result = database.DB.Model(&task).Updates(updates)
-	return result.Error
-}
-
-// UpdateTaskProgress updates the progress of a task
-func (s *AsyncTaskService) UpdateTaskProgress(id string, progress int) error {
-	if progress < 0 || progress > 100 {
-		return errors.New("progress must be between 0 and 100")
-	}
-
-	result := database.DB.Model(&models.AsyncTask{}).Where("id = ?", id).Update("progress", progress)
-	return result.Error
-}
-
-// DeleteTask deletes a task
-func (s *AsyncTaskService) DeleteTask(id string) error {
-	result := database.DB.Delete(&models.AsyncTask{}, "id = ?", id)
-	return result.Error
-}
-
-// CleanupOldTasks deletes tasks older than the specified duration
-func (s *AsyncTaskService) CleanupOldTasks(age time.Duration) error {
-	cutoff := time.Now().Add(-age)
-	result := database.DB.Where("created_at < ?", cutoff).Delete(&models.AsyncTask{})
 	return result.Error
 }

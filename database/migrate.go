@@ -50,32 +50,3 @@ func MigrateDB() {
 
 	log.Println("Database migrations completed successfully")
 }
-
-// CreateTestUser creates a test user for development
-func CreateTestUser() {
-	log.Println("Creating test user...")
-
-	// Check if test user already exists
-	var count int64
-	DB.Model(&models.User{}).Where("email = ?", "test@example.com").Count(&count)
-	if count > 0 {
-		log.Println("Test user already exists, skipping creation")
-		return
-	}
-
-	// Create test user
-	testUser := models.User{
-		ID:        "test-user-id",
-		Name:      "Test User",
-		Email:     "test@example.com",
-		AvatarURL: "https://via.placeholder.com/150",
-		Provider:  "test",
-	}
-
-	result := DB.Create(&testUser)
-	if result.Error != nil {
-		log.Fatalf("Failed to create test user: %v", result.Error)
-	}
-
-	log.Println("Test user created successfully")
-}

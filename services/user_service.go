@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"github.com/zhaojunlucky/mkdocs-cms/core"
 
 	"github.com/zhaojunlucky/mkdocs-cms/database"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
@@ -11,11 +12,12 @@ import (
 )
 
 // UserService handles business logic related to users
-type UserService struct{}
+type UserService struct {
+	BaseService
+}
 
-// NewUserService creates a new user service
-func NewUserService() *UserService {
-	return &UserService{}
+func (s *UserService) Init(ctx *core.APPContext) {
+	s.InitService("userService", ctx, s)
 }
 
 // GetUserByID retrieves a user by ID

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/google/go-github/v45/github"
@@ -14,20 +15,18 @@ import (
 
 	"github.com/zhaojunlucky/mkdocs-cms/database"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
-	"github.com/zhaojunlucky/mkdocs-cms/utils"
 	"gopkg.in/yaml.v3"
 )
 
 // UserGitRepoCollectionService handles business logic for git repository collections
 type UserGitRepoCollectionService struct {
+	BaseService
 	userGitRepoService *UserGitRepoService
 }
 
-// NewUserGitRepoCollectionService creates a new instance of UserGitRepoCollectionService
-func NewUserGitRepoCollectionService(userGitRepoService *UserGitRepoService) *UserGitRepoCollectionService {
-	return &UserGitRepoCollectionService{
-		userGitRepoService: userGitRepoService,
-	}
+func (s *UserGitRepoCollectionService) Init(ctx *core.APPContext) {
+	s.InitService("userGitRepoCollectionService", ctx, s)
+	s.userGitRepoService = ctx.MustGetService("userGitRepoService").(*UserGitRepoService)
 }
 
 // VedaConfig represents the structure of veda/config.yml
@@ -511,18 +510,15 @@ func (s *UserGitRepoCollectionService) CommitWithGithubApp(repo models.UserGitRe
 		},
 	}
 
-	token, err := utils.GetGitHubInstallationToken(
-		s.userGitRepoService.githubAppSettings.AppID,
-		s.userGitRepoService.privateKey,
-		repo.InstallationID,
-		opts,
-	)
+	// Get an installation token
+	token, _, err := s.ctx.GithubAppClient.Apps.CreateInstallationToken(context.Background(), repo.InstallationID, opts)
+
 	if err != nil {
 		return fmt.Errorf("failed to get installation token: %v", err)
 	}
 
 	// Set up git config with token
-	remoteURL := fmt.Sprintf("https://x-access-token:%s@%s", token, repo.RemoteURL[8:])
+	remoteURL := fmt.Sprintf("https://x-access-token:%s@%s", token.GetToken(), repo.RemoteURL[8:])
 	cmd := exec.Command("git", "-C", repo.LocalPath, "remote", "set-url", "origin", remoteURL)
 
 	if err := cmd.Run(); err != nil {
