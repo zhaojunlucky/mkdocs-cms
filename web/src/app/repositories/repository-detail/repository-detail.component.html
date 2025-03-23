@@ -73,11 +73,11 @@
             <p>Loading files...</p>
           </div>
 
-          <div *ngIf="!isLoading && files.length === 0" class="empty-state">
+          <div *ngIf="!isLoading && (!files || files.length === 0)" class="empty-state">
             <p>This folder is empty.</p>
           </div>
 
-          <div *ngIf="!isLoading && files.length > 0" class="file-list">
+          <div *ngIf="!isLoading && files && files.length > 0" class="file-list">
             <div *ngFor="let file of files" class="file-item"
                  [class.is-folder]="file.is_dir"
                  (click)="file.is_dir ? navigateToFolder(file) : openFile(file)">

@@ -9,23 +9,6 @@ import { SimplemdeModule } from 'ngx-simplemde';
     SimplemdeModule.forRoot({
       options: {
         placeholder: 'Type your markdown here...',
-        spellChecker: false,
-        autosave: {
-          enabled: true,
-          delay: 5000,
-          uniqueId: 'markdown-editor'
-        },
-        renderingConfig: {
-          singleLineBreaks: false,
-          codeSyntaxHighlighting: true,
-        },
-        toolbar: [
-          'bold', 'italic', 'heading', '|',
-          'quote', 'unordered-list', 'ordered-list', '|',
-          'link', 'image', '|',
-          'preview', 'side-by-side', 'fullscreen', '|',
-          'guide'
-        ]
       }
     })
   ],

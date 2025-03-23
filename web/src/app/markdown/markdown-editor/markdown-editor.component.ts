@@ -1,6 +1,6 @@
 import { Component, Input, OnInit, ViewChild, forwardRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SimplemdeComponent, SimplemdeModule } from 'ngx-simplemde';
+import {SimplemdeComponent, SimplemdeModule, SimplemdeOptions} from 'ngx-simplemde';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
 import * as yaml from 'js-yaml';
 
@@ -20,17 +20,36 @@ import * as yaml from 'js-yaml';
 })
 export class MarkdownEditorComponent implements OnInit, ControlValueAccessor {
   @ViewChild('simplemde', { static: true }) private simplemde!: SimplemdeComponent;
-  
+
   @Input() disabled = false;
   @Input() placeholder = 'Type your markdown here...';
-  
+
   markdownContent = '';
   frontMatter: Record<string, any> = {};
   private onChange: any = () => {};
   private onTouched: any = () => {};
+  options: SimplemdeOptions = {
+    indentWithTabs: false,
+    tabSize: 2,
+    shortcuts: {
+      drawTable: "Cmd-Alt-T"
+    },
+    showIcons: ["code", "table"],
+    spellChecker: true,
+    autosave: {
+      enabled: true,
+      delay: 5000,
+      uniqueId: 'markdown-editor'
+    },
+    renderingConfig: {
+      singleLineBreaks: false,
+      codeSyntaxHighlighting: true,
+    },
+  };
 
   ngOnInit(): void {
     // Additional initialization if needed
+
   }
 
   writeValue(value: string): void {
@@ -67,7 +86,7 @@ export class MarkdownEditorComponent implements OnInit, ControlValueAccessor {
       // Check if the content has front matter (between --- delimiters)
       const frontMatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n/;
       const match = this.markdownContent.match(frontMatterRegex);
-      
+
       if (match && match[1]) {
         this.frontMatter = yaml.load(match[1]) as Record<string, any>;
       } else {
@@ -82,13 +101,13 @@ export class MarkdownEditorComponent implements OnInit, ControlValueAccessor {
   // Method to update front matter and regenerate the markdown content
   updateFrontMatter(newFrontMatter: Record<string, any>): void {
     this.frontMatter = { ...newFrontMatter };
-    
+
     // Generate front matter YAML
     const frontMatterYaml = yaml.dump(this.frontMatter);
-    
+
     // Check if the content already has front matter
     const frontMatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n/;
-    
+
     if (frontMatterRegex.test(this.markdownContent)) {
       // Replace existing front matter
       this.markdownContent = this.markdownContent.replace(
@@ -99,7 +118,7 @@ export class MarkdownEditorComponent implements OnInit, ControlValueAccessor {
       // Add front matter to the beginning of the content
       this.markdownContent = `---\n${frontMatterYaml}---\n\n${this.markdownContent}`;
     }
-    
+
     // Notify of the change
     this.onChange(this.markdownContent);
   }

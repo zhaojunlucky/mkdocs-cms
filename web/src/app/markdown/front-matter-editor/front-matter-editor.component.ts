@@ -85,7 +85,7 @@ export class FrontMatterEditorComponent implements OnInit, OnChanges {
         [field.name]: defaultValue
       })
     });
-
+    this.updateFrontMatter();
     // Listen for changes to update front matter
     this.frontMatterForm.valueChanges.subscribe(() => {
       this.updateFrontMatter();
