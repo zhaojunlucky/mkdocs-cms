@@ -46,7 +46,6 @@ type GitHubOAuthConfig struct {
 // GitHubAppConfig represents GitHub App configuration
 type GitHubAppConfig struct {
 	AppID          int64  `yaml:"app_id"`
-	InstallationID string `yaml:"installation_id"`
 	PrivateKeyPath string `yaml:"private_key_path"`
 	WebhookSecret  string `yaml:"webhook_secret"`
 	Name           string `yaml:"app_name"`
@@ -145,9 +144,6 @@ func overrideWithEnvVars(config *Config) {
 		}
 		config.GitHub.App.AppID = intVal
 	}
-	if val := os.Getenv("GITHUB_APP_INSTALLATION_ID"); val != "" {
-		config.GitHub.App.InstallationID = val
-	}
 	if val := os.Getenv("GITHUB_APP_PRIVATE_KEY_PATH"); val != "" {
 		config.GitHub.App.PrivateKeyPath = val
 	}
@@ -162,19 +158,4 @@ func overrideWithEnvVars(config *Config) {
 	if val := os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"); val != "" {
 		config.Google.OAuth.ClientSecret = val
 	}
-}
-
-// GetConfig is a singleton function to get the application configuration
-var configInstance *Config
-
-// GetConfig returns the application configuration
-func GetConfig(configPath string) (*Config, error) {
-	if configInstance == nil {
-		var err error
-		configInstance, err = LoadConfig(configPath)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return configInstance, nil
 }

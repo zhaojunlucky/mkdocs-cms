@@ -1,7 +1,10 @@
 package database
 
 import (
+	"fmt"
+	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"os"
+	"path/filepath"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
@@ -13,14 +16,19 @@ import (
 var DB *gorm.DB
 
 // Initialize sets up the database connection
-func Initialize() {
+func Initialize(ctx *core.APPContext) {
 	var err error
 
 	// Get database path from environment variable or use default
-	dbPath := os.Getenv("DB_PATH")
-	if dbPath == "" {
-		dbPath = "cms.db"
+	dbPath := filepath.Join(ctx.Config.WorkingDir, "db")
+	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+		err := os.MkdirAll(dbPath, 0755) // Creates parent directories recursively with permissions 0755
+		if err != nil {
+			log.Fatalf("error creating directory %s: %v", dbPath, err)
+		}
+		fmt.Printf("Successfully created directory: %s\n", dbPath)
 	}
+	dbPath = filepath.Join(dbPath, "cms.db")
 
 	// Configure GORM logger
 	newLogger := logger.New(

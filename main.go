@@ -46,7 +46,7 @@ func main() {
 	log.Infof("GitHub App ID: %d", appConfig.GitHub.App.AppID)
 
 	// Initialize database
-	database.Initialize()
+	database.Initialize(ctx)
 
 	// Initialize Gin router
 	router := gin.New()
@@ -63,9 +63,6 @@ func main() {
 	controllers.InitAPIControllers(ctx, api)
 	v1 := api.Group("/v1")
 	controllers.InitV1Controllers(ctx, v1)
-
-	// Setup API routes
-	setupRoutes(router)
 
 	// Start the server
 	log.Infof("Server starting on http://localhost:8080")
@@ -93,15 +90,6 @@ func createContext(appConfig *config.Config) *core.APPContext {
 	}
 	ctx.GithubAppClient = utils.CreateGitHubAppClient(ctx)
 	return ctx
-}
-
-// setupRoutes configures all the routes for our application
-func setupRoutes(r *gin.Engine) {
-
-	// Serve Angular app for any other routes
-	r.NoRoute(func(c *gin.Context) {
-		c.File("./web/dist/web/browser/index.html")
-	})
 }
 
 func setupLog(ctx *core.APPContext) {
