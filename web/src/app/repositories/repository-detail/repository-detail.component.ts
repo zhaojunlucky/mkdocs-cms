@@ -308,6 +308,7 @@ export class RepositoryDetailComponent implements OnInit {
     this.frontMatter = {};
     if (this.selectedCollection.fields) {
       this.selectedCollection.fields.forEach(field => {
+        if (field.name === 'body') return
         this.frontMatter[field.name] = null
       });
     }
