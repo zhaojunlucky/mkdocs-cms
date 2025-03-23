@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { catchError, map, tap } from 'rxjs/operators';
+import {environment} from '../../environments/environment';
 
 export interface User {
   id: string;
@@ -19,7 +20,7 @@ export interface User {
 export class AuthService {
   private userSubject = new BehaviorSubject<User | null>(null);
   private tokenSubject = new BehaviorSubject<string | null>(null);
-  private apiUrl = 'http://localhost:8080/api'; // Base URL for our backend API
+  private apiUrl = environment.apiServer; // Base URL for our backend API
 
   constructor(
     private http: HttpClient,
@@ -28,7 +29,7 @@ export class AuthService {
     // Check if user is already logged in (from localStorage)
     const storedUser = localStorage.getItem('user');
     const storedToken = localStorage.getItem('auth_token');
-    
+
     if (storedUser && storedToken) {
       this.userSubject.next(JSON.parse(storedUser));
       this.tokenSubject.next(storedToken);
@@ -56,13 +57,13 @@ export class AuthService {
     if (!this.userSubject.value || !token) {
       return false;
     }
-    
+
     try {
       const tokenParts = token.split('.');
       if (tokenParts.length !== 3) {
         return false;
       }
-      
+
       const payload = JSON.parse(atob(tokenParts[1]));
       const expirationTime = payload.exp * 1000; // Convert to milliseconds
       return Date.now() < expirationTime;
@@ -87,11 +88,11 @@ export class AuthService {
     if (!token) {
       throw new Error('Authentication failed');
     }
-    
+
     // Store token
     localStorage.setItem('auth_token', token);
     this.tokenSubject.next(token);
-    
+
     // Get user info
     return this.getUserInfo(token).pipe(
       tap(user => this.setUser(user)),
@@ -117,7 +118,7 @@ export class AuthService {
     if (!token) {
       return of(false);
     }
-    
+
     return this.getUserInfo(token).pipe(
       map(user => {
         this.setUser(user);

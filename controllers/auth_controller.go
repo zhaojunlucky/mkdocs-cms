@@ -292,7 +292,7 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 	}
 
 	// Redirect to frontend with token
-	frontendURL := "http://localhost:4200/login"
+	frontendURL := fmt.Sprintf("%s/login", c.ctx.Config.FrontendURL)
 	redirectURL := fmt.Sprintf("%s?token=%s", frontendURL, url.QueryEscape(jwtToken))
 	ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }
