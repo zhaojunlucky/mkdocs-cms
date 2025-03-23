@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/config"
@@ -25,6 +26,16 @@ func main() {
 	configPath := os.Getenv("CONFIG_PATH")
 	if configPath == "" {
 		configPath = "./config/config-dev.yaml"
+	}
+
+	port := 8080
+	var err error
+	portStr := os.Getenv("PORT")
+	if portStr != "" {
+		port, err = strconv.Atoi(portStr)
+		if err != nil {
+			log.Fatalf("Failed to parse PORT as an integer: %v", err)
+		}
 	}
 
 	// Load configuration
@@ -65,8 +76,8 @@ func main() {
 	controllers.InitV1Controllers(ctx, v1)
 
 	// Start the server
-	log.Infof("Server starting on http://localhost:8080")
-	if err := router.Run(":8080"); err != nil {
+	log.Infof("Server starting on http://localhost:%d", port)
+	if err := router.Run(fmt.Sprintf(":%d", port)); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }
