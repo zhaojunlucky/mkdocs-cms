@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -253,6 +254,10 @@ func (s *UserGitRepoCollectionService) ListFilesInCollection(repoID uint, collec
 		files = append(files, fileInfo)
 	}
 
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].Name > files[j].Name
+	})
+
 	return files, nil
 }
 
@@ -316,6 +321,17 @@ func (s *UserGitRepoCollectionService) ListFilesInPath(repoID uint, collectionNa
 
 		files = append(files, fileInfo)
 	}
+
+	sort.Slice(files, func(i, j int) bool {
+		if files[i].IsDir && !files[j].IsDir {
+			return true // Directories come before files
+		}
+		if !files[i].IsDir && files[j].IsDir {
+			return false // Files come after directories
+		}
+		// If both are directories or both are files, sort by name
+		return files[i].Name > files[j].Name
+	})
 
 	return files, nil
 }

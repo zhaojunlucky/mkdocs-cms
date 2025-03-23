@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../auth/auth.service';
 import { catchError, finalize } from 'rxjs/operators';
 import { of } from 'rxjs';
+import {environment} from '../../../environments/environment';
 
 interface GithubAccount {
   login: string;
@@ -65,7 +66,7 @@ export class RepositoryImportComponent implements OnInit {
 
   loadGithubAppInfo(): void {
     const headers = this.getAuthHeaders();
-    this.http.get<GithubAppInfo>('http://localhost:8080/api/v1/github/app', { headers })
+    this.http.get<GithubAppInfo>(`${environment.apiServer}/v1/github/app`, { headers })
       .pipe(
         catchError(err => {
           console.error('Error loading GitHub App info:', err);
@@ -80,27 +81,23 @@ export class RepositoryImportComponent implements OnInit {
   }
 
   navigateToGitHubAppInstallation(): void {
-    if (this.githubAppInfo && this.githubAppInfo.html_url) {
-      window.open(this.githubAppInfo.html_url, '_blank');
-    } else {
-      this.error = 'GitHub App installation URL not available.';
-    }
+    window.open('https://github.com/apps/mkdocs-cms/', '_blank');
   }
 
   loadInstallations(): void {
     this.error = '';
-    
+
     const headers = this.getAuthHeaders();
-    this.http.get<GithubInstallation[]>('http://localhost:8080/api/v1/github/installations', { headers })
+    this.http.get<GithubInstallation[]>(`${environment.apiServer}/v1/github/installations`, { headers })
       .subscribe({
         next: (installations) => {
           this.installations = installations;
           this.loading = false;
-          
+
           // If no installations found, user needs to install the GitHub App
           if (this.installations.length === 0) {
             this.error = 'You need to install the GitHub App to your account first.';
-          } 
+          }
           // Auto-select the first installation if there's only one
           else if (this.installations.length === 1) {
             this.selectedInstallation = this.installations[0].id;
@@ -124,10 +121,10 @@ export class RepositoryImportComponent implements OnInit {
   loadRepositories(installationId: number): void {
     this.loading = true;
     this.error = '';
-    
+
     const headers = this.getAuthHeaders();
     this.http.get<GithubRepository[]>(
-      `http://localhost:8080/api/v1/github/installations/${installationId}/repositories`, 
+      `${environment.apiServer}/v1/github/installations/${installationId}/repositories`,
       { headers }
     ).subscribe({
       next: (repositories) => {
@@ -136,7 +133,7 @@ export class RepositoryImportComponent implements OnInit {
           selected: false
         }));
         this.loading = false;
-        
+
         if (this.repositories.length === 0) {
           this.error = 'No repositories found for this installation or all repositories have already been imported.';
         }
@@ -166,22 +163,22 @@ export class RepositoryImportComponent implements OnInit {
       this.error = 'No installation selected.';
       return;
     }
-    
+
     const selectedRepos = this.repositories
       .filter(repo => repo.selected)
       .map(repo => repo.id);
-    
+
     if (selectedRepos.length === 0) {
       this.error = 'No repositories selected.';
       return;
     }
-    
+
     this.loading = true;
     this.error = '';
-    
+
     const headers = this.getAuthHeaders();
     this.http.post(
-      `http://localhost:8080/api/v1/github/installations/${this.selectedInstallation}/import`,
+      `${environment.apiServer}/v1/github/installations/${this.selectedInstallation}/import`,
       { repositories: selectedRepos },
       { headers }
     ).pipe(

@@ -40,7 +40,7 @@
     <!-- No Installations Message -->
     <div *ngIf="installations.length === 0 && !loading" class="no-installations">
       <p>No GitHub installations found. Please install the GitHub App to your account first.</p>
-      <button *ngIf="githubAppInfo"
+      <button
               class="github-app-install-btn"
               (click)="navigateToGitHubAppInstallation()">
         Install GitHub App
