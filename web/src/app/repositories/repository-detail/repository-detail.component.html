@@ -175,10 +175,9 @@
             <!-- Markdown Editor -->
             <div class="markdown-editor-wrapper">
               <h3>Content</h3>
-              <app-markdown-editor
-                [(ngModel)]="markdownContent"
-                (ngModelChange)="onMarkdownChange($event)">
-              </app-markdown-editor>
+              <nu-markdown  [(ngModel)]="markdownContent" [options]="editorOptions" (ready)="onEditorReady($event)"/>
+
+
             </div>
           </div>
         </div>

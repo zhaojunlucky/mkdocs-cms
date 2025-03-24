@@ -8,12 +8,11 @@ import { NgIf, NgFor, NgClass, DatePipe, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import * as jsYaml from 'js-yaml';
-import { MarkdownModule } from '../../markdown/markdown.module';
-import { MarkdownEditorComponent } from '../../markdown/markdown-editor/markdown-editor.component';
 import { FrontMatterEditorComponent } from '../../markdown/front-matter-editor/front-matter-editor.component';
 import {MatMenuModule} from '@angular/material/menu';
 import {MatIcon} from '@angular/material/icon';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
+import {NuMarkdownComponent} from '@ng-util/markdown';
 
 @Component({
   selector: 'app-repository-detail',
@@ -28,12 +27,11 @@ import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
     RouterLink,
     RouterModule,
     MatButtonModule,
-    MarkdownModule,
-    MarkdownEditorComponent,
     FrontMatterEditorComponent,
     MatIcon,
     MatMenuModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    NuMarkdownComponent
   ],
   templateUrl: './repository-detail.component.html',
   styleUrls: ['./repository-detail.component.scss']
@@ -57,6 +55,29 @@ export class RepositoryDetailComponent implements OnInit {
   fileError = '';
   newFileName = '';
   savingFile = false;
+  editorOptions = {
+    theme: 'vs-light',
+    language: 'markdown',
+    lang:'en_US',
+    icon: 'material',
+    counter: {
+      enable: true,
+    },
+    cache: {
+      enable: false,
+    },
+    preview: {
+      hljs: {
+        lineNumber: true,
+      },
+      markdown: {
+        toc: true
+      },
+      actions: [
+        "desktop"
+      ]
+    }
+  };
 
   // Front matter and markdown content
   frontMatter: Record<string, any> = {};
@@ -80,6 +101,10 @@ export class RepositoryDetailComponent implements OnInit {
         this.error = 'Invalid repository ID';
       }
     });
+  }
+
+  onEditorReady(event: any) {
+    console.log('Editor is ready', event);
   }
 
   loadRepository(id: string): void {

@@ -46,6 +46,12 @@ func (ctrl *UserGitRepoCollectionController) GetCollectionsByRepo(c *gin.Context
 		return
 	}
 
+	// Verify repository ownership
+	if !ctrl.VerifyRepoOwnership(c, uint(repoID)) {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
 	collections, err := ctrl.service.GetCollectionsByRepo(uint(repoID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -65,6 +71,12 @@ func (ctrl *UserGitRepoCollectionController) GetCollectionFiles(c *gin.Context) 
 	repoID, err := strconv.ParseUint(c.Param("repoId"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid repository ID"})
+		return
+	}
+
+	// Verify repository ownership
+	if !ctrl.VerifyRepoOwnership(c, uint(repoID)) {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -88,6 +100,12 @@ func (ctrl *UserGitRepoCollectionController) GetCollectionFilesInPath(c *gin.Con
 	repoID, err := strconv.ParseUint(c.Param("repoId"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid repository ID"})
+		return
+	}
+
+	// Verify repository ownership
+	if !ctrl.VerifyRepoOwnership(c, uint(repoID)) {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -128,6 +146,11 @@ func (ctrl *UserGitRepoCollectionController) GetFileContent(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid repository ID"})
 		return
 	}
+	// Verify repository ownership
+	if !ctrl.VerifyRepoOwnership(c, uint(repoID)) {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
 
 	collectionName := c.Param("collectionName")
 	if collectionName == "" {
@@ -162,6 +185,12 @@ func (ctrl *UserGitRepoCollectionController) UpdateFileContent(c *gin.Context) {
 	repoID, err := strconv.ParseUint(c.Param("repoId"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid repository ID"})
+		return
+	}
+
+	// Verify repository ownership
+	if !ctrl.VerifyRepoOwnership(c, uint(repoID)) {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -207,6 +236,11 @@ func (ctrl *UserGitRepoCollectionController) DeleteFile(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid repository ID"})
 		return
 	}
+	// Verify repository ownership
+	if !ctrl.VerifyRepoOwnership(c, uint(repoID)) {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
 
 	collectionName := c.Param("collectionName")
 	if collectionName == "" {
@@ -233,6 +267,11 @@ func (ctrl *UserGitRepoCollectionController) UploadFile(c *gin.Context) {
 	repoID, err := strconv.ParseUint(c.Param("repoId"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid repository ID"})
+		return
+	}
+	// Verify repository ownership
+	if !ctrl.VerifyRepoOwnership(c, uint(repoID)) {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -309,6 +348,7 @@ func (ctrl *UserGitRepoCollectionController) RenameFile(c *gin.Context) {
 
 	// Verify repository ownership
 	if !ctrl.VerifyRepoOwnership(c, uint(repoID)) {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -352,6 +392,7 @@ func (ctrl *UserGitRepoCollectionController) CreateFolder(c *gin.Context) {
 
 	// Verify repository ownership
 	if !ctrl.VerifyRepoOwnership(c, uint(repoID)) {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
 

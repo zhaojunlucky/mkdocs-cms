@@ -219,27 +219,6 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, core.EnsureNonNilArr(response))
 }
 
-// GetRepositoryByID returns a specific repository by ID
-func (c *GitHubAppController) GetRepositoryByID(ctx *gin.Context) {
-	// Parse the repository ID from the URL
-	repoIDStr := ctx.Param("id")
-	repoID, err := strconv.ParseUint(repoIDStr, 10, 64)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid repository ID"})
-		return
-	}
-
-	// Get the repository from the database
-	repo, err := c.userGitRepoService.GetRepoByID(strconv.FormatUint(repoID, 10))
-	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"error": "Repository not found"})
-		return
-	}
-
-	// Return the repository
-	ctx.JSON(http.StatusOK, repo.ToResponse(true))
-}
-
 // ImportRepositories imports repositories from a GitHub App installation
 func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 	authenticatedUserID, exists := ctx.Get("userId")

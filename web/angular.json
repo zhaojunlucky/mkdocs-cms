@@ -55,11 +55,9 @@
             ],
             "styles": [
               "src/styles.scss",
-              "node_modules/simplemde/dist/simplemde.min.css",
               "node_modules/highlight.js/styles/github.css"
             ],
             "scripts": [
-              "node_modules/simplemde/dist/simplemde.min.js"
             ]
           },
           "configurations": {
