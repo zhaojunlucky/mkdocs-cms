@@ -1,6 +1,7 @@
 package services
 
 import (
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"time"
@@ -21,6 +22,7 @@ func (s *AsyncTaskService) Init(ctx *core.APPContext) {
 // CreateTask creates a new async task
 func (s *AsyncTaskService) CreateTask(taskType models.TaskType, resourceID, userID string) (models.AsyncTask, error) {
 	task := models.AsyncTask{
+		ID:         uuid.New().String(),
 		Type:       taskType,
 		Status:     models.TaskStatusPending,
 		ResourceID: resourceID,

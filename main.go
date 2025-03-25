@@ -12,6 +12,7 @@ import (
 	"github.com/zhaojunlucky/mkdocs-cms/models"
 	"github.com/zhaojunlucky/mkdocs-cms/services"
 	"github.com/zhaojunlucky/mkdocs-cms/utils"
+	"gopkg.in/natefinch/lumberjack.v2"
 	"io"
 	"os"
 	"path"
@@ -130,12 +131,20 @@ func setupLog(ctx *core.APPContext) {
 	} else if !fiInfo.IsDir() {
 		log.Fatalf("%s must be a directory", logPath)
 	}
-
 	logFilePath := path.Join(logPath, "mkdocs-cms.log")
-	logFile, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	if err != nil {
-		log.Fatalf("Failed to log to file, using default stderr")
+
+	lumberjackLogger := &lumberjack.Logger{
+		Filename:   logFilePath,
+		MaxSize:    10,
+		MaxBackups: 5,
+		MaxAge:     30,
+		Compress:   true,
 	}
+
+	// Configure logrus
+	log.SetOutput(io.MultiWriter(os.Stdout, lumberjackLogger))
+	log.SetFormatter(&log.JSONFormatter{})
+
 	log.SetReportCaller(true)
 	log.SetFormatter(&log.TextFormatter{
 		CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
@@ -144,7 +153,5 @@ func setupLog(ctx *core.APPContext) {
 			return "", fileName
 		},
 	})
-
-	log.SetOutput(io.MultiWriter(os.Stdout, logFile))
 
 }
