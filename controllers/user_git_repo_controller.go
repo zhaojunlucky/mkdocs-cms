@@ -13,14 +13,16 @@ import (
 // UserGitRepoController handles git repository-related HTTP requests
 type UserGitRepoController struct {
 	BaseController
-	userGitRepoService *services.UserGitRepoService
-	asyncTaskService   *services.AsyncTaskService
+	userGitRepoService     *services.UserGitRepoService
+	asyncTaskService       *services.AsyncTaskService
+	userGitRepoLockService *services.UserGitRepoLockService
 }
 
 func (c *UserGitRepoController) Init(ctx *core.APPContext, router *gin.RouterGroup) {
 	c.ctx = ctx
 	c.userGitRepoService = ctx.MustGetService("userGitRepoService").(*services.UserGitRepoService)
 	c.asyncTaskService = ctx.MustGetService("asyncTaskService").(*services.AsyncTaskService)
+	c.userGitRepoLockService = ctx.MustGetService("userGitRepoLockService").(*services.UserGitRepoLockService)
 	repos := router.Group("/repos")
 	{
 		//repos.GET("", userGitRepoController.GetRepos)
@@ -211,6 +213,7 @@ func (c *UserGitRepoController) DeleteRepo(ctx *gin.Context) {
 // SyncRepo synchronizes a git repository with its remote
 func (c *UserGitRepoController) SyncRepo(ctx *gin.Context) {
 	// Get authenticated user ID from context
+
 	authenticatedUserID, exists := ctx.Get("userId")
 	if !exists {
 		log.Errorf("Failed to get authenticated user ID from context")
@@ -243,6 +246,11 @@ func (c *UserGitRepoController) SyncRepo(ctx *gin.Context) {
 		return
 	}
 
+	lock := c.userGitRepoLockService.Acquire(id)
+	lock.Lock()
+
+	defer lock.Unlock()
+
 	// Update status to syncing
 	if err := c.userGitRepoService.UpdateRepoStatus(id, models.StatusSyncing, ""); err != nil {
 		log.Errorf("Failed to update repository status: %v", err)
@@ -255,7 +263,7 @@ func (c *UserGitRepoController) SyncRepo(ctx *gin.Context) {
 		// Update task status to running
 		c.asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusRunning, "Repository sync in progress")
 
-		if err := c.userGitRepoService.SyncRepo(id); err != nil {
+		if err := c.userGitRepoService.SyncRepo(id, ""); err != nil {
 			// Update task status to failed
 			log.Errorf("Failed to sync repository: %v", err)
 			c.userGitRepoService.UpdateRepoStatus(id, models.StatusFailed, err.Error())

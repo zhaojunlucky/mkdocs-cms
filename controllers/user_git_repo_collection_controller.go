@@ -17,12 +17,14 @@ import (
 
 type UserGitRepoCollectionController struct {
 	BaseController
-	service *services.UserGitRepoCollectionService
+	service                *services.UserGitRepoCollectionService
+	userGitRepoLockService *services.UserGitRepoLockService
 }
 
 func (ctrl *UserGitRepoCollectionController) Init(ctx *core.APPContext, router *gin.RouterGroup) {
 	ctrl.ctx = ctx
 	ctrl.service = ctx.MustGetService("userGitRepoCollectionService").(*services.UserGitRepoCollectionService)
+	ctrl.userGitRepoLockService = ctx.MustGetService("userGitRepoLockService").(*services.UserGitRepoLockService)
 	collections := router.Group("/collections")
 	{
 		collections.GET("/repo/:repoId", ctrl.GetCollectionsByRepo)
@@ -187,7 +189,7 @@ func (ctrl *UserGitRepoCollectionController) GetFileContent(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
+	log.Infof("File %s content retrieved successfully", filePath)
 	// Set the content type and return the file content
 	c.Header("Content-Type", contentType)
 	c.Data(http.StatusOK, contentType, content)
@@ -229,6 +231,11 @@ func (ctrl *UserGitRepoCollectionController) UpdateFileContent(c *gin.Context) {
 		return
 	}
 
+	lock := ctrl.userGitRepoLockService.Acquire(c.Param("repoId"))
+	lock.Lock()
+
+	defer lock.Unlock()
+
 	if err := ctrl.service.UpdateFileContent(uint(repoID), collectionName, req.Path, []byte(req.Content)); err != nil {
 		log.Errorf("Failed to update file content: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -250,7 +257,7 @@ func (ctrl *UserGitRepoCollectionController) UpdateFileContent(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to commit changes: %v", err)})
 		return
 	}
-
+	log.Infof("File %s updated and changes committed successfully", req.Path)
 	c.JSON(http.StatusOK, gin.H{"message": "File updated and changes committed successfully"})
 }
 
@@ -283,12 +290,17 @@ func (ctrl *UserGitRepoCollectionController) DeleteFile(c *gin.Context) {
 		return
 	}
 
+	lock := ctrl.userGitRepoLockService.Acquire(c.Param("repoId"))
+	lock.Lock()
+
+	defer lock.Unlock()
+
 	if err := ctrl.service.DeleteFile(uint(repoID), collectionName, filePath); err != nil {
 		log.Errorf("Failed to delete file: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
+	log.Infof("File %s deleted successfully", filePath)
 	c.JSON(http.StatusOK, gin.H{"message": "File deleted successfully"})
 }
 
@@ -346,12 +358,18 @@ func (ctrl *UserGitRepoCollectionController) UploadFile(c *gin.Context) {
 		content = []byte(request.Content)
 	}
 
+	lock := ctrl.userGitRepoLockService.Acquire(c.Param("repoId"))
+	lock.Lock()
+
+	defer lock.Unlock()
+
 	if err := ctrl.service.UpdateFileContent(uint(repoID), collectionName, request.Path, content); err != nil {
 		log.Errorf("Failed to update file content: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	log.Infof("File %s uploaded successfully", request.Path)
 	c.JSON(http.StatusOK, gin.H{"message": "File uploaded successfully"})
 }
 
@@ -392,6 +410,11 @@ func (ctrl *UserGitRepoCollectionController) RenameFile(c *gin.Context) {
 		return
 	}
 
+	lock := ctrl.userGitRepoLockService.Acquire(c.Param("repoId"))
+	lock.Lock()
+
+	defer lock.Unlock()
+
 	// Call service to rename file
 	err = ctrl.service.RenameFile(uint(repoID), collectionName, req.OldPath, req.NewPath)
 	if err != nil {
@@ -400,6 +423,7 @@ func (ctrl *UserGitRepoCollectionController) RenameFile(c *gin.Context) {
 		return
 	}
 
+	log.Infof("File %s renamed to %s successfully", req.OldPath, req.NewPath)
 	c.Status(http.StatusOK)
 }
 
@@ -449,6 +473,11 @@ func (ctrl *UserGitRepoCollectionController) CreateFolder(c *gin.Context) {
 		return
 	}
 
+	lock := ctrl.userGitRepoLockService.Acquire(c.Param("repoId"))
+	lock.Lock()
+
+	defer lock.Unlock()
+
 	// Call service to create folder
 	err = ctrl.service.CreateFolder(uint(repoID), collectionName, req.Path, req.Folder)
 	if err != nil {
@@ -456,6 +485,6 @@ func (ctrl *UserGitRepoCollectionController) CreateFolder(c *gin.Context) {
 		core.HandleError(c, err)
 		return
 	}
-
+	log.Infof("Folder %s created successfully", req.Folder)
 	c.JSON(http.StatusOK, gin.H{"message": "Folder created successfully"})
 }

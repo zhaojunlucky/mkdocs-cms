@@ -135,7 +135,7 @@ func (s *UserGitRepoService) UpdateRepo(id string, request models.UpdateUserGitR
 	// If branch was changed, sync the repo and checkout the new branch
 	if branchChanged {
 		// First sync the repository to ensure we have the latest changes
-		if err := s.SyncRepo(id); err != nil {
+		if err := s.SyncRepo(id, ""); err != nil {
 			return repo, fmt.Errorf("failed to sync repository after branch change: %v", err)
 		}
 
@@ -191,7 +191,8 @@ func (s *UserGitRepoService) UpdateRepoStatus(id string, status models.GitRepoSt
 }
 
 // SyncRepo synchronizes a git repository with its remote
-func (s *UserGitRepoService) SyncRepo(id string) error {
+func (s *UserGitRepoService) SyncRepo(id string, commitId string) error {
+
 	var repo models.UserGitRepo
 	if err := database.DB.First(&repo, id).Error; err != nil {
 		log.Errorf("Failed to get repository by id %s: %v", id, err)
@@ -207,7 +208,7 @@ func (s *UserGitRepoService) SyncRepo(id string) error {
 	var err error
 	switch repo.AuthType {
 	case "github_app":
-		err = s.syncWithGitHubApp(repo)
+		err = s.syncWithGitHubApp(repo, commitId)
 	default:
 		err = s.syncWithGitCommand(repo)
 	}
@@ -258,7 +259,23 @@ func (s *UserGitRepoService) syncWithGitCommand(repo models.UserGitRepo) error {
 }
 
 // syncWithGitHubApp uses GitHub App authentication to sync a repository
-func (s *UserGitRepoService) syncWithGitHubApp(repo models.UserGitRepo) error {
+func (s *UserGitRepoService) syncWithGitHubApp(repo models.UserGitRepo, commitId string) error {
+	if commitId != "" {
+		log.Infof("Check repository with commit ID: %s", commitId)
+		if _, err := os.Stat(repo.LocalPath); err == nil {
+			setRemoteCmd := exec.Command("git", "-C", repo.LocalPath, "rev-parse", "HEAD")
+			output, err := setRemoteCmd.Output()
+			if err != nil {
+				log.Errorf("Failed to get current commit ID: %v, fallback to pull", err)
+			} else {
+				currentCommitID := strings.TrimSpace(string(output))
+				if currentCommitID == commitId {
+					log.Infof("Commit ID match, current commit ID: %s, expected commit ID: %s, skip pull", currentCommitID, commitId)
+					return nil
+				}
+			}
+		}
+	}
 	// Parse the auth data
 	var authData models.GitHubAuthData
 	err := json.Unmarshal([]byte(repo.AuthData), &authData)
@@ -316,8 +333,8 @@ func (s *UserGitRepoService) syncWithGitHubApp(repo models.UserGitRepo) error {
 }
 
 // SyncRepository is an alias for SyncRepo for compatibility with the webhook controller
-func (s *UserGitRepoService) SyncRepository(id string) error {
-	return s.SyncRepo(id)
+func (s *UserGitRepoService) SyncRepository(id string, commitId string) error {
+	return s.SyncRepo(id, commitId)
 }
 
 // GetRepoBranches returns all branches for a specific git repository

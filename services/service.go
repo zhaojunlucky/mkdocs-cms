@@ -18,6 +18,7 @@ func (s *BaseService) InitService(name string, ctx *core.APPContext, instance Se
 }
 
 var service = []Service{
+	&UserGitRepoLockService{},
 	&AsyncTaskService{},
 	&UserGitRepoService{},
 	&UserGitRepoCollectionService{},

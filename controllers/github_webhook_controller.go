@@ -9,7 +9,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"io"
-
 	"net/http"
 	"strings"
 
@@ -22,9 +21,10 @@ import (
 // GitHubWebhookController handles webhook events from GitHub
 type GitHubWebhookController struct {
 	BaseController
-	gitRepoService *services.UserGitRepoService
-	eventService   *services.EventService
-	webhookSecret  string
+	gitRepoService         *services.UserGitRepoService
+	eventService           *services.EventService
+	webhookSecret          string
+	userGitRepoLockService *services.UserGitRepoLockService
 }
 
 func (c *GitHubWebhookController) Init(ctx *core.APPContext, router *gin.RouterGroup) {
@@ -32,6 +32,7 @@ func (c *GitHubWebhookController) Init(ctx *core.APPContext, router *gin.RouterG
 	c.gitRepoService = ctx.MustGetService("userGitRepoService").(*services.UserGitRepoService)
 	c.eventService = ctx.MustGetService("eventService").(*services.EventService)
 	c.webhookSecret = ctx.GithubAppSettings.WebhookSecret
+	c.userGitRepoLockService = ctx.MustGetService("userGitRepoLockService").(*services.UserGitRepoLockService)
 
 	router.POST("/github/webhook", c.HandleWebhook)
 
@@ -130,7 +131,7 @@ func (c *GitHubWebhookController) handlePushEvent(ctx *gin.Context, event *githu
 	}
 
 	if len(repos) == 0 {
-		log.Errorf("No repositories found for URL %s", remoteURL)
+		log.Warnf("No repositories found for URL %s", remoteURL)
 		ctx.JSON(http.StatusOK, gin.H{"message": "No matching repositories found"})
 		return
 	}
@@ -138,25 +139,35 @@ func (c *GitHubWebhookController) handlePushEvent(ctx *gin.Context, event *githu
 	// Sync each matching repository
 	for _, repo := range repos {
 		if repo.Branch == branch {
-			if err := c.gitRepoService.SyncRepository(fmt.Sprintf("%d", repo.ID)); err != nil {
-				log.Errorf("Failed to sync repository %d: %v", repo.ID, err)
-				continue
-			}
-
-			// Log the event
-			repoID := repo.ID
-			c.eventService.CreateEvent(models.CreateEventRequest{
-				Level:        models.EventLevelInfo,
-				Source:       models.EventSourceGitRepo,
-				Message:      "Repository synced due to GitHub push event",
-				ResourceID:   &repoID,
-				ResourceType: "repository",
-				Details:      string(body),
-			})
+			c.syncRepo(repo, body, *event.After)
 		}
 	}
-
+	log.Infof("Push event processed for repository %s", repoFullName)
 	ctx.JSON(http.StatusOK, gin.H{"message": "Push event processed"})
+}
+
+func (c *GitHubWebhookController) syncRepo(repo models.UserGitRepo, body []byte, commitID string) {
+	id := fmt.Sprintf("%d", repo.ID)
+	lock := c.userGitRepoLockService.Acquire(id)
+	lock.Lock()
+
+	defer lock.Unlock()
+	if err := c.gitRepoService.SyncRepository(id, commitID); err != nil {
+		log.Errorf("Failed to sync repository %s: %v", id, err)
+		return
+	}
+
+	// Log the event
+	repoID := repo.ID
+	c.eventService.CreateEvent(models.CreateEventRequest{
+		Level:        models.EventLevelInfo,
+		Source:       models.EventSourceGitRepo,
+		Message:      "Repository synced due to GitHub push event",
+		ResourceID:   &repoID,
+		ResourceType: "repository",
+		Details:      string(body),
+	})
+
 }
 
 // handlePullRequestEvent processes GitHub pull request events
@@ -197,7 +208,7 @@ func (c *GitHubWebhookController) handlePullRequestEvent(ctx *gin.Context, body 
 	// Sync each matching repository
 	for _, repo := range repos {
 		if repo.Branch == targetBranch {
-			if err := c.gitRepoService.SyncRepository(fmt.Sprintf("%d", repo.ID)); err != nil {
+			if err := c.gitRepoService.SyncRepository(fmt.Sprintf("%d", repo.ID), ""); err != nil {
 				log.Errorf("Failed to sync repository %d: %v", repo.ID, err)
 				continue
 			}
