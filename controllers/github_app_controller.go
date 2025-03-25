@@ -76,6 +76,7 @@ func (c *GitHubAppController) GetInstallations(ctx *gin.Context) {
 	// Get current user from context
 	userID, exists := ctx.Get("userId")
 	if !exists {
+		log.Error("User not authenticated")
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
@@ -83,6 +84,7 @@ func (c *GitHubAppController) GetInstallations(ctx *gin.Context) {
 	// Get all installations
 	installations, _, err := c.ctx.GithubAppClient.Apps.ListInstallations(ctx, nil)
 	if err != nil {
+		log.Errorf("Failed to get installations: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get installations: " + err.Error()})
 		return
 	}
@@ -90,6 +92,7 @@ func (c *GitHubAppController) GetInstallations(ctx *gin.Context) {
 	// Get user's GitHub username from database
 	user, err := c.userService.GetUserByID(fmt.Sprintf("%v", userID))
 	if err != nil {
+		log.Errorf("Failed to get user information: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user information: " + err.Error()})
 		return
 	}
@@ -121,12 +124,14 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 	// Get current user from context
 	userID, exists := ctx.Get("userId")
 	if !exists {
+		log.Error("User not authenticated")
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
 	installationID, err := strconv.ParseInt(ctx.Param("installation_id"), 10, 64)
 	if err != nil {
+		log.Errorf("Invalid installation ID: %v", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid installation ID"})
 		return
 	}
@@ -134,6 +139,7 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 	// Verify that the installation belongs to the user
 	installations, _, err := c.ctx.GithubAppClient.Apps.ListInstallations(ctx, nil)
 	if err != nil {
+		log.Errorf("Failed to get installations: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get installations: " + err.Error()})
 		return
 	}
@@ -141,6 +147,7 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 	// Get user's GitHub username from database
 	user, err := c.userService.GetUserByID(fmt.Sprintf("%v", userID))
 	if err != nil {
+		log.Errorf("Failed to get user information: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user information: " + err.Error()})
 		return
 	}
@@ -157,6 +164,7 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 	}
 
 	if !installationBelongsToUser {
+		log.Errorf("Installation does not belong to the authenticated user")
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "Installation does not belong to the authenticated user"})
 		return
 	}
@@ -164,6 +172,7 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 	// Get an installation token
 	installationToken, _, err := c.ctx.GithubAppClient.Apps.CreateInstallationToken(ctx, installationID, nil)
 	if err != nil {
+		log.Errorf("Failed to get installation token: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get installation token: " + err.Error()})
 		return
 	}
@@ -181,12 +190,14 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 	// Get repositories for the installation
 	repos, _, err := client.Apps.ListRepos(ctx, nil)
 	if err != nil {
+		log.Errorf("Failed to get repositories: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get repositories: " + err.Error()})
 		return
 	}
 
 	userExistingRepos, err := c.userGitRepoService.GetReposByUser(userID.(string))
 	if err != nil {
+		log.Errorf("Failed to get user existing repos: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -223,18 +234,21 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 	authenticatedUserID, exists := ctx.Get("userId")
 	if !exists {
+		log.Errorf("User not found in context")
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
 	installationID, err := strconv.ParseInt(ctx.Param("installation_id"), 10, 64)
 	if err != nil {
+		log.Errorf("Invalid installation ID: %v", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid installation ID"})
 		return
 	}
 
 	var request models.ImportRepositoriesRequest
 	if err := ctx.ShouldBindJSON(&request); err != nil {
+		log.Errorf("Invalid request: %v", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -243,6 +257,7 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 	// Get an installation token
 	installationToken, _, err := c.ctx.GithubAppClient.Apps.CreateInstallationToken(ctx, installationID, nil)
 	if err != nil {
+		log.Errorf("Failed to get installation token: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get installation token: " + err.Error()})
 		return
 	}
@@ -260,6 +275,7 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 	// Get repositories for the installation
 	repos, _, err := client.Apps.ListRepos(ctx, nil)
 	if err != nil {
+		log.Errorf("Failed to get repositories: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get repositories: " + err.Error()})
 		return
 	}
@@ -297,6 +313,7 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 
 		err = c.userGitRepoService.CreateRepo(newRepo)
 		if err != nil {
+			log.Warnf("Failed to create repository: %v", err)
 			continue
 		}
 
@@ -325,6 +342,7 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 		parts := strings.Split(*selectedRepo.FullName, "/")
 		createdHook, _, err := client.Repositories.CreateHook(context.Background(), parts[0], parts[1], hook)
 		if err != nil {
+			log.Errorf("Failed to create webhook: %v", err)
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create webhook: " + err.Error()})
 			return
 		}

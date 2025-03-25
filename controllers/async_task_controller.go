@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/services"
 )
 
@@ -30,6 +31,7 @@ func (c *AsyncTaskController) GetTask(ctx *gin.Context) {
 	// Get authenticated user ID from context
 	authenticatedUserID, exists := ctx.Get("userId")
 	if !exists {
+		log.Errorf("Failed to get authenticated user ID from context")
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
 		return
 	}
@@ -37,6 +39,7 @@ func (c *AsyncTaskController) GetTask(ctx *gin.Context) {
 	// Get task ID from URL parameter
 	taskID := ctx.Param("id")
 	if taskID == "" {
+		log.Errorf("Task ID is required")
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Task ID is required"})
 		return
 	}
@@ -44,12 +47,14 @@ func (c *AsyncTaskController) GetTask(ctx *gin.Context) {
 	// Get the task
 	task, err := c.asyncTaskService.GetTaskByID(taskID)
 	if err != nil {
+		log.Errorf("Failed to retrieve task: %v", err)
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
 		return
 	}
 
 	// Check if the authenticated user owns this task
 	if task.UserID != authenticatedUserID.(string) {
+		log.Errorf("User %s does not own task %s", authenticatedUserID, taskID)
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "You can only view your own tasks"})
 		return
 	}
@@ -62,6 +67,7 @@ func (c *AsyncTaskController) GetUserTasks(ctx *gin.Context) {
 	// Get authenticated user ID from context
 	authenticatedUserID, exists := ctx.Get("userId")
 	if !exists {
+		log.Errorf("Failed to get authenticated user ID from context")
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
 		return
 	}
@@ -69,6 +75,7 @@ func (c *AsyncTaskController) GetUserTasks(ctx *gin.Context) {
 	// Get the tasks
 	tasks, err := c.asyncTaskService.GetTasksByUser(authenticatedUserID.(string))
 	if err != nil {
+		log.Errorf("Failed to retrieve tasks: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve tasks"})
 		return
 	}
@@ -81,6 +88,7 @@ func (c *AsyncTaskController) GetResourceTasks(ctx *gin.Context) {
 	// Get authenticated user ID from context
 	authenticatedUserID, exists := ctx.Get("userId")
 	if !exists {
+		log.Errorf("Failed to get authenticated user ID from context")
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
 		return
 	}
@@ -88,6 +96,7 @@ func (c *AsyncTaskController) GetResourceTasks(ctx *gin.Context) {
 	// Get resource ID from URL parameter
 	resourceID := ctx.Param("resourceId")
 	if resourceID == "" {
+		log.Errorf("Resource ID is required")
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Resource ID is required"})
 		return
 	}
@@ -95,6 +104,7 @@ func (c *AsyncTaskController) GetResourceTasks(ctx *gin.Context) {
 	// Get the tasks
 	tasks, err := c.asyncTaskService.GetTasksByResource(resourceID)
 	if err != nil {
+		log.Errorf("Failed to retrieve tasks: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve tasks"})
 		return
 	}

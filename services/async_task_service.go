@@ -1,6 +1,7 @@
 package services
 
 import (
+	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"time"
 
@@ -69,6 +70,7 @@ func (s *AsyncTaskService) UpdateTaskStatus(id string, status models.TaskStatus,
 	var task models.AsyncTask
 	result := database.DB.Where("id = ?", id).First(&task)
 	if result.Error != nil {
+		log.Errorf("Failed to get task by id %s: %v", id, result.Error)
 		return result.Error
 	}
 

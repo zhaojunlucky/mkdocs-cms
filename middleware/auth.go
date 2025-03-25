@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"net/http"
 	"strings"
@@ -27,6 +28,7 @@ func NewAuthMiddleware(ctx *core.APPContext) gin.HandlerFunc {
 func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 
 	if shouldSkipAuth(c.Request.URL.Path) {
+		log.Infof("Skipping auth for path: %s", c.Request.URL.Path)
 		c.Next()
 		return
 	}
@@ -34,6 +36,7 @@ func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 	// Get the Authorization header
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {
+		log.Warnf("Authorization header is required")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization header is required"})
 		c.Abort()
 		return
@@ -42,6 +45,7 @@ func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 	// Check if the header format is valid
 	parts := strings.Split(authHeader, " ")
 	if len(parts) != 2 || parts[0] != "Bearer" {
+		log.Warnf("Invalid authorization header format")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization header format"})
 		c.Abort()
 		return
@@ -54,6 +58,7 @@ func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		// Validate the signing method
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			log.Errorf("unable to find signing method: %v", token.Header["alg"])
 			return nil, jwt.ErrSignatureInvalid
 		}
 
@@ -61,6 +66,7 @@ func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 	})
 
 	if err != nil {
+		log.Errorf("invalid token: %v", err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token: " + err.Error()})
 		c.Abort()
 		return
@@ -71,6 +77,7 @@ func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 		// Set user ID in the context
 		userId, ok := claims["sub"].(string)
 		if !ok {
+			log.Errorf("invalid token claims")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token claims"})
 			c.Abort()
 			return

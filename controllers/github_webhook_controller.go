@@ -42,6 +42,7 @@ func (c *GitHubWebhookController) HandleWebhook(ctx *gin.Context) {
 	// Verify the webhook signature
 	signature := ctx.GetHeader("X-Hub-Signature-256")
 	if !c.verifySignature(ctx.Request, signature) {
+		log.Error("Invalid webhook signature")
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid webhook signature"})
 		return
 	}
@@ -49,6 +50,7 @@ func (c *GitHubWebhookController) HandleWebhook(ctx *gin.Context) {
 	// Get the event type
 	eventType := ctx.GetHeader("X-GitHub-Event")
 	if eventType == "" {
+		log.Error("Missing X-GitHub-Event header")
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Missing X-GitHub-Event header"})
 		return
 	}
@@ -56,6 +58,7 @@ func (c *GitHubWebhookController) HandleWebhook(ctx *gin.Context) {
 	// Read the request body
 	body, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
+		log.Errorf("Failed to read request body: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read request body"})
 		return
 	}
@@ -65,6 +68,7 @@ func (c *GitHubWebhookController) HandleWebhook(ctx *gin.Context) {
 	case "push":
 		var event github.PushEvent
 		if err := json.Unmarshal(body, &event); err != nil {
+			log.Errorf("Invalid push event payload: %v", err)
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid push event payload"})
 			return
 		}

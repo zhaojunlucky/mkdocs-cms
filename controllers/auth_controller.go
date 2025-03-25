@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"io"
 	"net/http"
@@ -81,6 +82,7 @@ func (c *AuthController) GithubLogin(ctx *gin.Context) {
 	// Generate a random state
 	state, err := generateRandomState()
 	if err != nil {
+		log.Errorf("Failed to generate state: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate state"})
 		return
 	}
@@ -98,12 +100,14 @@ func (c *AuthController) GithubCallback(ctx *gin.Context) {
 	// Get state from cookie
 	state, err := ctx.Cookie("oauth_state")
 	if err != nil {
+		log.Errorf("Failed to get state from cookie: %v", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid state"})
 		return
 	}
 
 	// Verify state
 	if state != ctx.Query("state") {
+		log.Errorf("State mismatch")
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid state"})
 		return
 	}
@@ -112,6 +116,7 @@ func (c *AuthController) GithubCallback(ctx *gin.Context) {
 	code := ctx.Query("code")
 	token, err := c.githubOAuthConfig.Exchange(ctx, code)
 	if err != nil {
+		log.Errorf("Failed to exchange code for token: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to exchange code for token"})
 		return
 	}
@@ -120,6 +125,7 @@ func (c *AuthController) GithubCallback(ctx *gin.Context) {
 	client := c.githubOAuthConfig.Client(ctx, token)
 	resp, err := client.Get("https://api.github.com/user")
 	if err != nil {
+		log.Errorf("Failed to get user info: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
 		return
 	}
@@ -128,6 +134,7 @@ func (c *AuthController) GithubCallback(ctx *gin.Context) {
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		log.Errorf("Failed to read response body: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read response body"})
 		return
 	}
@@ -142,6 +149,7 @@ func (c *AuthController) GithubCallback(ctx *gin.Context) {
 	}
 
 	if err := json.Unmarshal(body, &githubUser); err != nil {
+		log.Errorf("Failed to parse user info: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse user info"})
 		return
 	}
@@ -181,6 +189,7 @@ func (c *AuthController) GithubCallback(ctx *gin.Context) {
 	// Save user to database
 	savedUser, err := c.userService.CreateOrUpdateUser(user)
 	if err != nil {
+		log.Errorf("Failed to save user: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save user"})
 		return
 	}
@@ -188,6 +197,7 @@ func (c *AuthController) GithubCallback(ctx *gin.Context) {
 	// Generate JWT token
 	jwtToken, err := c.generateJWT(savedUser)
 	if err != nil {
+		log.Errorf("Failed to generate token: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
 	}
@@ -203,6 +213,7 @@ func (c *AuthController) GoogleLogin(ctx *gin.Context) {
 	// Generate a random state
 	state, err := generateRandomState()
 	if err != nil {
+		log.Errorf("Failed to generate state: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate state"})
 		return
 	}
@@ -220,6 +231,7 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 	// Get state from cookie
 	state, err := ctx.Cookie("oauth_state")
 	if err != nil {
+		log.Errorf("Failed to get state from cookie: %v", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid state"})
 		return
 	}
@@ -234,6 +246,7 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 	code := ctx.Query("code")
 	token, err := c.googleOAuthConfig.Exchange(ctx, code)
 	if err != nil {
+		log.Errorf("Failed to exchange code for token: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to exchange code for token"})
 		return
 	}
@@ -242,6 +255,7 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 	client := c.googleOAuthConfig.Client(ctx, token)
 	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
 	if err != nil {
+		log.Errorf("Failed to get user info: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
 		return
 	}
@@ -250,6 +264,7 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		log.Errorf("Failed to read response body: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read response body"})
 		return
 	}
@@ -263,6 +278,7 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 	}
 
 	if err := json.Unmarshal(body, &googleUser); err != nil {
+		log.Errorf("Failed to parse user info: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse user info"})
 		return
 	}
@@ -280,6 +296,7 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 	// Save user to database
 	savedUser, err := c.userService.CreateOrUpdateUser(user)
 	if err != nil {
+		log.Errorf("Failed to save user: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save user"})
 		return
 	}
@@ -287,6 +304,7 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 	// Generate JWT token
 	jwtToken, err := c.generateJWT(savedUser)
 	if err != nil {
+		log.Errorf("Failed to generate token: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
 	}
@@ -302,6 +320,7 @@ func (c *AuthController) GetCurrentUser(ctx *gin.Context) {
 	// Get user from context (set by AuthMiddleware)
 	user, exists := ctx.Get("user")
 	if !exists {
+		log.Error("User not found in context")
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
@@ -315,12 +334,14 @@ func (c *AuthController) AuthMiddleware() gin.HandlerFunc {
 		// Get token from header
 		authHeader := ctx.GetHeader("Authorization")
 		if authHeader == "" {
+			log.Error("Authorization header is required")
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
 			return
 		}
 
 		// Check if the header has the Bearer prefix
 		if !strings.HasPrefix(authHeader, "Bearer ") {
+			log.Error("Invalid authorization format")
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization format"})
 			return
 		}
@@ -332,12 +353,14 @@ func (c *AuthController) AuthMiddleware() gin.HandlerFunc {
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			// Validate the signing method
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				log.Errorf("Unexpected signing method: %v", token.Header["alg"])
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
 			return []byte(c.jwtSecret), nil
 		})
 
 		if err != nil {
+			log.Errorf("Failed to parse token: %v", err)
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			return
 		}
@@ -347,6 +370,7 @@ func (c *AuthController) AuthMiddleware() gin.HandlerFunc {
 			// Check token expiration
 			if exp, ok := claims["exp"].(float64); ok {
 				if time.Now().Unix() > int64(exp) {
+					log.Error("Token expired")
 					ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Token expired"})
 					return
 				}
@@ -355,6 +379,7 @@ func (c *AuthController) AuthMiddleware() gin.HandlerFunc {
 			// Get user ID from claims
 			userIDStr, ok := claims["sub"].(string)
 			if !ok {
+				log.Error("Invalid token claims")
 				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
 				return
 			}
@@ -362,6 +387,7 @@ func (c *AuthController) AuthMiddleware() gin.HandlerFunc {
 			// Get user from database
 			user, err := c.userService.GetUserByID(userIDStr)
 			if err != nil {
+				log.Errorf("Failed to get user: %v", err)
 				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
 				return
 			}
@@ -370,6 +396,7 @@ func (c *AuthController) AuthMiddleware() gin.HandlerFunc {
 			ctx.Set("user", user)
 			ctx.Next()
 		} else {
+			log.Error("Invalid token")
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			return
 		}
@@ -381,6 +408,7 @@ func generateRandomState() (string, error) {
 	b := make([]byte, 32)
 	_, err := rand.Read(b)
 	if err != nil {
+		log.Errorf("Failed to generate random state: %v", err)
 		return "", err
 	}
 	return base64.URLEncoding.EncodeToString(b), nil
@@ -402,6 +430,7 @@ func (c *AuthController) generateJWT(user *models.User) (string, error) {
 	// Sign token
 	tokenString, err := token.SignedString(c.jwtSecret)
 	if err != nil {
+		log.Errorf("Failed to sign token: %v", err)
 		return "", err
 	}
 
@@ -422,6 +451,7 @@ func (c *AuthController) getGithubEmails(client *http.Client) ([]struct {
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		log.Errorf("Failed to read GitHub emails: %v", err)
 		return nil, err
 	}
 
@@ -432,6 +462,7 @@ func (c *AuthController) getGithubEmails(client *http.Client) ([]struct {
 	}
 
 	if err := json.Unmarshal(body, &emails); err != nil {
+		log.Errorf("Failed to unmarshal GitHub emails: %v", err)
 		return nil, err
 	}
 

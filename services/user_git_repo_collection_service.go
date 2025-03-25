@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/go-github/v45/github"
+	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"net/http"
 	"os"
@@ -66,12 +67,13 @@ func (s *UserGitRepoCollectionService) GetCollectionsByRepo(repoID uint) ([]mode
 	// Get the repository to find its local path
 	var repo models.UserGitRepo
 	if err := database.DB.First(&repo, repoID).Error; err != nil {
-		return nil, errors.New("repository not found")
+		return nil, errors.New(fmt.Sprintf("repository %d not found", repoID))
 	}
 
 	// Read collections from veda/config.yml
 	collections, err := s.readCollectionsFromConfig(repo)
 	if err != nil {
+		log.Errorf("Failed to read collections from veda/config.yml: %v", err)
 		return nil, err
 	}
 
@@ -84,18 +86,21 @@ func (s *UserGitRepoCollectionService) readCollectionsFromConfig(repo models.Use
 
 	// Check if the config file exists
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		log.Errorf("veda/config.yml not found in repository %s", repo.Name)
 		return nil, fmt.Errorf("veda/config.yml not found in repository %s", repo.Name)
 	}
 
 	// Read the config file
 	configData, err := os.ReadFile(configPath)
 	if err != nil {
+		log.Errorf("Failed to read veda/config.yml: %v", err)
 		return nil, fmt.Errorf("failed to read veda/config.yml: %v", err)
 	}
 
 	// Parse the YAML
 	var config VedaConfig
 	if err := yaml.Unmarshal(configData, &config); err != nil {
+		log.Errorf("Invalid YAML format in veda/config.yml: %v", err)
 		return nil, fmt.Errorf("invalid YAML format in veda/config.yml: %v", err)
 	}
 
@@ -141,7 +146,7 @@ func (s *UserGitRepoCollectionService) GetCollectionByID(id uint) (models.UserGi
 		// If we can't find it in the database, try to find it by name in the repository
 		var repo models.UserGitRepo
 		if err := database.DB.First(&repo, "id = ?", id).Error; err != nil {
-			return models.UserGitRepoCollection{}, errors.New("repository not found")
+			return models.UserGitRepoCollection{}, errors.New(fmt.Sprintf("repository %d not found", id))
 		}
 
 		// Read collections from veda/config.yml
@@ -530,14 +535,16 @@ func (s *UserGitRepoCollectionService) CommitWithGithubApp(repo models.UserGitRe
 	token, _, err := s.ctx.GithubAppClient.Apps.CreateInstallationToken(context.Background(), repo.InstallationID, opts)
 
 	if err != nil {
+		log.Errorf("Failed to get installation token: %v", err)
 		return fmt.Errorf("failed to get installation token: %v", err)
 	}
 
 	// Set up git config with token
 	remoteURL := fmt.Sprintf("https://x-access-token:%s@%s", token.GetToken(), repo.RemoteURL[8:])
 	cmd := exec.Command("git", "-C", repo.LocalPath, "remote", "set-url", "origin", remoteURL)
+	if output, err := cmd.CombinedOutput(); err != nil {
 
-	if err := cmd.Run(); err != nil {
+		log.Errorf("Failed to configure git with token: %s", string(output))
 		return fmt.Errorf("failed to configure git with token: %v", err)
 	}
 
@@ -553,20 +560,23 @@ func (s *UserGitRepoCollectionService) CommitWithGithubApp(repo models.UserGitRe
 	if needPush {
 		// Add all changes
 		cmd = exec.Command("git", "-C", repo.LocalPath, "add", ".")
-		if err := cmd.Run(); err != nil {
+		if output, err := cmd.CombinedOutput(); err != nil {
+			log.Errorf("Failed to stage changes: %s", string(output))
 			return fmt.Errorf("failed to stage changes: %v", err)
 		}
 
 		// Commit changes
 		cmd = exec.Command("git", "-C", repo.LocalPath, "commit", "-m", message)
-		if err := cmd.Run(); err != nil {
+		if output, err := cmd.CombinedOutput(); err != nil {
+			log.Errorf("Failed to commit changes: %s", string(output))
 			return fmt.Errorf("failed to commit changes: %v", err)
 		}
 	}
 
 	// Push changes
 	cmd = exec.Command("git", "-C", repo.LocalPath, "push", "origin", repo.Branch)
-	if err := cmd.Run(); err != nil {
+	if output, err := cmd.CombinedOutput(); err != nil {
+		log.Errorf("Failed to push changes: %s", string(output))
 		return fmt.Errorf("failed to push changes: %v", err)
 	}
 
@@ -683,6 +693,7 @@ func (s *UserGitRepoCollectionService) CreateFolder(u uint, name string, path st
 	// Commit the changes
 	commitMsg := fmt.Sprintf("Create folder %s in collection %s", filepath.Join(cleanPath, cleanFolder), name)
 	if err := s.CommitWithGithubApp(repo, commitMsg); err != nil {
+		log.Errorf("Failed to commit changes: %v", err)
 		return fmt.Errorf("failed to commit changes: %v", err)
 	}
 

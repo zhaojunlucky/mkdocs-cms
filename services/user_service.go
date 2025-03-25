@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
 
 	"github.com/zhaojunlucky/mkdocs-cms/database"
@@ -25,6 +26,7 @@ func (s *UserService) GetUserByID(id string) (*models.User, error) {
 	var user models.User
 	result := database.DB.First(&user, "id = ?", id)
 	if result.Error != nil {
+		log.Errorf("Failed to get user by ID: %s, %v", id, result.Error)
 		return nil, result.Error
 	}
 	return &user, nil
@@ -47,6 +49,7 @@ func (s *UserService) CreateOrUpdateUser(user *models.User) (*models.User, error
 		// Update user
 		result = database.DB.Save(&existingUser)
 		if result.Error != nil {
+			log.Errorf("Failed to update user: %v", result.Error)
 			return nil, errors.New("failed to update user")
 		}
 
@@ -76,6 +79,7 @@ func (s *UserService) CreateOrUpdateUser(user *models.User) (*models.User, error
 	// Create the user
 	result = database.DB.Create(user)
 	if result.Error != nil {
+		log.Errorf("Failed to create user: %v", result.Error)
 		return nil, errors.New("failed to create user")
 	}
 

@@ -183,18 +183,24 @@ func (s *UserGitRepoService) UpdateRepoStatus(id string, status models.GitRepoSt
 	}
 	repo.UpdatedAt = time.Now()
 
-	return database.DB.Save(&repo).Error
+	err := database.DB.Save(&repo).Error
+	if err != nil {
+		log.Errorf("Failed to update repository status: %v", err)
+	}
+	return err
 }
 
 // SyncRepo synchronizes a git repository with its remote
 func (s *UserGitRepoService) SyncRepo(id string) error {
 	var repo models.UserGitRepo
 	if err := database.DB.First(&repo, id).Error; err != nil {
+		log.Errorf("Failed to get repository by id %s: %v", id, err)
 		return err
 	}
 
 	// Update status to syncing
 	if err := s.UpdateRepoStatus(id, models.StatusSyncing, ""); err != nil {
+		log.Errorf("Failed to update repository status: %v", err)
 		return err
 	}
 
@@ -207,6 +213,8 @@ func (s *UserGitRepoService) SyncRepo(id string) error {
 	}
 
 	if err != nil {
+		// Update status to failed
+		log.Errorf("Failed to sync repository: %v", err)
 		s.UpdateRepoStatus(id, models.StatusFailed, err.Error())
 		return err
 	}
@@ -214,10 +222,12 @@ func (s *UserGitRepoService) SyncRepo(id string) error {
 	// Check if veda/config.yml exists and has valid format
 	if err := s.checkVedaConfig(repo); err != nil {
 		// Set error message but don't fail the sync
+		log.Errorf("Failed to check veda/config.yml: %v", err)
 		s.UpdateRepoStatus(id, models.StatusWarning, err.Error())
 	} else {
 		// Update status to synced
 		if err := s.UpdateRepoStatus(id, models.StatusSynced, ""); err != nil {
+			log.Errorf("Failed to update repository status: %v", err)
 			return err
 		}
 	}
@@ -231,13 +241,15 @@ func (s *UserGitRepoService) syncWithGitCommand(repo models.UserGitRepo) error {
 	if _, err := os.Stat(repo.LocalPath); os.IsNotExist(err) {
 		// Clone the repository
 		cmd := exec.Command("git", "clone", "-b", repo.Branch, repo.RemoteURL, repo.LocalPath)
-		if err := cmd.Run(); err != nil {
+		if output, err := cmd.CombinedOutput(); err != nil {
+			log.Errorf("Failed to clone repository: %s", string(output))
 			return fmt.Errorf("failed to clone repository: %v", err)
 		}
 	} else {
 		// Pull the latest changes
 		cmd := exec.Command("git", "-C", repo.LocalPath, "pull", "origin", repo.Branch)
-		if err := cmd.Run(); err != nil {
+		if output, err := cmd.CombinedOutput(); err != nil {
+			log.Errorf("Failed to pull repository: %s", string(output))
 			return fmt.Errorf("failed to pull repository: %v", err)
 		}
 	}
@@ -251,6 +263,7 @@ func (s *UserGitRepoService) syncWithGitHubApp(repo models.UserGitRepo) error {
 	var authData models.GitHubAuthData
 	err := json.Unmarshal([]byte(repo.AuthData), &authData)
 	if err != nil {
+		log.Errorf("Invalid auth data: %v", err)
 		return fmt.Errorf("invalid auth data: %v", err)
 	}
 
@@ -258,6 +271,7 @@ func (s *UserGitRepoService) syncWithGitHubApp(repo models.UserGitRepo) error {
 	ctx := context.Background()
 	installationToken, _, err := s.ctx.GithubAppClient.Apps.CreateInstallationToken(ctx, authData.InstallationID, nil)
 	if err != nil {
+		log.Errorf("Failed to get installation token: %v", err)
 		return fmt.Errorf("failed to get installation token: %v", err)
 	}
 
@@ -270,26 +284,30 @@ func (s *UserGitRepoService) syncWithGitHubApp(repo models.UserGitRepo) error {
 		cloneURL = fmt.Sprintf("https://x-access-token:%s@%s", installationToken.GetToken(), cloneURL[8:])
 
 		cmd := exec.Command("git", "clone", "-b", repo.Branch, cloneURL, repo.LocalPath)
-		if err := cmd.Run(); err != nil {
+		if output, err := cmd.CombinedOutput(); err != nil {
+			log.Errorf("Failed to clone repository: %s", string(output))
 			return fmt.Errorf("failed to clone repository: %v", err)
 		}
 	} else {
 		// Set the remote URL with the token
 		remoteURL := fmt.Sprintf("https://x-access-token:%s@%s", installationToken.GetToken(), repo.RemoteURL[8:])
 		setRemoteCmd := exec.Command("git", "-C", repo.LocalPath, "remote", "set-url", "origin", remoteURL)
-		if err := setRemoteCmd.Run(); err != nil {
+		if output, err := setRemoteCmd.CombinedOutput(); err != nil {
+			log.Errorf("Failed to set remote URL: %s", string(output))
 			return fmt.Errorf("failed to set remote URL: %v", err)
 		}
 
 		// Pull the latest changes
 		pullCmd := exec.Command("git", "-C", repo.LocalPath, "pull", "origin") //, repo.Branch
-		if err := pullCmd.Run(); err != nil {
+		if output, err := pullCmd.CombinedOutput(); err != nil {
+			log.Errorf("Failed to pull repository: %s", string(output))
 			return fmt.Errorf("failed to pull repository: %v", err)
 		}
 
 		// Reset the remote URL to the original
 		resetRemoteCmd := exec.Command("git", "-C", repo.LocalPath, "remote", "set-url", "origin", repo.RemoteURL)
-		if err := resetRemoteCmd.Run(); err != nil {
+		if output, err := resetRemoteCmd.CombinedOutput(); err != nil {
+			log.Errorf("Failed to reset remote URL: %s", string(output))
 			return fmt.Errorf("failed to reset remote URL: %v", err)
 		}
 	}
@@ -380,17 +398,20 @@ func (s *UserGitRepoService) checkoutBranch(repo models.UserGitRepo) error {
 
 	// Checkout the branch
 	checkoutCmd := exec.Command("git", "-C", repo.LocalPath, "switch", repo.Branch)
-	if err := checkoutCmd.Run(); err != nil {
+	if output, err := checkoutCmd.CombinedOutput(); err != nil {
+		log.Errorf("Failed to checkout branch: %s", string(output))
 		// Try to create and checkout the branch if it doesn't exist locally
 		createCmd := exec.Command("git", "-C", repo.LocalPath, "checkout", "-b", repo.Branch, "origin/"+repo.Branch)
-		if err := createCmd.Run(); err != nil {
+		if output, err := createCmd.CombinedOutput(); err != nil {
+			log.Errorf("Failed to create and checkout branch: %s", string(output))
 			return fmt.Errorf("failed to checkout branch '%s': %v", repo.Branch, err)
 		}
 	}
 
 	// Pull the latest changes for this branch
 	pullCmd := exec.Command("git", "-C", repo.LocalPath, "pull", "origin", repo.Branch)
-	if err := pullCmd.Run(); err != nil {
+	if output, err := pullCmd.CombinedOutput(); err != nil {
+		log.Errorf("Failed to pull latest changes for branch: %s", string(output))
 		return fmt.Errorf("failed to pull latest changes for branch '%s': %v", repo.Branch, err)
 	}
 
