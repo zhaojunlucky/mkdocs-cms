@@ -34,6 +34,8 @@ export interface CollectionFieldDefinition {
 export interface Collection {
   id: number;
   name: string;
+  label: string;
+  description?: string;
   path: string;
   repo_id: number;
   created_at: string;

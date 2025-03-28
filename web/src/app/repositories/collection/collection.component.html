@@ -1,0 +1,106 @@
+<!-- Collection Component -->
+<div class="collection-container">
+  <!-- Loading overlay that blocks user interaction -->
+  <div *ngIf="isLoading" class="loading-overlay">
+    <div class="spinner-container">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p>Loading...</p>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="error-message">
+    <p>{{ error }}</p>
+    <a [routerLink]="['/repositories', repositoryId]" class="back-btn">Back to Repository</a>
+  </div>
+
+  <div *ngIf="!isLoading && !error && collectionName">
+    <!-- Collection Header -->
+    <div class="collection-header">
+      <h1>{{ collectionName }}</h1>
+      <div class="breadcrumbs-container">
+        <div class="breadcrumbs">
+          <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]">Root</a>
+          <span *ngFor="let segment of pathSegments">
+            <span class="breadcrumb-separator">/</span>
+            <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName, segment.path]">{{ segment.name }}</a>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- File Browser -->
+    <div class="file-browser">
+      <div class="file-browser-header">
+        <h2>Files</h2>
+        <div class="file-actions">
+          <button (click)="openCreateFileDialog()" class="action-btn create-file-btn">
+            <span class="btn-icon">+</span> New File
+          </button>
+          <button (click)="openCreateFolderDialog()" class="action-btn create-folder-btn">
+            <span class="btn-icon">+</span> New Folder
+          </button>
+        </div>
+      </div>
+
+      <!-- Create Folder Dialog -->
+      <div *ngIf="isCreatingFolder" class="dialog-overlay">
+        <div class="dialog">
+          <h3>Create New Folder</h3>
+          <div class="dialog-content">
+            <input [(ngModel)]="newFolderName" placeholder="Folder Name" class="dialog-input">
+            <div *ngIf="folderError" class="error-text">{{ folderError }}</div>
+          </div>
+          <div class="dialog-actions">
+            <button (click)="createFolder()" [disabled]="!newFolderName.trim()" class="dialog-btn primary">Create</button>
+            <button (click)="cancelCreateFolder()" class="dialog-btn">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- File List -->
+      <div class="file-list">
+        <!-- Empty State -->
+        <div *ngIf="files.length === 0" class="empty-state">
+          <p>No files in this collection{{ currentPath ? ' path' : '' }}.</p>
+          <div class="empty-actions">
+            <button (click)="openCreateFileDialog()" class="action-btn">Create a file</button>
+            <button (click)="openCreateFolderDialog()" class="action-btn">Create a folder</button>
+          </div>
+        </div>
+
+        <!-- Files and Folders -->
+        <div *ngIf="files.length > 0" class="file-items">
+          <div *ngFor="let file of files" class="file-item" [class.is-directory]="file.is_dir">
+            <div class="file-item-content" (click)="file.is_dir ? navigateToFolder(file) : selectFile(file)">
+              <span class="file-icon">{{ file.is_dir ? '📁' : '📄' }}</span>
+              <span class="file-name">{{ file.name }}</span>
+              <span class="file-meta">
+                <span class="file-size" *ngIf="!file.is_dir">{{ file.size | fileSize }}</span>
+                <span class="file-date">{{ file.mod_time | date:'short' }}</span>
+              </span>
+            </div>
+            <div class="file-actions">
+              <button (click)="openRenameDialog(file)" class="action-btn small">Rename</button>
+              <button *ngIf="!file.is_dir" (click)="deleteFileOrFolder(file)" class="action-btn small danger">Delete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rename Dialog -->
+      <div *ngIf="isRenaming" class="dialog-overlay">
+        <div class="dialog">
+          <h3>Rename {{ selectedFile?.is_dir ? 'Folder' : 'File' }}</h3>
+          <div class="dialog-content">
+            <input [(ngModel)]="newName" placeholder="New Name" class="dialog-input">
+            <div *ngIf="renameError" class="error-text">{{ renameError }}</div>
+          </div>
+          <div class="dialog-actions">
+            <button (click)="renameFileOrFolder()" [disabled]="!newName.trim()" class="dialog-btn primary">Rename</button>
+            <button (click)="cancelRename()" class="dialog-btn">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

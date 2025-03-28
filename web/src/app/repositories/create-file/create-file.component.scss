@@ -1,0 +1,153 @@
+.create-file-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 20px;
+  position: relative;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.spinner-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.error-message {
+  background-color: #ffebee;
+  color: #b71c1c;
+  padding: 16px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.back-btn {
+  display: inline-block;
+  margin-top: 8px;
+  color: #1976d2;
+  text-decoration: none;
+}
+
+.back-btn:hover {
+  text-decoration: underline;
+}
+
+.create-file-header {
+  margin-bottom: 24px;
+}
+
+.breadcrumbs-container {
+  margin-top: 8px;
+}
+
+.breadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 14px;
+}
+
+.breadcrumb-separator {
+  margin: 0 8px;
+  color: #757575;
+}
+
+.breadcrumbs a {
+  color: #1976d2;
+  text-decoration: none;
+}
+
+.breadcrumbs a:hover {
+  text-decoration: underline;
+}
+
+.create-file-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.file-name-input {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.file-name-input label {
+  font-weight: 500;
+}
+
+.form-input {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.error-text {
+  color: #d32f2f;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.markdown-editor-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 400px;
+}
+
+.markdown-editor-wrapper h3 {
+  margin: 0;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.create-btn, .cancel-btn {
+  padding: 10px 16px;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s;
+}
+
+.create-btn {
+  background-color: #1976d2;
+  color: white;
+}
+
+.create-btn:hover:not(:disabled) {
+  background-color: #1565c0;
+}
+
+.cancel-btn {
+  background-color: #e0e0e0;
+  color: #424242;
+}
+
+.cancel-btn:hover:not(:disabled) {
+  background-color: #d5d5d5;
+}
+
+button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}

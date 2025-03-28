@@ -1,0 +1,66 @@
+<div class="edit-file-container">
+  <!-- Loading overlay that blocks user interaction -->
+  <div *ngIf="isLoading" class="loading-overlay">
+    <div class="spinner-container">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p>Loading...</p>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="error-message">
+    <p>{{ error }}</p>
+    <a [routerLink]="['/repositories', repositoryId]" class="back-btn">Back to Repository</a>
+  </div>
+
+  <div *ngIf="!isLoading && !error && repository && collection">
+    <!-- File Editor -->
+    <div class="file-editor">
+      <div class="file-editor-header">
+        <div class="file-editor-title">
+          <h2>{{ 'Editing: ' + selectedFile?.name }}</h2>
+          <div class="breadcrumbs-container" style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="breadcrumbs">
+              <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]">Root</a>
+              <span *ngFor="let segment of pathSegments">
+                <span class="breadcrumb-separator">/</span>
+                <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName, segment.path]">{{ segment.name }}</a>
+              </span>
+              <span *ngIf="selectedFile">
+                <span class="breadcrumb-separator">/</span>
+                <span class="active">{{ selectedFile.name }}</span>
+              </span>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 8px;">
+              <button (click)="saveFile()" [disabled]="savingFile" class="save-btn">
+                <span *ngIf="!savingFile">Save</span>
+                <span *ngIf="savingFile">Saving...</span>
+              </button>
+              <button (click)="cancelEditing()" [disabled]="savingFile" class="cancel-btn">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- File Error Message -->
+      <div *ngIf="fileError" class="file-error-message">
+        <p>{{ fileError }}</p>
+      </div>
+
+      <!-- Editor Content (only show when not loading) -->
+      <div *ngIf="!isLoading && !fileError" class="file-editor-content">
+        <!-- Front Matter Editor -->
+        <app-front-matter-editor *ngIf="collection && collection.fields"
+          [frontMatter]="frontMatter"
+          [fields]="collection.fields"
+          (frontMatterChange)="onFrontMatterChange($event)">
+        </app-front-matter-editor>
+
+        <!-- Markdown Editor -->
+        <div class="markdown-editor-wrapper">
+          <h3>Content</h3>
+          <nu-markdown [(ngModel)]="markdownContent" [options]="editorOptions" (ready)="onEditorReady($event)"/>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
