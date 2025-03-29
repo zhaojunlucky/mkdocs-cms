@@ -1,7 +1,7 @@
 # This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
 
-name: Node.js CI
+name: Mkdocs CMS CI
 
 on:
   pull_request:
@@ -27,25 +27,28 @@ jobs:
     - run: |
         go version
         go build main.go
+        ls -l
 
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
+        cache-dependency-path: '**/yarn.lock'
     - run: |
-        pushd web
+        cd web
+        ls -al
         yarn global add @angular/cli@19.x
         yarn install
         yarn version --no-git-tag-version --new-version 1.0.${{ github.run_number }}
         ng build --configuration production --aot
-        popd
-    - run |
-      mkdir output
-      cp main output/mkdocs-cms
-      cp -r web/dist/mkdocs-cms-ui output/mkdocs-cms-ui
-      cd output
-      tar -czvf mkdocs-cms-PR-${{ github.event.pull_request.number }}-1.0.${{ github.run_number }}.tar.gz *
+    - run: | 
+        mkdir output
+        cp main output/mkdocs-cms
+        cp -r web/dist/mkdocs-cms-ui output/mkdocs-cms-ui
+        cd output
+        tar -czvf mkdocs-cms-PR-${{ github.event.pull_request.number }}-1.0.${{ github.run_number }}.tar.gz *
+        ls -al
 
     - name: artifacts_retention
       env:
@@ -58,5 +61,5 @@ jobs:
     - name: upload
       uses: actions/upload-artifact@v4
       with:
-        name: mkdocs-PR-${{ github.event.pull_request.number }}-1.0.${{ github.run_number }}.tar.gz
-        path: output/mkdocs-PR-${{ github.event.pull_request.number }}-1.0.${{ github.run_number }}.tar.gz
+        name: mkdocs-cms-PR-${{ github.event.pull_request.number }}-1.0.${{ github.run_number }}.tar.gz
+        path: output/mkdocs-cms-PR-${{ github.event.pull_request.number }}-1.0.${{ github.run_number }}.tar.gz
