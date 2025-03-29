@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiServer: 'https://app.gundamz.net/api',
+  apiServer: 'https://mkdocs.zhaojun.dev/api',
 };
