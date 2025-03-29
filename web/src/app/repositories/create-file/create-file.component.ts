@@ -4,7 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
-import { RepositoryService, Repository, Collection } from '../../services/repository.service';
+import { RepositoryService, Collection } from '../../services/repository.service';
 import { CollectionService } from '../../services/collection.service';
 import { FrontMatterEditorComponent } from '../../markdown/front-matter-editor/front-matter-editor.component';
 import { NuMarkdownComponent } from '@ng-util/markdown';
@@ -40,7 +40,6 @@ export class CreateFileComponent implements OnInit {
   // File creation properties
   fileName: string = '';
   fileError: string = '';
-  fileContent: string = '';
   isCreating: boolean = false;
 
   // Front matter and markdown content
@@ -55,6 +54,7 @@ export class CreateFileComponent implements OnInit {
     theme: 'vs-light',
     language: 'markdown',
     lang: 'en_US',
+    mode: 'wysiwyg',
     icon: 'material',
     counter: {
       enable: true,
@@ -109,13 +109,10 @@ export class CreateFileComponent implements OnInit {
         const foundCollection = collections.find(c => c.name === this.collectionName);
         if (foundCollection) {
           this.collection = foundCollection;
+          let bodyField = this.collection.fields?.find(f=>f.name === 'body')
+          this.markdownContent = bodyField?.default || '';
           this.updatePathSegments();
           this.isLoading = false;
-
-          // Initialize front matter with default values if collection has fields
-          if (foundCollection.fields) {
-            this.initializeFrontMatter(foundCollection.fields);
-          }
         } else {
           this.error = 'Collection not found';
           this.isLoading = false;
@@ -149,34 +146,6 @@ export class CreateFileComponent implements OnInit {
     }
   }
 
-  initializeFrontMatter(fields: any[]): void {
-    fields.forEach(field => {
-      if (field.default !== undefined) {
-        this.frontMatter[field.name] = field.default;
-      } else {
-        // Initialize with empty values based on field type
-        switch (field.type) {
-          case 'string':
-            this.frontMatter[field.name] = '';
-            break;
-          case 'number':
-            this.frontMatter[field.name] = 0;
-            break;
-          case 'boolean':
-            this.frontMatter[field.name] = false;
-            break;
-          case 'array':
-            this.frontMatter[field.name] = [];
-            break;
-          case 'object':
-            this.frontMatter[field.name] = {};
-            break;
-          default:
-            this.frontMatter[field.name] = '';
-        }
-      }
-    });
-  }
 
   onFrontMatterChange(newFrontMatter: Record<string, any>): void {
     this.frontMatter = { ...newFrontMatter };
@@ -216,7 +185,7 @@ export class CreateFileComponent implements OnInit {
     const yamlFrontMatter = `---\n${jsYaml.dump(this.frontMatter)}---\n`;
     const fileContent = `${yamlFrontMatter}${this.markdownContent}`;
 
-    this.collectionService.updateFileContent(
+    this.collectionService.uploadFile(
       this.repositoryId.toString(),
       this.collection.name,
       filePath,
@@ -226,7 +195,9 @@ export class CreateFileComponent implements OnInit {
         this.isLoading = false;
         this.isCreating = false;
         // Navigate back to collection view
-        this.router.navigate(['/repositories', this.repositoryId, 'collection', this.collectionName, this.currentPath]);
+        this.router.navigate(['/repositories', this.repositoryId, 'collection', this.collectionName], {
+          queryParams: { path: this.currentPath }
+        });
       },
       error: (error: any) => {
         console.error('Error creating file:', error);
@@ -239,6 +210,8 @@ export class CreateFileComponent implements OnInit {
 
   cancel(): void {
     // Navigate back to collection view
-    this.router.navigate(['/repositories', this.repositoryId, 'collection', this.collectionName, this.currentPath]);
+    this.router.navigate(['/repositories', this.repositoryId, 'collection', this.collectionName], {
+      queryParams: { path: this.currentPath }
+    });
   }
 }

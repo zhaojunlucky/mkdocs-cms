@@ -56,6 +56,7 @@ export class EditFileComponent implements OnInit {
     language: 'markdown',
     lang: 'en_US',
     icon: 'material',
+    mode: 'wysiwyg',
     counter: {
       enable: true,
     },
@@ -144,7 +145,6 @@ export class EditFileComponent implements OnInit {
       next: (fileContent) => {
         // Parse the file content to separate front matter and markdown
         this.parseFileContent(fileContent);
-
         this.isLoading = false;
 
       },

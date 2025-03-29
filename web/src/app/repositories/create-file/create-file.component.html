@@ -13,11 +13,10 @@
     <a [routerLink]="['/repositories', repositoryId]" class="back-btn">Back to Repository</a>
   </div>
 
-  <div *ngIf="!isLoading && !error && repositoryId && collection">
     <!-- Create File Header -->
-    <div class="create-file-header">
+    <div class="create-file-header" *ngIf="!isLoading && !error && repositoryId && collection">
       <h1>Create New File</h1>
-      <div class="breadcrumbs-container">
+      <div class="breadcrumbs-container" style="display: flex; justify-content: space-between; align-items: center;">
         <div class="breadcrumbs">
           <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]">Root</a>
           <span *ngFor="let segment of pathSegments">
@@ -25,11 +24,19 @@
             <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName, segment.path]">{{ segment.name }}</a>
           </span>
         </div>
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <button (click)="createFile()" [disabled]="isCreating || !fileName.trim()" class="create-btn">
+            <span *ngIf="!isCreating">Create File</span>
+            <span *ngIf="isCreating">Creating...</span>
+          </button>
+          <button (click)="cancel()" [disabled]="isCreating" class="cancel-btn">Cancel</button>
+        </div>
       </div>
     </div>
 
     <!-- File Creation Form -->
-    <div class="create-file-form">
+    <div class="create-file-form" *ngIf="!isLoading && !error && repositoryId && collection">
       <div class="file-name-input">
         <label for="fileName">File Name</label>
         <mat-form-field>
@@ -52,14 +59,5 @@
         <nu-markdown [(ngModel)]="markdownContent" [options]="editorOptions" (ready)="onEditorReady($event)"></nu-markdown>
       </div>
 
-      <!-- Action Buttons -->
-      <div class="action-buttons">
-        <button (click)="createFile()" [disabled]="isCreating || !fileName.trim()" class="create-btn">
-          <span *ngIf="!isCreating">Create File</span>
-          <span *ngIf="isCreating">Creating...</span>
-        </button>
-        <button (click)="cancel()" [disabled]="isCreating" class="cancel-btn">Cancel</button>
-      </div>
-    </div>
   </div>
 </div>
