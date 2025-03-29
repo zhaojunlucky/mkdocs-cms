@@ -311,7 +311,7 @@
       background-color: #e3f2fd;
     }
 
-    &.active {
+    &.active, &.selected {
       background-color: #bbdefb;
       border-left: 4px solid #2196f3;
     }
@@ -501,7 +501,7 @@
       background-color: #e9ecef;
     }
 
-    &.active {
+    &.active, &.selected {
       background-color: #007bff;
       color: white;
     }

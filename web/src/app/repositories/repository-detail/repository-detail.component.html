@@ -29,6 +29,7 @@
           </div>
           <ul class="collection-list">
             <li *ngFor="let collection of collections"
+                [class.selected]="collection.name === selectedColName"
                 (click)="selectCollection(collection)">
               <span class="collection-name">{{ collection.label }}</span>
             </li>
