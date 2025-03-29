@@ -18,7 +18,7 @@
     <div class="collection-header">
       <div class="breadcrumbs-container">
         <div class="breadcrumbs">
-          <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]">Root</a>
+          <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" matTooltip="Home"><mat-icon>home</mat-icon></a>
           <span *ngFor="let segment of pathSegments">
             <span class="breadcrumb-separator">/</span>
             <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName, segment.path]">{{ segment.name }}</a>
@@ -43,17 +43,22 @@
 
       <!-- Create Folder Dialog -->
       <div *ngIf="isCreatingFolder" class="dialog-overlay">
-        <div class="dialog">
-          <h3>Create New Folder</h3>
-          <div class="dialog-content">
-            <input [(ngModel)]="newFolderName" placeholder="Folder Name" class="dialog-input">
-            <div *ngIf="folderError" class="error-text">{{ folderError }}</div>
-          </div>
-          <div class="dialog-actions">
-            <button (click)="createFolder()" [disabled]="!newFolderName.trim()" class="dialog-btn primary">Create</button>
-            <button (click)="cancelCreateFolder()" class="dialog-btn">Cancel</button>
-          </div>
-        </div>
+        <mat-card class="dialog">
+          <mat-card-header>
+            <mat-card-title>Create New Folder</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <mat-form-field class="dialog-content">
+              <mat-label>New Folder</mat-label>
+              <input matInput [(ngModel)]="newFolderName" placeholder="Folder Name" class="dialog-input">
+              <mat-error  *ngIf="folderError" class="error-text">{{ folderError }}</mat-error >
+            </mat-form-field>
+          </mat-card-content>
+          <mat-card-actions class="dialog-actions">
+            <button mat-flat-button color="primary" (click)="createFolder()" [disabled]="!newFolderName.trim()" class="dialog-btn primary">Create</button>
+            <button mat-flat-button color="warn" (click)="cancelCreateFolder()" class="dialog-btn">Cancel</button>
+          </mat-card-actions>
+        </mat-card>
       </div>
 
       <!-- Rename Dialog -->
@@ -92,7 +97,7 @@
         </div>
 
         <!-- Files and Folders -->
-        <div *ngIf="files.length > 0" class="file-items" [class.overlay-active]="isRenaming">
+        <div *ngIf="files.length > 0" class="file-items" [class.overlay-active]="isRenaming || isCreatingFolder">
           <div *ngFor="let file of files" class="file-item" [class.is-directory]="file.is_dir">
             <div class="file-item-content" (click)="file.is_dir ? navigateToFolder(file) : selectFile(file)">
               <mat-icon *ngIf="file.is_dir" class="folder-icon">folder</mat-icon>

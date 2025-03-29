@@ -10,6 +10,8 @@ import { FrontMatterEditorComponent } from '../../markdown/front-matter-editor/f
 import { NuMarkdownComponent } from '@ng-util/markdown';
 import * as jsYaml from 'js-yaml';
 import { MatInputModule} from '@angular/material/input';
+import {MatIcon} from '@angular/material/icon';
+import {MatTooltip} from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-create-file',
@@ -24,7 +26,9 @@ import { MatInputModule} from '@angular/material/input';
     MatButtonModule,
     FrontMatterEditorComponent,
     NuMarkdownComponent,
-    MatInputModule
+    MatInputModule,
+    MatIcon,
+    MatTooltip
   ],
   templateUrl: './create-file.component.html',
   styleUrls: ['./create-file.component.scss']

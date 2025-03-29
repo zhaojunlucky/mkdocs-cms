@@ -8,6 +8,8 @@ import {Collection, Repository, RepositoryService} from '../../services/reposito
 import {CollectionService, FileInfo} from '../../services/collection.service';
 import * as yaml from 'js-yaml';
 import {FrontMatterEditorComponent} from '../../markdown/front-matter-editor/front-matter-editor.component';
+import {MatIcon} from '@angular/material/icon';
+import {MatTooltip} from '@angular/material/tooltip';
 
 interface PathSegment {
   name: string;
@@ -25,7 +27,9 @@ interface PathSegment {
     RouterLink,
     MatProgressSpinnerModule,
     FrontMatterEditorComponent,
-    NuMarkdownComponent
+    NuMarkdownComponent,
+    MatIcon,
+    MatTooltip
   ],
   templateUrl: './edit-file.component.html',
   styleUrls: ['./edit-file.component.scss']

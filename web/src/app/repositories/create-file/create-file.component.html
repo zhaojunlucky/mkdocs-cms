@@ -18,7 +18,7 @@
       <h1>Create New File</h1>
       <div class="breadcrumbs-container" style="display: flex; justify-content: space-between; align-items: center;">
         <div class="breadcrumbs">
-          <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]">Root</a>
+          <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" matTooltip="Home"><mat-icon>home</mat-icon></a>
           <span *ngFor="let segment of pathSegments">
             <span class="breadcrumb-separator">/</span>
             <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName, segment.path]">{{ segment.name }}</a>
