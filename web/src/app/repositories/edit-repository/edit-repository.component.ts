@@ -6,11 +6,12 @@ import { RepositoryService, Repository } from '../../services/repository.service
 import { ComponentsModule } from '../../components/components.module';
 import {MatInputModule} from '@angular/material/input';
 import {StrUtils} from '../../shared/utils/str.utils';
+import {NavComponent} from '../../nav/nav.component';
 
 @Component({
   selector: 'app-edit-repository',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, ComponentsModule, MatInputModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, ComponentsModule, MatInputModule, NavComponent],
   templateUrl: './edit-repository.component.html',
   styleUrls: ['./edit-repository.component.scss']
 })

@@ -8,6 +8,7 @@ import { of } from 'rxjs';
 import {environment} from '../../../environments/environment';
 import {ArrayResponse} from '../../shared/core/response';
 import {StrUtils} from '../../shared/utils/str.utils';
+import {NavComponent} from '../../nav/nav.component';
 
 interface GithubAccount {
   login: string;
@@ -36,7 +37,7 @@ interface GithubAppInfo {
 @Component({
   selector: 'app-repository-import',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, NavComponent],
   templateUrl: './repository-import.component.html',
   styleUrls: ['./repository-import.component.scss'],
   providers: [AuthService]
@@ -90,10 +91,10 @@ export class RepositoryImportComponent implements OnInit {
     this.error = '';
 
     const headers = this.getAuthHeaders();
-    this.http.get<GithubInstallation[]>(`${environment.apiServer}/v1/github/installations`, { headers })
+    this.http.get<ArrayResponse<GithubInstallation>>(`${environment.apiServer}/v1/github/installations`, { headers })
       .subscribe({
-        next: (installations) => {
-          this.installations = installations;
+        next: (installations: ArrayResponse<GithubInstallation>) => {
+          this.installations = installations.entries;
           this.loading = false;
 
           // If no installations found, user needs to install the GitHub App

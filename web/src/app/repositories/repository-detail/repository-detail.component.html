@@ -1,3 +1,4 @@
+<app-nav></app-nav>
 <div class="repository-detail-container">
   <!-- Loading overlay that blocks user interaction -->
   <div *ngIf="isLoading" class="loading-overlay">
@@ -13,9 +14,6 @@
   </div>
 
   <div *ngIf="!isLoading && !error && repository">
-    <div class="repository-header">
-      <a routerLink="/home" class="back-link"><h1>{{ repository.name }}</h1></a>
-    </div>
 
     <div class="content-layout">
       <!-- Sidenav for collections -->

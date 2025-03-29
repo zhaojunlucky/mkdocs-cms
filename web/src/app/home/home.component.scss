@@ -1,7 +1,7 @@
 .home-container {
   width: 100vw;
   max-width: 100%;
-  margin: 0;
+  margin: 64px 0 0 0;
   padding: 1rem;
   box-sizing: border-box;
   background-color: white;
@@ -97,7 +97,7 @@ h1 {
 
   .repo-details {
     padding: 0 16px 16px 16px;
-    
+
     .repo-path {
       font-family: monospace;
       background-color: #f9f9f9;
@@ -108,39 +108,39 @@ h1 {
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    
+
     .repo-date {
       color: #777;
       font-size: 14px;
     }
-    
+
     .repo-status {
       font-weight: 500;
       margin-bottom: 8px;
       position: relative;
-      
+
       &.status-synced {
         color: #4CAF50;
       }
-      
+
       &.status-syncing {
         color: #3498db;
         font-weight: bold;
         animation: pulse 1.5s infinite ease-in-out;
       }
-      
+
       &.status-failed {
         color: #F44336;
       }
-      
+
       &.status-pending {
         color: #FF9800;
       }
-      
+
       &.status-warning {
         color: #FFC107;
       }
-      
+
       .error-tooltip {
         visibility: hidden;
         background-color: #333;
@@ -159,30 +159,30 @@ h1 {
         font-size: 12px;
         font-weight: normal;
       }
-      
+
       &:hover .error-tooltip {
         visibility: visible;
         opacity: 1;
       }
     }
-    
+
     .warning-message {
       margin-top: 15px;
       padding: 10px;
       background-color: #FFF8E1;
       border: 1px solid #FFECB3;
       border-radius: 4px;
-      
+
       p {
         color: #FF8F00;
         margin-bottom: 10px;
         font-size: 14px;
-        
+
         i {
           margin-right: 5px;
         }
       }
-      
+
       .fix-config-btn {
         background-color: #FFC107;
         color: #212121;
@@ -192,7 +192,7 @@ h1 {
         cursor: pointer;
         font-size: 13px;
         transition: background-color 0.3s;
-        
+
         &:hover {
           background-color: #FFB300;
         }
@@ -205,7 +205,7 @@ h1 {
     padding: 10px 15px;
     background-color: #fafafa;
     border-top: 1px solid #e0e0e0;
-    
+
     a, button {
       flex: 1;
       padding: 8px;
@@ -218,49 +218,49 @@ h1 {
       border: none;
       transition: background-color 0.2s;
     }
-    
+
     .view-btn {
       background-color: #3f51b5;
       color: white;
-      
+
       &:hover {
         background-color: #303f9f;
       }
     }
-    
+
     .edit-btn {
       background-color: #ff9800;
       color: white;
-      
+
       &:hover {
         background-color: #f57c00;
       }
     }
-    
+
     .delete-btn {
       background-color: #f44336;
       color: white;
-      
+
       &:hover {
         background-color: #d32f2f;
       }
     }
   }
-  
+
   .repo-menu {
     position: relative;
-    
+
     .menu-btn {
       background: none;
       border: none;
       cursor: pointer;
       padding: 5px;
       color: #666;
-      
+
       &:hover {
         color: #333;
       }
-      
+
       i {
         font-size: 16px;
       }

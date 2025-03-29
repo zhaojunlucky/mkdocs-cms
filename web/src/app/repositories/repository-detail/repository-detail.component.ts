@@ -9,6 +9,7 @@ import { Repository, Collection } from '../../services/repository.service';
 import {RouteParameterService} from '../../services/routeparameter.service';
 import {MatChipsModule} from '@angular/material/chips';
 import {StrUtils} from '../../shared/utils/str.utils';
+import {NavComponent} from '../../nav/nav.component';
 
 @Component({
   selector: 'app-repository-detail',
@@ -20,7 +21,8 @@ import {StrUtils} from '../../shared/utils/str.utils';
     MatProgressSpinnerModule,
     RouterLink,
     RouterOutlet,
-    MatChipsModule
+    MatChipsModule,
+    NavComponent
   ],
   templateUrl: './repository-detail.component.html',
   styleUrls: ['./repository-detail.component.scss']
