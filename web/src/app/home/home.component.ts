@@ -9,12 +9,14 @@ import { ComponentsModule } from '../components/components.module';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatCardModule } from '@angular/material/card';
 import { Router } from '@angular/router';
+import {MatChipsModule} from '@angular/material/chips';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule, ComponentsModule, MatButtonModule, MatIconModule, MatMenuModule],
+  imports: [CommonModule, RouterModule, ComponentsModule, MatButtonModule, MatIconModule, MatMenuModule, MatCardModule, MatChipsModule],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
@@ -23,21 +25,21 @@ export class HomeComponent implements OnInit {
   loading = true;
   error = '';
   activeTasks: Map<string, AsyncTask> = new Map(); // Map of repo ID to task
-  
+
   constructor(
     private repositoryService: RepositoryService,
     private authService: AuthService,
     private router: Router
   ) {}
-  
+
   ngOnInit(): void {
     this.loadRepositories();
   }
-  
+
   loadRepositories(): void {
     this.loading = true;
     this.error = '';
-    
+
     this.repositoryService.getUserRepositories().subscribe({
       next: (repos) => {
         this.repositories = repos;
@@ -58,7 +60,7 @@ export class HomeComponent implements OnInit {
         r.showMenu = false;
       }
     });
-    
+
     // Toggle the menu for the selected repository
     repo.showMenu = !repo.showMenu;
   }
@@ -66,11 +68,11 @@ export class HomeComponent implements OnInit {
   syncRepository(repo: Repository): void {
     repo.showMenu = false; // Close the menu
     repo.syncing = true; // Show syncing indicator
-    
+
     this.repositoryService.syncRepository(repo.id).subscribe({
       next: (response: SyncResponse) => {
         console.log('Sync started with task ID:', response.task_id);
-        
+
         // Create a temporary AsyncTask object until we get the full details
         const tempTask: AsyncTask = {
           id: response.task_id,
@@ -83,7 +85,7 @@ export class HomeComponent implements OnInit {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
-        
+
         // Start polling for task status
         this.activeTasks.set(repo.id.toString(), tempTask);
         this.pollTaskStatus(response.task_id, repo);
@@ -104,7 +106,7 @@ export class HomeComponent implements OnInit {
     ).subscribe({
       next: (task: AsyncTask) => {
         console.log('Task status:', task.status);
-        
+
         if (task.status === 'completed' || task.status === 'failed') {
           // Task is done, stop polling and reload repositories
           subscription.unsubscribe();
@@ -148,7 +150,7 @@ export class HomeComponent implements OnInit {
     if (repo.syncing) {
       return 'status-syncing';
     }
-    
+
     switch (repo.status) {
       case 'synced':
         return 'status-synced';

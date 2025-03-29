@@ -7,6 +7,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { RepositoryService } from '../../services/repository.service';
 import { Repository, Collection } from '../../services/repository.service';
 import {RouteParameterService} from '../../services/routeparameter.service';
+import {MatChipsModule} from '@angular/material/chips';
 
 @Component({
   selector: 'app-repository-detail',
@@ -17,7 +18,8 @@ import {RouteParameterService} from '../../services/routeparameter.service';
     MatButtonModule,
     MatProgressSpinnerModule,
     RouterLink,
-    RouterOutlet
+    RouterOutlet,
+    MatChipsModule
   ],
   templateUrl: './repository-detail.component.html',
   styleUrls: ['./repository-detail.component.scss']

@@ -21,47 +21,57 @@
     </div>
 
     <div *ngIf="!loading && repositories.length > 0" class="repositories-list">
-      <div *ngFor="let repo of repositories" class="repository-card">
-        <div class="repo-header">
-          <h3>{{ repo.name }}</h3>
+      <mat-card *ngFor="let repo of repositories" class="repository-card">
+        <mat-card-header>
+          <mat-card-title><mat-chip >{{ repo.name }}</mat-chip></mat-card-title>
           <div class="repo-menu">
-            <button class="menu-btn" (click)="toggleMenu(repo)">
-              <i class="fas fa-ellipsis-v"></i>
+            <button mat-icon-button [matMenuTriggerFor]="repoMenu" aria-label="Repository menu">
+              <mat-icon>more_vert</mat-icon>
             </button>
-            <div class="dropdown-menu" *ngIf="repo?.showMenu">
-              <button (click)="syncRepository(repo)">Sync Repository</button>
-              <button (click)="editRepository(repo)">Edit</button>
-              <button (click)="deleteRepository(repo)">Delete</button>
+            <mat-menu #repoMenu="matMenu" xPosition="before">
+              <button mat-menu-item (click)="syncRepository(repo)">
+                <mat-icon>sync</mat-icon>
+                <span>Sync Repository</span>
+              </button>
+              <button mat-menu-item (click)="editRepository(repo)">
+                <mat-icon>edit</mat-icon>
+                <span>Edit</span>
+              </button>
+              <button mat-menu-item (click)="deleteRepository(repo)">
+                <mat-icon>delete</mat-icon>
+                <span>Delete</span>
+              </button>
+            </mat-menu>
+          </div>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="repo-details">
+            <p class="repo-status" [ngClass]="getStatusClass(repo)">
+              Status: {{ repo.syncing ? 'Syncing...' : (repo.status | titlecase) }}
+              <span *ngIf="repo.error_msg" class="error-tooltip">{{ repo.error_msg }}</span>
+            </p>
+            <p class="repo-branch">Branch: {{ repo.branch || 'default' }}</p>
+            <p class="repo-date">Last synced: {{ repo.last_sync_at ? (repo.last_sync_at | date:'yyyy-MM-dd HH:mm:ssZ') : 'Never' }}</p>
+            <p class="repo-date">Added: {{ repo.created_at | date }}</p>
+
+            <!-- Show warning message directly if status is warning -->
+            <div *ngIf="repo.status === 'warning'" class="warning-message">
+              <p><mat-icon>warning</mat-icon> {{ repo.error_msg }}</p>
+              <button mat-stroked-button color="warn" (click)="syncRepository(repo)">Retry Sync</button>
             </div>
           </div>
-        </div>
-        <div class="repo-details">
-          <p class="repo-status" [ngClass]="getStatusClass(repo)">
-            Status: {{ repo.syncing ? 'Syncing...' : (repo.status | titlecase) }}
-            <span *ngIf="repo.error_msg" class="error-tooltip">{{ repo.error_msg }}</span>
-          </p>
-          <p class="repo-branch">Branch: {{ repo.branch || 'default' }}</p>
-          <p class="repo-date">Last synced: {{ repo.last_sync_at ? (repo.last_sync_at | date:'yyyy-MM-dd HH:mm:ssZ') : 'Never' }}</p>
-          <p class="repo-date">Added: {{ repo.created_at | date }}</p>
 
-          <!-- Show warning message directly if status is warning -->
-          <div *ngIf="repo.status === 'warning'" class="warning-message">
-            <p><i class="fas fa-exclamation-triangle"></i> {{ repo.error_msg }}</p>
-            <button class="fix-config-btn" (click)="syncRepository(repo)">Retry Sync</button>
-          </div>
-        </div>
-
-        <!-- Task Status Component -->
-        <app-task-status
-          *ngIf="activeTasks.has(repo.id.toString())"
-          [task]="activeTasks.get(repo.id.toString())"
-          [autoRefresh]="true">
-        </app-task-status>
-
-        <div class="repo-actions">
-          <a [routerLink]="['/repositories', repo.id]" class="view-btn">View Collections</a>
-        </div>
-      </div>
+          <!-- Task Status Component -->
+          <app-task-status
+            *ngIf="activeTasks.has(repo.id.toString())"
+            [task]="activeTasks.get(repo.id.toString())"
+            [autoRefresh]="true">
+          </app-task-status>
+        </mat-card-content>
+        <mat-card-actions class="repo-actions">
+          <a mat-raised-button color="primary" [routerLink]="['/repositories', repo.id]" class="view-btn">View Collections</a>
+        </mat-card-actions>
+      </mat-card>
     </div>
   </div>
 </div>

@@ -66,9 +66,6 @@ h1 {
 }
 
 .repository-card {
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  overflow: hidden;
   transition: transform 0.2s, box-shadow 0.2s;
 
   &:hover {
@@ -76,23 +73,30 @@ h1 {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 
-  .repo-header {
+  mat-card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
+    padding-bottom: 8px;
 
-    h3 {
+    mat-card-title {
       margin: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
       flex: 1;
+      font-size: 18px;
     }
   }
 
+  .repo-menu {
+    display: flex;
+    justify-content: flex-end;
+    margin-left: auto;
+  }
+
   .repo-details {
-    padding: 15px;
+    padding: 0 16px 16px 16px;
     
     .repo-path {
       font-family: monospace;
@@ -259,31 +263,6 @@ h1 {
       
       i {
         font-size: 16px;
-      }
-    }
-    
-    .dropdown-menu {
-      position: absolute;
-      right: 0;
-      top: 100%;
-      background-color: white;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      border-radius: 4px;
-      z-index: 10;
-      min-width: 150px;
-      
-      button {
-        display: block;
-        width: 100%;
-        text-align: left;
-        padding: 8px 15px;
-        background: none;
-        border: none;
-        cursor: pointer;
-        
-        &:hover {
-          background-color: #f5f5f5;
-        }
       }
     }
   }
