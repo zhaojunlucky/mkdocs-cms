@@ -55,7 +55,7 @@
   color: #1976d2;
   cursor: pointer;
   text-decoration: none;
-  
+
   &:hover {
     text-decoration: underline;
   }
@@ -106,7 +106,7 @@
 
 .markdown-editor-wrapper {
   margin-top: 20px;
-  
+
   h3 {
     margin-top: 0;
     margin-bottom: 10px;
@@ -126,11 +126,11 @@
 .save-btn {
   background-color: #1976d2;
   color: white;
-  
+
   &:hover {
     background-color: #1565c0;
   }
-  
+
   &:disabled {
     background-color: #bbdefb;
     cursor: not-allowed;
@@ -140,11 +140,11 @@
 .cancel-btn {
   background-color: #e0e0e0;
   color: #424242;
-  
+
   &:hover {
     background-color: #bdbdbd;
   }
-  
+
   &:disabled {
     opacity: 0.7;
     cursor: not-allowed;

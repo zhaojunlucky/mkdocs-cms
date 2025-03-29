@@ -12,7 +12,7 @@
     <a [routerLink]="['/repositories', repositoryId]" class="back-btn">Back to Repository</a>
   </div>
 
-  <div *ngIf="!isLoading && !error && repository && collection">
+  <div *ngIf="!isLoading && !error">
     <!-- File Editor -->
     <div class="file-editor">
       <div class="file-editor-header">

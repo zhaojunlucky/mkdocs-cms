@@ -28,10 +28,9 @@ import * as jsYaml from 'js-yaml';
   styleUrls: ['./create-file.component.scss']
 })
 export class CreateFileComponent implements OnInit {
-  repository: Repository | null = null;
   collection: Collection | null = null;
   error = '';
-  repositoryId: number = 0;
+  repositoryId: string = '';
   collectionName: string = '';
   currentPath: string = '';
   pathSegments: { name: string; path: string }[] = [];
@@ -82,25 +81,17 @@ export class CreateFileComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
+    if (this.route.parent) {
+      this.repositoryId = this.route.parent.snapshot.paramMap.get('id') || '';
+    }
     this.route.paramMap.subscribe(params => {
-      const repoId = params.get('id');
       const collectionName = params.get('collectionName');
 
-      if (repoId && collectionName) {
-        this.repositoryId = parseInt(repoId, 10);
+      if (this.repositoryId && collectionName) {
         this.collectionName = collectionName;
-
-        // Get the current path from the URL
-        this.route.url.subscribe(segments => {
-          // The path is everything after 'create' in the URL
-          const createIndex = segments.findIndex(segment => segment.path === 'create');
-          if (createIndex !== -1 && segments.length > createIndex + 1) {
-            this.currentPath = segments.slice(createIndex + 1).map(segment => segment.path).join('/');
-          } else {
-            this.currentPath = '';
-          }
-
-          this.loadRepository();
+        this.route.queryParams.subscribe(params => {
+          this.currentPath = params['path'] || '';
+          this.loadCollection();
         });
       } else {
         this.error = 'Invalid repository ID or collection name';
@@ -109,22 +100,22 @@ export class CreateFileComponent implements OnInit {
     });
   }
 
-  loadRepository(): void {
-    this.isLoading = true;
-    this.error = '';
-
-    this.repositoryService.getRepository(this.repositoryId).subscribe({
-      next: (repo) => {
-        this.repository = repo;
-        this.loadCollection();
-      },
-      error: (err) => {
-        console.error('Error loading repository:', err);
-        this.error = 'Failed to load repository. Please try again later.';
-        this.isLoading = false;
-      }
-    });
-  }
+  // loadRepository(): void {
+  //   this.isLoading = true;
+  //   this.error = '';
+  //
+  //   this.repositoryService.getRepository(this.repositoryId).subscribe({
+  //     next: (repo) => {
+  //       this.repository = repo;
+  //       this.loadCollection();
+  //     },
+  //     error: (err) => {
+  //       console.error('Error loading repository:', err);
+  //       this.error = 'Failed to load repository. Please try again later.';
+  //       this.isLoading = false;
+  //     }
+  //   });
+  // }
 
   loadCollection(): void {
     this.repositoryService.getRepositoryCollections(this.repositoryId).subscribe({
@@ -214,7 +205,7 @@ export class CreateFileComponent implements OnInit {
   }
 
   createFile(): void {
-    if (!this.repository || !this.collection) return;
+    if (!this.repositoryId || !this.collection) return;
     if (!this.fileName.trim()) {
       this.fileError = 'Please enter a file name';
       return;

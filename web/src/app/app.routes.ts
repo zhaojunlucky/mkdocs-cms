@@ -17,9 +17,8 @@ export const routes: Routes = [
   { path: 'repositories/:id', component: RepositoryDetailComponent, canActivate: [authGuard] ,
     children: [
       { path: 'collection/:collectionName', component: CollectionComponent, canActivate: [authGuard] },
-      { path: 'collection/:collectionName/**', component: CollectionComponent, canActivate: [authGuard] },
-      { path: 'collection/:collectionName/edit/**', component: EditFileComponent, canActivate: [authGuard] },
-      { path: 'collection/:collectionName/create/**', component: CreateFileComponent, canActivate: [authGuard] },
+      { path: 'collection/:collectionName/edit', component: EditFileComponent, canActivate: [authGuard] },
+      { path: 'collection/:collectionName/create', component: CreateFileComponent, canActivate: [authGuard] },
     ]
   },
   { path: 'repositories/:id/edit', component: EditRepositoryComponent, canActivate: [authGuard] },

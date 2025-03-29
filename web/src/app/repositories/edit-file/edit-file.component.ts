@@ -35,7 +35,6 @@ export class EditFileComponent implements OnInit {
   collectionName: string = '';
   filePath: string = '';
 
-  repository: Repository | null = null;
   collection: Collection | null | undefined = null;
   selectedFile: FileInfo | null = null;
 
@@ -81,25 +80,30 @@ export class EditFileComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private collectionService: CollectionService
+    private collectionService: CollectionService,
+    private repositoryService: RepositoryService,
   ) {}
 
   ngOnInit(): void {
+    if (this.route.parent) {
+      this.repositoryId = this.route.parent.snapshot.paramMap.get('id') || '';
+    }
     this.route.paramMap.subscribe(params => {
-      this.repositoryId = params.get('id') || '';
       this.collectionName = params.get('collectionName') || '';
 
-      // Get the file path from the URL
-      const url = this.router.url;
-      const editIndex = url.indexOf('/edit/');
-      if (editIndex !== -1) {
-        this.filePath = url.substring(editIndex + 6);// +6 to skip '/edit/'
-        if (!this.filePath) {
-          this.router.navigate(['/404']);
+      this.route.queryParamMap.subscribe(queryParams => {
+        this.filePath = queryParams.get('path') || '';
+        if (this.repositoryId && this.collectionName && this.filePath) {
+          this.setupPathSegments();
+          this.loadData();
+        } else {
+          this.error = 'Invalid repository ID or collection name';
+          this.isLoading = false;
         }
-      }
 
-      this.loadData();
+      });
+
+
     });
   }
 
@@ -110,7 +114,26 @@ export class EditFileComponent implements OnInit {
       this.isLoading = false;
       return;
     }
+    this.loadCollection();
     this.loadFileContent();
+  }
+
+  loadCollection(): void {
+    this.repositoryService.getRepositoryCollections(this.repositoryId).subscribe({
+      next: (collections: Collection[]) => {
+        this.collection = collections.find(c => c.name === this.collectionName);
+        if (this.collection) {
+          this.loadFileContent()
+        } else {
+          this.error = `Failed to load collection: ${this.collectionName}`;
+          this.isLoading = false;
+        }
+      },
+      error: (err: any) => {
+        this.error = `Failed to load collection: ${err.message || 'Unknown error'}`;
+        this.isLoading = false;
+      }
+    });
   }
 
   loadFileContent(): void {

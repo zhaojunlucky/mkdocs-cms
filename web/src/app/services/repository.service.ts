@@ -88,7 +88,7 @@ export class RepositoryService {
   }
 
   // Get a specific repository by ID
-  getRepository(id: number): Observable<Repository> {
+  getRepository(id: number | string): Observable<Repository> {
     const headers = this.getAuthHeaders();
     return this.http.get<Repository>(`${this.apiUrl}/v1/repos/${id}`, { headers });
   }
@@ -100,7 +100,7 @@ export class RepositoryService {
   }
 
   // Get collections for a repository
-  getRepositoryCollections(repoId: number): Observable<Collection[]> {
+  getRepositoryCollections(repoId: number|string): Observable<Collection[]> {
     const headers = this.getAuthHeaders();
     return this.http.get<Collection[]>(`${this.apiUrl}/v1/collections/repo/${repoId}`, { headers });
   }

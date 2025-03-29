@@ -13,7 +13,7 @@
     <a [routerLink]="['/repositories', repositoryId]" class="back-btn">Back to Repository</a>
   </div>
 
-  <div *ngIf="!isLoading && !error && repository && collection">
+  <div *ngIf="!isLoading && !error && repositoryId && collection">
     <!-- Create File Header -->
     <div class="create-file-header">
       <h1>Create New File</h1>

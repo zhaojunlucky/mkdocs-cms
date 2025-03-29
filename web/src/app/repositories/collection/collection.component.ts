@@ -85,26 +85,18 @@ export class CollectionComponent implements OnInit {
   ngOnInit(): void {
     if (this.route.parent) {
       this.repositoryId = this.route.parent.snapshot.paramMap.get('id') || '';
-
     }
+
     this.route.paramMap.subscribe(params => {
       const collectionName = params.get('collectionName');
 
       if (this.repositoryId && collectionName) {
         this.collectionName = collectionName;
-
-        // Get the current path from the URL
-        this.route.url.subscribe(segments => {
-          // The path is everything after the collection name in the URL
-          const collectionIndex = segments.findIndex(segment => segment.path === collectionName);
-          if (collectionIndex !== -1 && segments.length > collectionIndex + 1) {
-            this.currentPath = segments.slice(collectionIndex + 1).map(segment => segment.path).join('/');
-          } else {
-            this.currentPath = '';
-          }
-
+        this.route.queryParams.subscribe(params => {
+          this.currentPath = params['path'] || '';
           this.loadFiles();
         });
+
       } else {
         this.error = 'Invalid repository ID or collection name';
         this.isLoading = false;
@@ -159,7 +151,9 @@ export class CollectionComponent implements OnInit {
     if (!folder.is_dir) return;
 
     const path = folder.path;
-    this.router.navigate(['/repositories', this.repositoryId, 'collection', this.collectionName, path]);
+    this.router.navigate(['/repositories', this.repositoryId, 'collection', this.collectionName],{
+      queryParams: { path }
+    });
   }
 
 
@@ -290,10 +284,17 @@ export class CollectionComponent implements OnInit {
   // Navigate to create file page
   openCreateFileDialog(): void {
     const path = this.currentPath ? this.currentPath : '';
-    this.router.navigate(['/repositories', this.repositoryId, 'collection', this.collectionName, 'create', path]);
+    this.router.navigate(['/repositories', this.repositoryId, 'collection', this.collectionName, 'create'], {
+      queryParams: { path }
+    });
   }
 
   selectFile(file: FileInfo) {
-    this.selectedFile = file;
+    this.router.navigate(['/repositories', this.repositoryId, 'collection', this.collectionName, 'edit'], {
+      queryParams: {
+        path: file.path
+      }
+    });
+
   }
 }
