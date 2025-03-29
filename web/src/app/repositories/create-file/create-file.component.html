@@ -32,7 +32,10 @@
     <div class="create-file-form">
       <div class="file-name-input">
         <label for="fileName">File Name</label>
-        <input id="fileName" [(ngModel)]="fileName" placeholder="Enter file name (e.g. my-document.md)" class="form-input">
+        <mat-form-field>
+          <mat-label>File Name</mat-label>
+          <input matInput id="fileName" [(ngModel)]="fileName" placeholder="Enter file name (e.g. my-document.md)" class="form-input">
+        </mat-form-field>
         <div *ngIf="fileError" class="error-text">{{ fileError }}</div>
       </div>
 

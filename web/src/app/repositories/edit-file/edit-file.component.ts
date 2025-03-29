@@ -34,9 +34,9 @@ export class EditFileComponent implements OnInit {
   repositoryId: string = '';
   collectionName: string = '';
   filePath: string = '';
+  fileName: string = '';
 
   collection: Collection | null | undefined = null;
-  selectedFile: FileInfo | null = null;
 
   isLoading: boolean = true;
   error: string = '';
@@ -94,6 +94,7 @@ export class EditFileComponent implements OnInit {
       this.route.queryParamMap.subscribe(queryParams => {
         this.filePath = queryParams.get('path') || '';
         if (this.repositoryId && this.collectionName && this.filePath) {
+          this.fileName = this.filePath.split('/').pop() || '';
           this.setupPathSegments();
           this.loadData();
         } else {

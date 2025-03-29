@@ -17,17 +17,17 @@
     <div class="file-editor">
       <div class="file-editor-header">
         <div class="file-editor-title">
-          <h2>{{ 'Editing: ' + selectedFile?.name }}</h2>
+          <h2>{{ 'Editing: ' + fileName }}</h2>
           <div class="breadcrumbs-container" style="display: flex; justify-content: space-between; align-items: center;">
             <div class="breadcrumbs">
               <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]">Root</a>
               <span *ngFor="let segment of pathSegments">
                 <span class="breadcrumb-separator">/</span>
-                <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName, segment.path]">{{ segment.name }}</a>
+                <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" [queryParams]="{path: segment.path}">{{ segment.name }}</a>
               </span>
-              <span *ngIf="selectedFile">
+              <span *ngIf="filePath">
                 <span class="breadcrumb-separator">/</span>
-                <span class="active">{{ selectedFile.name }}</span>
+                <span class="active">{{ fileName }}</span>
               </span>
             </div>
             <div style="display: flex; justify-content: flex-end; gap: 8px;">

@@ -9,6 +9,7 @@ import { CollectionService } from '../../services/collection.service';
 import { FrontMatterEditorComponent } from '../../markdown/front-matter-editor/front-matter-editor.component';
 import { NuMarkdownComponent } from '@ng-util/markdown';
 import * as jsYaml from 'js-yaml';
+import { MatInputModule} from '@angular/material/input';
 
 @Component({
   selector: 'app-create-file',
@@ -22,7 +23,8 @@ import * as jsYaml from 'js-yaml';
     MatProgressSpinnerModule,
     MatButtonModule,
     FrontMatterEditorComponent,
-    NuMarkdownComponent
+    NuMarkdownComponent,
+    MatInputModule
   ],
   templateUrl: './create-file.component.html',
   styleUrls: ['./create-file.component.scss']
@@ -91,6 +93,7 @@ export class CreateFileComponent implements OnInit {
         this.collectionName = collectionName;
         this.route.queryParams.subscribe(params => {
           this.currentPath = params['path'] || '';
+          this.fileName = new Date().toISOString().slice(0, 10) + '-';
           this.loadCollection();
         });
       } else {
@@ -99,23 +102,6 @@ export class CreateFileComponent implements OnInit {
       }
     });
   }
-
-  // loadRepository(): void {
-  //   this.isLoading = true;
-  //   this.error = '';
-  //
-  //   this.repositoryService.getRepository(this.repositoryId).subscribe({
-  //     next: (repo) => {
-  //       this.repository = repo;
-  //       this.loadCollection();
-  //     },
-  //     error: (err) => {
-  //       console.error('Error loading repository:', err);
-  //       this.error = 'Failed to load repository. Please try again later.';
-  //       this.isLoading = false;
-  //     }
-  //   });
-  // }
 
   loadCollection(): void {
     this.repositoryService.getRepositoryCollections(this.repositoryId).subscribe({
