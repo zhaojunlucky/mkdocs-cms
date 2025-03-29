@@ -7,9 +7,11 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { RepositoryService, Repository, Collection } from '../../services/repository.service';
 import { CollectionService, FileInfo } from '../../services/collection.service';
-import { FrontMatterEditorComponent } from '../../markdown/front-matter-editor/front-matter-editor.component';
-import { NuMarkdownComponent } from '@ng-util/markdown';
 import {Observable} from 'rxjs';
+import {MatIconModule} from '@angular/material/icon';
+import {MatTooltip} from '@angular/material/tooltip';
+import {MatCardModule} from '@angular/material/card';
+import {MatFormField, MatInput, MatInputModule} from '@angular/material/input';
 
 @Pipe({
   name: 'fileSize',
@@ -40,14 +42,17 @@ export class FileSizePipe implements PipeTransform {
     MatProgressSpinnerModule,
     MatButtonModule,
     MatMenuModule,
-    FileSizePipe
+    FileSizePipe,
+    MatIconModule,
+    MatTooltip,
+    MatCardModule,
+    MatInputModule,
+    MatFormField,
   ],
   templateUrl: './collection.component.html',
   styleUrls: ['./collection.component.scss']
 })
 export class CollectionComponent implements OnInit {
-  repository: Repository | null = null;
-  collection: Collection | null = null;
   error = '';
   repositoryId: string = '';
   collectionName: string = '';
@@ -171,7 +176,7 @@ export class CollectionComponent implements OnInit {
   }
 
   createFolder(): void {
-    if (!this.repository || !this.collection) return;
+    if (!this.repositoryId || !this.collectionName) return;
     if (!this.newFolderName.trim()) {
       this.folderError = 'Please enter a folder name';
       return;
@@ -182,7 +187,7 @@ export class CollectionComponent implements OnInit {
 
     this.collectionService.createFolder(
       this.repositoryId.toString(),
-      this.collection.name,
+      this.collectionName,
       this.currentPath,
       this.newFolderName.trim()
     ).subscribe({
@@ -203,7 +208,9 @@ export class CollectionComponent implements OnInit {
   openRenameDialog(file: FileInfo): void {
     this.selectedFile = file;
     this.isRenaming = true;
-    this.newName = file.name;
+
+    // @ts-ignore
+    this.newName = file.name.substring(0, file.name.length - file.extension?.length);
     this.renameError = '';
   }
 
@@ -214,8 +221,8 @@ export class CollectionComponent implements OnInit {
     this.renameError = '';
   }
 
-  renameFileOrFolder(): void {
-    if (!this.repository || !this.collection || !this.selectedFile) return;
+  renameFile(): void {
+    if (!this.repositoryId ||!this.selectedFile) return;
     if (!this.newName.trim()) {
       this.renameError = 'Please enter a name';
       return;
@@ -228,13 +235,14 @@ export class CollectionComponent implements OnInit {
     const currentPath = this.selectedFile.path;
     const lastSlashIndex = currentPath.lastIndexOf('/');
     const dirPath = lastSlashIndex !== -1 ? currentPath.substring(0, lastSlashIndex) : '';
+    const newFileName = this.newName.trim() + this.selectedFile.extension;
 
     // Build the new path
-    const newPath = dirPath ? `${dirPath}/${this.newName.trim()}` : this.newName.trim();
+    const newPath = dirPath ? `${dirPath}/${newFileName}` : newFileName;
 
     this.collectionService.renameFile(
       this.repositoryId.toString(),
-      this.collection.name,
+      this.collectionName,
       this.selectedFile.path,
       newPath
     ).subscribe({
@@ -252,20 +260,21 @@ export class CollectionComponent implements OnInit {
   }
 
   // Delete operations
-  deleteFileOrFolder(file: FileInfo): void {
-    if (!this.repository || !this.collection) return;
+  deleteFile(file: FileInfo): void {
+    if (!this.repositoryId || !this.collectionName) return;
 
     const isFolder = file.is_dir;
-    const confirmMessage = isFolder
-      ? `Are you sure you want to delete the folder "${file.name}" and all its contents?`
-      : `Are you sure you want to delete the file "${file.name}"?`;
+    if (isFolder) {
+      alert("Folders cannot be deleted.");
+      return;
+    }
 
-    if (confirm(confirmMessage)) {
+    if (confirm(`Are you sure you want to delete the file "${file.name}"?`)) {
       this.isLoading = true;
 
       this.collectionService.deleteFile(
         this.repositoryId.toString(),
-        this.collection.name,
+        this.collectionName,
         file.path
       ).subscribe({
         next: () => {

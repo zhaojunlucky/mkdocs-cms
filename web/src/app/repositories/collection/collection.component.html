@@ -16,7 +16,6 @@
   <div *ngIf="!isLoading && !error && collectionName">
     <!-- Collection Header -->
     <div class="collection-header">
-      <h1>{{ collectionName }}</h1>
       <div class="breadcrumbs-container">
         <div class="breadcrumbs">
           <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]">Root</a>
@@ -33,11 +32,11 @@
       <div class="file-browser-header">
         <h2>Files</h2>
         <div class="file-actions">
-          <button (click)="openCreateFileDialog()" class="action-btn create-file-btn">
-            <span class="btn-icon">+</span> New File
+          <button mat-icon-button matTooltip="Create File" (click)="openCreateFileDialog()" class="action-btn create-file-btn">
+            <mat-icon>note_add</mat-icon>
           </button>
-          <button (click)="openCreateFolderDialog()" class="action-btn create-folder-btn">
-            <span class="btn-icon">+</span> New Folder
+          <button mat-icon-button matTooltip="Create Folder" (click)="openCreateFolderDialog()" class="action-btn create-folder-btn">
+            <mat-icon>create_new_folder</mat-icon>
           </button>
         </div>
       </div>
@@ -57,47 +56,69 @@
         </div>
       </div>
 
+      <!-- Rename Dialog -->
+      <div *ngIf="isRenaming" class="dialog-overlay">
+        <mat-card class="dialog">
+          <mat-card-header>
+            <mat-card-title>Rename File</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <mat-form-field class="example-full-width">
+              <mat-label>New Name without extension</mat-label>
+              <input matInput [(ngModel)]="newName" placeholder="New Name" class="dialog-input">
+              <mat-error *ngIf="renameError" class="error-text">{{ renameError }}</mat-error>
+            </mat-form-field>
+          </mat-card-content>
+          <mat-card-actions class="dialog-actions">
+            <button mat-flat-button color="primary" (click)="renameFile()" [disabled]="!newName.trim() || newName+selectedFile?.extension == selectedFile?.name  " class="dialog-btn primary">Rename</button>
+            <button mat-flat-button color="warn" (click)="cancelRename()" class="dialog-btn">Cancel</button>
+          </mat-card-actions>
+        </mat-card>
+      </div>
+
       <!-- File List -->
       <div class="file-list">
         <!-- Empty State -->
         <div *ngIf="files.length === 0" class="empty-state">
           <p>No files in this collection{{ currentPath ? ' path' : '' }}.</p>
           <div class="empty-actions">
-            <button (click)="openCreateFileDialog()" class="action-btn">Create a file</button>
-            <button (click)="openCreateFolderDialog()" class="action-btn">Create a folder</button>
+            <button mat-icon-button matTooltip="Create File" (click)="openCreateFileDialog()" class="action-btn create-file-btn">
+              <mat-icon>note_add</mat-icon>
+            </button>
+            <button mat-icon-button matTooltip="Create Folder" (click)="openCreateFolderDialog()" class="action-btn create-folder-btn">
+              <mat-icon>create_new_folder</mat-icon>
+            </button>
           </div>
         </div>
 
         <!-- Files and Folders -->
-        <div *ngIf="files.length > 0" class="file-items">
+        <div *ngIf="files.length > 0" class="file-items" [class.overlay-active]="isRenaming">
           <div *ngFor="let file of files" class="file-item" [class.is-directory]="file.is_dir">
             <div class="file-item-content" (click)="file.is_dir ? navigateToFolder(file) : selectFile(file)">
-              <span class="file-icon">{{ file.is_dir ? '📁' : '📄' }}</span>
+              <mat-icon *ngIf="file.is_dir" class="folder-icon">folder</mat-icon>
+              <mat-icon *ngIf="!file.is_dir" class="file-icon">article</mat-icon>
               <span class="file-name">{{ file.name }}</span>
               <span class="file-meta">
                 <span class="file-size" *ngIf="!file.is_dir">{{ file.size | fileSize }}</span>
                 <span class="file-date">{{ file.mod_time | date:'short' }}</span>
               </span>
             </div>
-            <div class="file-actions">
-              <button (click)="openRenameDialog(file)" class="action-btn small">Rename</button>
-              <button *ngIf="!file.is_dir" (click)="deleteFileOrFolder(file)" class="action-btn small danger">Delete</button>
+            <!-- File Actions Menu (only for non-directories) -->
+            <div *ngIf="!file.is_dir" class="file-actions" (click)="$event.stopPropagation()">
+              <button mat-icon-button [matMenuTriggerFor]="fileMenu" aria-label="File actions">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu #fileMenu="matMenu">
+                <button mat-menu-item (click)="openRenameDialog(file)">
+                  <mat-icon>edit</mat-icon>
+                  <span>Rename</span>
+                </button>
+                <button mat-menu-item (click)="deleteFile(file)">
+                  <mat-icon>delete</mat-icon>
+                  <span>Delete</span>
+                </button>
+              </mat-menu>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Rename Dialog -->
-      <div *ngIf="isRenaming" class="dialog-overlay">
-        <div class="dialog">
-          <h3>Rename {{ selectedFile?.is_dir ? 'Folder' : 'File' }}</h3>
-          <div class="dialog-content">
-            <input [(ngModel)]="newName" placeholder="New Name" class="dialog-input">
-            <div *ngIf="renameError" class="error-text">{{ renameError }}</div>
-          </div>
-          <div class="dialog-actions">
-            <button (click)="renameFileOrFolder()" [disabled]="!newName.trim()" class="dialog-btn primary">Rename</button>
-            <button (click)="cancelRename()" class="dialog-btn">Cancel</button>
           </div>
         </div>
       </div>

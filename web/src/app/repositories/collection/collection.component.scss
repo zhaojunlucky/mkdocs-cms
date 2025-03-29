@@ -1,6 +1,6 @@
 .collection-container {
-  padding: 20px;
-  max-width: 1200px;
+  padding: 10px;
+  width: 100%;
   margin: 0 auto;
   position: relative;
 }
@@ -60,7 +60,7 @@
 .breadcrumb-item {
   color: #1976d2;
   cursor: pointer;
-  
+
   &:hover {
     text-decoration: underline;
   }
@@ -80,11 +80,34 @@
 
 .file-browser-header {
   margin-bottom: 20px;
-  
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
   h2 {
     margin-top: 0;
     margin-bottom: 10px;
     font-size: 20px;
+  }
+}
+
+.file-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.action-btn {
+  &.mat-icon-button {
+    width: 48px;
+    height: 48px;
+    line-height: 48px;
+
+    .mat-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+      line-height: 24px;
+    }
   }
 }
 
@@ -108,32 +131,63 @@
   gap: 8px;
 }
 
-.file-item {
-  display: flex;
-  align-items: center;
-  padding: 10px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-  cursor: pointer;
-  
-  &:hover {
-    background-color: #f5f5f5;
-  }
-  
-  &.is-folder {
-    background-color: #e3f2fd;
-    
-    &:hover {
-      background-color: #bbdefb;
+.file-items {
+  position: relative;
+
+  &.overlay-active {
+    pointer-events: none; /* Disable interactions with all child elements */
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.2);
+      border-radius: 4px;
+      z-index: 1;
     }
   }
 }
 
-.file-icon {
+.file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #f5f5f5;
+  }
+
+  &.is-folder, &.is-directory {
+    background-color: #e3f2fd;
+
+    &:hover {
+      background-color: #bbdefb;
+    }
+  }
+
+  .file-item-content {
+    display: flex;
+    align-items: center;
+    flex: 1;
+  }
+}
+
+.dialog-overlay {
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+.file-icon, .folder-icon {
   margin-right: 10px;
   color: #757575;
-  
-  .is-folder & {
+
+  .is-folder &, .is-directory & {
     color: #1976d2;
   }
 }
@@ -152,6 +206,7 @@
   color: #757575;
   display: flex;
   gap: 15px;
+  padding-left: 5px;
 }
 
 .file-editor {
@@ -189,7 +244,7 @@
 
 .markdown-editor-wrapper {
   margin-top: 20px;
-  
+
   h3 {
     margin-top: 0;
     margin-bottom: 10px;
@@ -209,11 +264,11 @@
 .save-btn {
   background-color: #1976d2;
   color: white;
-  
+
   &:hover {
     background-color: #1565c0;
   }
-  
+
   &:disabled {
     background-color: #bbdefb;
     cursor: not-allowed;
@@ -223,11 +278,11 @@
 .cancel-btn {
   background-color: #e0e0e0;
   color: #424242;
-  
+
   &:hover {
     background-color: #bdbdbd;
   }
-  
+
   &:disabled {
     opacity: 0.7;
     cursor: not-allowed;
