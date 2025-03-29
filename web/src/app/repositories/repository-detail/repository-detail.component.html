@@ -1,0 +1,49 @@
+<app-nav></app-nav>
+<div class="repository-detail-container">
+  <!-- Loading overlay that blocks user interaction -->
+  <div *ngIf="isLoading" class="loading-overlay">
+    <div class="spinner-container">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p>Loading...</p>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="error-message">
+    <p>{{ error }}</p>
+    <a routerLink="/home" class="back-btn">Back to Home</a>
+  </div>
+
+  <div *ngIf="!isLoading && !error && repository">
+
+    <div class="content-layout">
+      <!-- Sidenav for collections -->
+      <div class="sidenav">
+        <div class="sidenav-header">
+          <h3>Collections</h3>
+        </div>
+        <div class="sidenav-content">
+          <div *ngIf="collections.length === 0" class="empty-state-sidenav">
+            <p>No collections found</p>
+          </div>
+          <ul class="collection-list">
+            <li *ngFor="let collection of collections"
+                [class.selected]="collection.name === selectedColName"
+                (click)="selectCollection(collection)">
+              <span class="collection-name">{{ collection.label }}</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Main content area -->
+      <div class="main-content">
+        <!-- Show info message if no collection is selected -->
+        <div class="info-message-large" *ngIf="!selectedColName">
+          <p>Select a collection from the sidebar to browse its files.</p>
+        </div>
+
+        <router-outlet></router-outlet>
+      </div>
+    </div>
+  </div>
+</div>

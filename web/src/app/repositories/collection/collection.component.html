@@ -1,0 +1,132 @@
+<!-- Collection Component -->
+<div class="collection-container">
+  <!-- Loading overlay that blocks user interaction -->
+  <div *ngIf="isLoading" class="loading-overlay">
+    <div class="spinner-container">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p>Loading...</p>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="error-message">
+    <p>{{ error }}</p>
+    <a [routerLink]="['/repositories', repositoryId]" class="back-btn">Back to Repository</a>
+  </div>
+
+  <div *ngIf="!isLoading && !error && collectionName">
+    <!-- Collection Header -->
+    <div class="collection-header">
+      <div class="breadcrumbs-container">
+        <div class="breadcrumbs">
+          <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" matTooltip="Home"><mat-icon>home</mat-icon></a>
+          <span *ngFor="let segment of pathSegments">
+            <span class="breadcrumb-separator">/</span>
+            <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName, segment.path]">{{ segment.name }}</a>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- File Browser -->
+    <div class="file-browser">
+      <div class="file-browser-header">
+        <h2>Files</h2>
+        <div class="file-actions">
+          <button mat-icon-button matTooltip="Create File" (click)="openCreateFileDialog()" class="action-btn create-file-btn">
+            <mat-icon>note_add</mat-icon>
+          </button>
+          <button mat-icon-button matTooltip="Create Folder" (click)="openCreateFolderDialog()" class="action-btn create-folder-btn">
+            <mat-icon>create_new_folder</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Create Folder Dialog -->
+      <div *ngIf="isCreatingFolder" class="dialog-overlay">
+        <mat-card class="dialog">
+          <mat-card-header>
+            <mat-card-title>Create New Folder</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <mat-form-field class="dialog-content">
+              <mat-label>New Folder</mat-label>
+              <input matInput [(ngModel)]="newFolderName" placeholder="Folder Name" class="dialog-input">
+              <mat-error  *ngIf="folderError" class="error-text">{{ folderError }}</mat-error >
+            </mat-form-field>
+          </mat-card-content>
+          <mat-card-actions class="dialog-actions">
+            <button mat-flat-button color="primary" (click)="createFolder()" [disabled]="!newFolderName.trim()" class="dialog-btn primary">Create</button>
+            <button mat-flat-button color="warn" (click)="cancelCreateFolder()" [disabled]="isLoading" class="dialog-btn">Cancel</button>
+          </mat-card-actions>
+        </mat-card>
+      </div>
+
+      <!-- Rename Dialog -->
+      <div *ngIf="isRenaming" class="dialog-overlay">
+        <mat-card class="dialog">
+          <mat-card-header>
+            <mat-card-title>Rename File</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <mat-form-field class="example-full-width">
+              <mat-label>New Name without extension</mat-label>
+              <input matInput [(ngModel)]="newName" placeholder="New Name" class="dialog-input">
+              <mat-error *ngIf="renameError" class="error-text">{{ renameError }}</mat-error>
+            </mat-form-field>
+          </mat-card-content>
+          <mat-card-actions class="dialog-actions">
+            <button mat-flat-button color="primary" (click)="renameFile()" [disabled]="!newName.trim() || newName+selectedFile?.extension == selectedFile?.name  " class="dialog-btn primary">Rename</button>
+            <button mat-flat-button color="warn" (click)="cancelRename()" [disabled]="isLoading" class="dialog-btn">Cancel</button>
+          </mat-card-actions>
+        </mat-card>
+      </div>
+
+      <!-- File List -->
+      <div class="file-list">
+        <!-- Empty State -->
+        <div *ngIf="files.length === 0" class="empty-state">
+          <p>No files in this collection{{ currentPath ? ' path' : '' }}.</p>
+          <div class="empty-actions">
+            <button mat-icon-button matTooltip="Create File" (click)="openCreateFileDialog()" class="action-btn create-file-btn">
+              <mat-icon>note_add</mat-icon>
+            </button>
+            <button mat-icon-button matTooltip="Create Folder" (click)="openCreateFolderDialog()" class="action-btn create-folder-btn">
+              <mat-icon>create_new_folder</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- Files and Folders -->
+        <div *ngIf="files.length > 0" class="file-items" [class.overlay-active]="isRenaming || isCreatingFolder">
+          <div *ngFor="let file of files" class="file-item" [class.is-directory]="file.is_dir">
+            <div class="file-item-content" (click)="file.is_dir ? navigateToFolder(file) : selectFile(file)">
+              <mat-icon *ngIf="file.is_dir" class="folder-icon">folder</mat-icon>
+              <mat-icon *ngIf="!file.is_dir" class="file-icon">article</mat-icon>
+              <span class="file-name">{{ file.name }}</span>
+              <span class="file-meta">
+                <span class="file-size" *ngIf="!file.is_dir">{{ file.size | fileSize }}</span>
+                <span class="file-date">{{ file.mod_time | date:'short' }}</span>
+              </span>
+            </div>
+            <!-- File Actions Menu (only for non-directories) -->
+            <div *ngIf="!file.is_dir" class="file-actions" (click)="$event.stopPropagation()">
+              <button mat-icon-button [matMenuTriggerFor]="fileMenu" aria-label="File actions">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu #fileMenu="matMenu">
+                <button mat-menu-item (click)="openRenameDialog(file)">
+                  <mat-icon>edit</mat-icon>
+                  <span>Rename</span>
+                </button>
+                <button mat-menu-item (click)="deleteFile(file)">
+                  <mat-icon>delete</mat-icon>
+                  <span>Delete</span>
+                </button>
+              </mat-menu>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

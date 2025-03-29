@@ -1,0 +1,63 @@
+<!-- Create File Component -->
+<div class="create-file-container">
+  <!-- Loading overlay that blocks user interaction -->
+  <div *ngIf="isLoading" class="loading-overlay">
+    <div class="spinner-container">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p>Loading...</p>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="error-message">
+    <p>{{ error }}</p>
+    <a [routerLink]="['/repositories', repositoryId]" class="back-btn">Back to Repository</a>
+  </div>
+
+    <!-- Create File Header -->
+    <div class="create-file-header" *ngIf="!isLoading && !error && repositoryId && collection">
+      <h1>Create New File</h1>
+      <div class="breadcrumbs-container" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="breadcrumbs">
+          <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" matTooltip="Home"><mat-icon>home</mat-icon></a>
+          <span *ngFor="let segment of pathSegments">
+            <span class="breadcrumb-separator">/</span>
+            <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName, segment.path]">{{ segment.name }}</a>
+          </span>
+        </div>
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <button (click)="createFile()" [disabled]="isCreating || !fileName.trim()" class="create-btn">
+            <span *ngIf="!isCreating">Create File</span>
+            <span *ngIf="isCreating">Creating...</span>
+          </button>
+          <button (click)="cancel()" [disabled]="isCreating" class="cancel-btn">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- File Creation Form -->
+    <div class="create-file-form" *ngIf="!isLoading && !error && repositoryId && collection">
+      <div class="file-name-input">
+        <label for="fileName">File Name</label>
+        <mat-form-field>
+          <mat-label>File Name</mat-label>
+          <input matInput id="fileName" [(ngModel)]="fileName" placeholder="Enter file name (e.g. my-document.md)" class="form-input">
+        </mat-form-field>
+        <div *ngIf="fileError" class="error-text">{{ fileError }}</div>
+      </div>
+
+      <!-- Front Matter Editor -->
+      <app-front-matter-editor *ngIf="collection && collection.fields"
+        [frontMatter]="frontMatter"
+        [fields]="collection.fields"
+        (frontMatterChange)="onFrontMatterChange($event)">
+      </app-front-matter-editor>
+
+      <!-- Markdown Editor -->
+      <div class="markdown-editor-wrapper">
+        <h3>Content</h3>
+        <nu-markdown [(ngModel)]="markdownContent" [options]="editorOptions" (ready)="onEditorReady($event)"></nu-markdown>
+      </div>
+
+  </div>
+</div>
