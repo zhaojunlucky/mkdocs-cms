@@ -51,6 +51,11 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "**/*.(js|css)",
+                "input": "node_modules/vditor",
+                "output": "/assets/vditor/"
               }
             ],
             "styles": [
@@ -124,6 +129,11 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "**/*.(js|css)",
+                "input": "node_modules/vditor",
+                "output": "/assets/vditor/"
               }
             ],
             "styles": [

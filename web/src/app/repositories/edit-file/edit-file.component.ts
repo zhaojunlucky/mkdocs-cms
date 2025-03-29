@@ -250,15 +250,12 @@ export class EditFileComponent implements OnInit {
 
   navigateToCollection(): void {
     // Navigate back to the collection view
-    if (this.filePath) {
-      const pathWithoutFile = this.filePath.substring(0, this.filePath.lastIndexOf('/'));
-      if (pathWithoutFile) {
-        this.router.navigate(['/repositories', this.repositoryId, 'collection', this.collectionName, pathWithoutFile]);
-      } else {
-        this.router.navigate(['/repositories', this.repositoryId, 'collection', this.collectionName]);
+
+    const pathWithoutFile = this.filePath.substring(0, this.filePath.lastIndexOf('/'));
+    this.router.navigate(['/repositories', this.repositoryId, 'collection', this.collectionName], {
+      queryParams: {
+        path: pathWithoutFile
       }
-    } else {
-      this.router.navigate(['/repositories', this.repositoryId, 'collection', this.collectionName]);
-    }
+    });
   }
 }
