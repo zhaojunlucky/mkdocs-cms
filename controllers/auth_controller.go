@@ -97,18 +97,22 @@ func (c *AuthController) GithubLogin(ctx *gin.Context) {
 
 // GithubCallback handles GitHub OAuth callback
 func (c *AuthController) GithubCallback(ctx *gin.Context) {
+	errUrl := fmt.Sprintf("%s/error", c.ctx.Config.FrontendURL)
+	frontendURL := fmt.Sprintf("%s/login", c.ctx.Config.FrontendURL)
+
 	// Get state from cookie
 	state, err := ctx.Cookie("oauth_state")
 	if err != nil {
 		log.Errorf("Failed to get state from cookie: %v", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid state"})
+		ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?error=%s&redirect=%s", errUrl, "Invalid state", frontendURL))
 		return
 	}
 
 	// Verify state
 	if state != ctx.Query("state") {
 		log.Errorf("State mismatch")
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid state"})
+		ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?error=%s&redirect=%s", errUrl, "Invalid state", frontendURL))
+
 		return
 	}
 
@@ -117,7 +121,8 @@ func (c *AuthController) GithubCallback(ctx *gin.Context) {
 	token, err := c.githubOAuthConfig.Exchange(ctx, code)
 	if err != nil {
 		log.Errorf("Failed to exchange code for token: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to exchange code for token"})
+		ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?error=%s&redirect=%s", errUrl, "Failed to exchange code for token", frontendURL))
+
 		return
 	}
 
@@ -126,7 +131,7 @@ func (c *AuthController) GithubCallback(ctx *gin.Context) {
 	resp, err := client.Get("https://api.github.com/user")
 	if err != nil {
 		log.Errorf("Failed to get user info: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
+		ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?error=%s&redirect=%s", errUrl, "Failed to get user info", frontendURL))
 		return
 	}
 	defer resp.Body.Close()
@@ -135,7 +140,7 @@ func (c *AuthController) GithubCallback(ctx *gin.Context) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Errorf("Failed to read response body: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read response body"})
+		ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?error=%s&redirect=%s", errUrl, "Failed to read response body", frontendURL))
 		return
 	}
 
@@ -150,7 +155,7 @@ func (c *AuthController) GithubCallback(ctx *gin.Context) {
 
 	if err := json.Unmarshal(body, &githubUser); err != nil {
 		log.Errorf("Failed to parse user info: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse user info"})
+		ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?error=%s&redirect=%s", errUrl, "Failed to parse user info", frontendURL))
 		return
 	}
 
@@ -190,7 +195,7 @@ func (c *AuthController) GithubCallback(ctx *gin.Context) {
 	savedUser, err := c.userService.CreateOrUpdateUser(user)
 	if err != nil {
 		log.Errorf("Failed to save user: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save user"})
+		ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?error=%s&redirect=%s", errUrl, "Failed to save user.", frontendURL))
 		return
 	}
 
@@ -198,12 +203,11 @@ func (c *AuthController) GithubCallback(ctx *gin.Context) {
 	jwtToken, err := c.generateJWT(savedUser)
 	if err != nil {
 		log.Errorf("Failed to generate token: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?error=%s&redirect=%s", errUrl, "Failed to generate token", frontendURL))
 		return
 	}
 
 	// Redirect to frontend with token
-	frontendURL := fmt.Sprintf("%s/login", c.ctx.Config.FrontendURL)
 	redirectURL := fmt.Sprintf("%s?token=%s", frontendURL, url.QueryEscape(jwtToken))
 	ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }

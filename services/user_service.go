@@ -6,6 +6,7 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
+	"net/http"
 
 	"github.com/zhaojunlucky/mkdocs-cms/database"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
@@ -54,6 +55,9 @@ func (s *UserService) CreateOrUpdateUser(user *models.User) (*models.User, error
 		}
 
 		return &existingUser, nil
+	} else {
+		log.Infof("User not found %s", user.Email)
+		return nil, core.NewHTTPError(http.StatusUnprocessableEntity, "register is temporary disabled")
 	}
 
 	// User doesn't exist, create new one

@@ -8,6 +8,8 @@ import { CollectionComponent } from './repositories/collection/collection.compon
 import { EditFileComponent } from './repositories/edit-file/edit-file.component';
 import { CreateFileComponent } from './repositories/create-file/create-file.component';
 import { authGuard } from './auth/auth.guard';
+import {NotFoundComponent} from './not-found/not-found.component';
+import {ErrorComponent} from './error/error.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/home', pathMatch: 'full' },
@@ -22,6 +24,7 @@ export const routes: Routes = [
     ]
   },
   { path: 'repositories/:id/edit', component: EditRepositoryComponent, canActivate: [authGuard] },
-
-  { path: '**', redirectTo: '/home' }
+  { path: '404', component: NotFoundComponent },
+  { path: 'error', component: ErrorComponent },
+  { path: '**', component: NotFoundComponent},
 ];
