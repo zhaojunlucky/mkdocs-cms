@@ -12,6 +12,8 @@ import {MatIconModule} from '@angular/material/icon';
 import {MatTooltip} from '@angular/material/tooltip';
 import {MatCardModule} from '@angular/material/card';
 import {MatFormField, MatInput, MatInputModule} from '@angular/material/input';
+import {ArrayResponse} from '../../shared/core/response';
+import {StrUtils} from '../../shared/utils/str.utils';
 
 @Pipe({
   name: 'fileSize',
@@ -111,7 +113,7 @@ export class CollectionComponent implements OnInit {
 
   loadFiles(): void {
     this.isLoading = true;
-    let fileInfoObservable: Observable<FileInfo[]>;
+    let fileInfoObservable: Observable<ArrayResponse<FileInfo>>;
     if (this.currentPath === '') {
       fileInfoObservable = this.collectionService.getCollectionFiles(this.repositoryId.toString(), this.collectionName);
     } else {
@@ -119,13 +121,13 @@ export class CollectionComponent implements OnInit {
     }
     fileInfoObservable.subscribe({
       next: (files) => {
-        this.files = files;
+        this.files = files.entries;
         this.updatePathSegments();
         this.isLoading = false;
       },
       error: (error) => {
         console.error('Error loading files:', error);
-        this.error = 'Failed to load files. Please try again later.';
+        this.error = `Failed to load files. ${StrUtils.stringifyHTTPErr(error)}`;
         this.isLoading = false;
       }
     });
@@ -198,7 +200,7 @@ export class CollectionComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error creating folder:', error);
-        this.folderError = 'Failed to create folder. Please try again later.';
+        this.folderError = `Failed to create folder. ${StrUtils.stringifyHTTPErr(error)}`;
         this.isLoading = false;
       }
     });
@@ -253,7 +255,7 @@ export class CollectionComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error renaming:', error);
-        this.renameError = 'Failed to rename. Please try again later.';
+        this.renameError = `Failed to rename. ${StrUtils.stringifyHTTPErr(error)}`;
         this.isLoading = false;
       }
     });
@@ -283,7 +285,7 @@ export class CollectionComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error deleting:', error);
-          this.error = `Failed to delete ${isFolder ? 'folder' : 'file'}. Please try again later.`;
+          this.error = `Failed to delete ${isFolder ? 'folder' : 'file'}. ${StrUtils.stringifyHTTPErr(error)}}`;
           this.isLoading = false;
         }
       });

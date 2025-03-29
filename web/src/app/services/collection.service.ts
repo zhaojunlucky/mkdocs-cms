@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import { environment } from '../../environments/environment';
+import {ArrayResponse} from '../shared/core/response';
 
 export interface FileInfo {
   name: string;
@@ -44,16 +45,16 @@ export class CollectionService {
   ) { }
 
   // Get all files in a collection
-  getCollectionFiles(repoId: string | number, collectionName: string, path: string = ''): Observable<FileInfo[]> {
+  getCollectionFiles(repoId: string | number, collectionName: string, path: string = ''): Observable<ArrayResponse<FileInfo>> {
     if (path) {
       return this.getCollectionFilesInPath(repoId, collectionName, path);
     }
-    return this.http.get<FileInfo[]>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files`, this.getAuthHeaders());
+    return this.http.get<ArrayResponse<FileInfo>>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files`, this.getAuthHeaders());
   }
 
   // Get files in a specific path within a collection
-  getCollectionFilesInPath(repoId: string | number, collectionName: string, path: string): Observable<FileInfo[]> {
-    return this.http.get<FileInfo[]>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files/path?path=${path}`, this.getAuthHeaders());
+  getCollectionFilesInPath(repoId: string | number, collectionName: string, path: string): Observable<ArrayResponse<FileInfo>> {
+    return this.http.get<ArrayResponse<FileInfo>>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files?path=${path}`, this.getAuthHeaders());
   }
 
   // Get file content

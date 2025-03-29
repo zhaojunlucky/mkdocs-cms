@@ -77,7 +77,7 @@ func (c *GitHubAppController) GetInstallations(ctx *gin.Context) {
 	userID, exists := ctx.Get("userId")
 	if !exists {
 		log.Error("User not authenticated")
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		core.ResponseErrStr(ctx, http.StatusUnauthorized, "User not authenticated")
 		return
 	}
 
@@ -85,7 +85,7 @@ func (c *GitHubAppController) GetInstallations(ctx *gin.Context) {
 	installations, _, err := c.ctx.GithubAppClient.Apps.ListInstallations(ctx, nil)
 	if err != nil {
 		log.Errorf("Failed to get installations: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get installations: " + err.Error()})
+		core.ResponseErrStr(ctx, http.StatusInternalServerError, "Failed to get installations: "+err.Error())
 		return
 	}
 
@@ -93,7 +93,7 @@ func (c *GitHubAppController) GetInstallations(ctx *gin.Context) {
 	user, err := c.userService.GetUserByID(fmt.Sprintf("%v", userID))
 	if err != nil {
 		log.Errorf("Failed to get user information: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user information: " + err.Error()})
+		core.ResponseErrStr(ctx, http.StatusInternalServerError, "Failed to get user information: "+err.Error())
 		return
 	}
 
@@ -116,7 +116,7 @@ func (c *GitHubAppController) GetInstallations(ctx *gin.Context) {
 		}
 	}
 
-	ctx.JSON(http.StatusOK, response)
+	core.ResponseOKArr(ctx, response)
 }
 
 // GetInstallationRepositories returns repositories for a specific installation
@@ -125,14 +125,14 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 	userID, exists := ctx.Get("userId")
 	if !exists {
 		log.Error("User not authenticated")
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		core.ResponseErrStr(ctx, http.StatusUnauthorized, "User not authenticated")
 		return
 	}
 
 	installationID, err := strconv.ParseInt(ctx.Param("installation_id"), 10, 64)
 	if err != nil {
 		log.Errorf("Invalid installation ID: %v", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid installation ID"})
+		core.ResponseErrStr(ctx, http.StatusBadRequest, "Invalid installation ID")
 		return
 	}
 
@@ -140,7 +140,7 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 	installations, _, err := c.ctx.GithubAppClient.Apps.ListInstallations(ctx, nil)
 	if err != nil {
 		log.Errorf("Failed to get installations: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get installations: " + err.Error()})
+		core.ResponseErrStr(ctx, http.StatusInternalServerError, "Failed to get installations: "+err.Error())
 		return
 	}
 
@@ -148,7 +148,7 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 	user, err := c.userService.GetUserByID(fmt.Sprintf("%v", userID))
 	if err != nil {
 		log.Errorf("Failed to get user information: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user information: " + err.Error()})
+		core.ResponseErrStr(ctx, http.StatusInternalServerError, "Failed to get user information: "+err.Error())
 		return
 	}
 
@@ -165,7 +165,7 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 
 	if !installationBelongsToUser {
 		log.Errorf("Installation does not belong to the authenticated user")
-		ctx.JSON(http.StatusForbidden, gin.H{"error": "Installation does not belong to the authenticated user"})
+		core.ResponseErrStr(ctx, http.StatusForbidden, "Installation does not belong to the authenticated user")
 		return
 	}
 
@@ -173,7 +173,7 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 	installationToken, _, err := c.ctx.GithubAppClient.Apps.CreateInstallationToken(ctx, installationID, nil)
 	if err != nil {
 		log.Errorf("Failed to get installation token: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get installation token: " + err.Error()})
+		core.ResponseErrStr(ctx, http.StatusInternalServerError, "Failed to get installation token: "+err.Error())
 		return
 	}
 
@@ -191,14 +191,14 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 	repos, _, err := client.Apps.ListRepos(ctx, nil)
 	if err != nil {
 		log.Errorf("Failed to get repositories: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get repositories: " + err.Error()})
+		core.ResponseErrStr(ctx, http.StatusInternalServerError, "Failed to get repositories: "+err.Error())
 		return
 	}
 
 	userExistingRepos, err := c.userGitRepoService.GetReposByUser(userID.(string))
 	if err != nil {
 		log.Errorf("Failed to get user existing repos: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		core.ResponseErrStr(ctx, http.StatusInternalServerError, "Failed to get user existing repos: "+err.Error())
 		return
 	}
 	var existingRepoIDs map[int64]string = make(map[int64]string)
@@ -227,7 +227,7 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 		response = append(response, repository)
 	}
 
-	ctx.JSON(http.StatusOK, core.EnsureNonNilArr(response))
+	core.ResponseOKArr(ctx, response)
 }
 
 // ImportRepositories imports repositories from a GitHub App installation
@@ -235,7 +235,7 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 	authenticatedUserID, exists := ctx.Get("userId")
 	if !exists {
 		log.Errorf("User not found in context")
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		core.ResponseErrStr(ctx, http.StatusUnauthorized, "User not authenticated")
 		return
 	}
 
@@ -243,13 +243,14 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 	if err != nil {
 		log.Errorf("Invalid installation ID: %v", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid installation ID"})
+		core.ResponseErrStr(ctx, http.StatusBadRequest, "Invalid installation ID")
 		return
 	}
 
 	var request models.ImportRepositoriesRequest
 	if err := ctx.ShouldBindJSON(&request); err != nil {
 		log.Errorf("Invalid request: %v", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		core.ResponseErr(ctx, http.StatusBadRequest, err)
 		return
 	}
 	request.UserID = authenticatedUserID.(string)
@@ -258,7 +259,7 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 	installationToken, _, err := c.ctx.GithubAppClient.Apps.CreateInstallationToken(ctx, installationID, nil)
 	if err != nil {
 		log.Errorf("Failed to get installation token: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get installation token: " + err.Error()})
+		core.ResponseErrStr(ctx, http.StatusInternalServerError, "Failed to get installation token: "+err.Error())
 		return
 	}
 
@@ -276,7 +277,7 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 	repos, _, err := client.Apps.ListRepos(ctx, nil)
 	if err != nil {
 		log.Errorf("Failed to get repositories: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get repositories: " + err.Error()})
+		core.ResponseErrStr(ctx, http.StatusInternalServerError, "Failed to get repositories: "+err.Error())
 		return
 	}
 
@@ -343,7 +344,7 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 		createdHook, _, err := client.Repositories.CreateHook(context.Background(), parts[0], parts[1], hook)
 		if err != nil {
 			log.Errorf("Failed to create webhook: %v", err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create webhook: " + err.Error()})
+			core.ResponseErrStr(ctx, http.StatusInternalServerError, "Failed to create webhook: "+err.Error())
 			return
 		}
 		c.eventService.CreateEvent(models.CreateEventRequest{
@@ -362,5 +363,5 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 		response = append(response, repo.ToResponse(true))
 	}
 
-	ctx.JSON(http.StatusOK, response)
+	core.ResponseOKArr(ctx, response)
 }

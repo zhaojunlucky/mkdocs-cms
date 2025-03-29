@@ -12,6 +12,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatCardModule } from '@angular/material/card';
 import { Router } from '@angular/router';
 import {MatChipsModule} from '@angular/material/chips';
+import {StrUtils} from '../shared/utils/str.utils';
 
 @Component({
   selector: 'app-home',
@@ -42,12 +43,13 @@ export class HomeComponent implements OnInit {
 
     this.repositoryService.getUserRepositories().subscribe({
       next: (repos) => {
-        this.repositories = repos;
+        this.repositories = repos.entries;
         this.loading = false;
       },
       error: (err: any) => {
-        console.error('Error loading repositories:', err);
-        this.error = 'Failed to load repositories. Please try again later.';
+        let msg = StrUtils.stringifyHTTPErr(err);
+        console.error('Error loading repositories:', msg);
+        this.error = `Failed to load repositories. ${msg}`;
         this.loading = false;
       }
     });

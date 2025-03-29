@@ -321,7 +321,7 @@ func (c *AuthController) GetCurrentUser(ctx *gin.Context) {
 	user, exists := ctx.Get("user")
 	if !exists {
 		log.Error("User not found in context")
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		core.ResponseErrStr(ctx, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
@@ -335,14 +335,16 @@ func (c *AuthController) AuthMiddleware() gin.HandlerFunc {
 		authHeader := ctx.GetHeader("Authorization")
 		if authHeader == "" {
 			log.Error("Authorization header is required")
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized,
+				core.NewErrorMessageDTOStr(http.StatusUnauthorized, "Authorization header is required"))
 			return
 		}
 
 		// Check if the header has the Bearer prefix
 		if !strings.HasPrefix(authHeader, "Bearer ") {
 			log.Error("Invalid authorization format")
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization format"})
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized,
+				core.NewErrorMessageDTOStr(http.StatusUnauthorized, "Invalid authorization format"))
 			return
 		}
 
@@ -361,7 +363,7 @@ func (c *AuthController) AuthMiddleware() gin.HandlerFunc {
 
 		if err != nil {
 			log.Errorf("Failed to parse token: %v", err)
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, core.NewErrorMessageDTO(http.StatusUnauthorized, err))
 			return
 		}
 
@@ -371,7 +373,8 @@ func (c *AuthController) AuthMiddleware() gin.HandlerFunc {
 			if exp, ok := claims["exp"].(float64); ok {
 				if time.Now().Unix() > int64(exp) {
 					log.Error("Token expired")
-					ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Token expired"})
+					ctx.AbortWithStatusJSON(http.StatusUnauthorized,
+						core.NewErrorMessageDTOStr(http.StatusUnauthorized, "Token expired"))
 					return
 				}
 			}
@@ -380,7 +383,8 @@ func (c *AuthController) AuthMiddleware() gin.HandlerFunc {
 			userIDStr, ok := claims["sub"].(string)
 			if !ok {
 				log.Error("Invalid token claims")
-				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+				ctx.AbortWithStatusJSON(http.StatusUnauthorized,
+					core.NewErrorMessageDTOStr(http.StatusUnauthorized, "Invalid token claims"))
 				return
 			}
 
@@ -388,7 +392,8 @@ func (c *AuthController) AuthMiddleware() gin.HandlerFunc {
 			user, err := c.userService.GetUserByID(userIDStr)
 			if err != nil {
 				log.Errorf("Failed to get user: %v", err)
-				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+				ctx.AbortWithStatusJSON(http.StatusUnauthorized,
+					core.NewErrorMessageDTOStr(http.StatusUnauthorized, "Failed to get user"))
 				return
 			}
 
@@ -397,7 +402,8 @@ func (c *AuthController) AuthMiddleware() gin.HandlerFunc {
 			ctx.Next()
 		} else {
 			log.Error("Invalid token")
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized,
+				core.NewErrorMessageDTOStr(http.StatusUnauthorized, "Invalid token"))
 			return
 		}
 	}

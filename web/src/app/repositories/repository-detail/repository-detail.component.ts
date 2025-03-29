@@ -8,6 +8,7 @@ import { RepositoryService } from '../../services/repository.service';
 import { Repository, Collection } from '../../services/repository.service';
 import {RouteParameterService} from '../../services/routeparameter.service';
 import {MatChipsModule} from '@angular/material/chips';
+import {StrUtils} from '../../shared/utils/str.utils';
 
 @Component({
   selector: 'app-repository-detail',
@@ -68,7 +69,7 @@ export class RepositoryDetailComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error loading repository:', err);
-        this.error = 'Failed to load repository. Please try again later.';
+        this.error = `Failed to load repository. ${StrUtils.stringifyHTTPErr(err)}`;
         this.isLoading = false;
       }
     });
@@ -77,12 +78,12 @@ export class RepositoryDetailComponent implements OnInit {
   loadCollections(repositoryId: number): void {
     this.repositoryService.getRepositoryCollections(repositoryId).subscribe({
       next: (collections) => {
-        this.collections = collections;
+        this.collections = collections.entries;
         this.isLoading = false;
       },
       error: (err) => {
         console.error('Error loading collections:', err);
-        this.error = 'Failed to load collections. Please try again later.';
+        this.error = `Failed to load collections. ${StrUtils.stringifyHTTPErr(err)}`;
         this.isLoading = false;
       }
     });

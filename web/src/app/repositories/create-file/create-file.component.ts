@@ -12,6 +12,7 @@ import * as jsYaml from 'js-yaml';
 import { MatInputModule} from '@angular/material/input';
 import {MatIcon} from '@angular/material/icon';
 import {MatTooltip} from '@angular/material/tooltip';
+import {StrUtils} from '../../shared/utils/str.utils';
 
 @Component({
   selector: 'app-create-file',
@@ -110,7 +111,7 @@ export class CreateFileComponent implements OnInit {
   loadCollection(): void {
     this.repositoryService.getRepositoryCollections(this.repositoryId).subscribe({
       next: (collections) => {
-        const foundCollection = collections.find(c => c.name === this.collectionName);
+        const foundCollection = collections.entries.find(c => c.name === this.collectionName);
         if (foundCollection) {
           this.collection = foundCollection;
           let bodyField = this.collection.fields?.find(f=>f.name === 'body')
@@ -124,7 +125,7 @@ export class CreateFileComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error loading collections:', err);
-        this.error = 'Failed to load collection. Please try again later.';
+        this.error = `Failed to load collection. ${StrUtils.stringifyHTTPErr(err)}`;
         this.isLoading = false;
       }
     });
@@ -205,7 +206,7 @@ export class CreateFileComponent implements OnInit {
       },
       error: (error: any) => {
         console.error('Error creating file:', error);
-        this.fileError = 'Failed to create file. Please try again later.';
+        this.fileError = `Failed to create file. ${StrUtils.stringifyHTTPErr(error)}`;
         this.isLoading = false;
         this.isCreating = false;
       }

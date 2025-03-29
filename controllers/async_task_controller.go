@@ -32,7 +32,7 @@ func (c *AsyncTaskController) GetTask(ctx *gin.Context) {
 	authenticatedUserID, exists := ctx.Get("userId")
 	if !exists {
 		log.Errorf("Failed to get authenticated user ID from context")
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+		core.ResponseErrStr(ctx, http.StatusUnauthorized, "Authentication required")
 		return
 	}
 
@@ -40,7 +40,7 @@ func (c *AsyncTaskController) GetTask(ctx *gin.Context) {
 	taskID := ctx.Param("id")
 	if taskID == "" {
 		log.Errorf("Task ID is required")
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Task ID is required"})
+		core.ResponseErrStr(ctx, http.StatusBadRequest, "Task ID is required")
 		return
 	}
 
@@ -48,14 +48,14 @@ func (c *AsyncTaskController) GetTask(ctx *gin.Context) {
 	task, err := c.asyncTaskService.GetTaskByID(taskID)
 	if err != nil {
 		log.Errorf("Failed to retrieve task: %v", err)
-		ctx.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
+		core.ResponseErrStr(ctx, http.StatusNotFound, "Task not found")
 		return
 	}
 
 	// Check if the authenticated user owns this task
 	if task.UserID != authenticatedUserID.(string) {
 		log.Errorf("User %s does not own task %s", authenticatedUserID, taskID)
-		ctx.JSON(http.StatusForbidden, gin.H{"error": "You can only view your own tasks"})
+		core.ResponseErrStr(ctx, http.StatusForbidden, "You can only view your own tasks")
 		return
 	}
 
@@ -68,7 +68,7 @@ func (c *AsyncTaskController) GetUserTasks(ctx *gin.Context) {
 	authenticatedUserID, exists := ctx.Get("userId")
 	if !exists {
 		log.Errorf("Failed to get authenticated user ID from context")
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+		core.ResponseErrStr(ctx, http.StatusUnauthorized, "Authentication required")
 		return
 	}
 
@@ -77,10 +77,11 @@ func (c *AsyncTaskController) GetUserTasks(ctx *gin.Context) {
 	if err != nil {
 		log.Errorf("Failed to retrieve tasks: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve tasks"})
+		core.ResponseErrStr(ctx, http.StatusInternalServerError, "Failed to retrieve tasks")
 		return
 	}
 
-	ctx.JSON(http.StatusOK, tasks)
+	core.ResponseOKArr(ctx, tasks)
 }
 
 // GetResourceTasks returns all tasks for a specific resource
@@ -117,5 +118,5 @@ func (c *AsyncTaskController) GetResourceTasks(ctx *gin.Context) {
 		}
 	}
 
-	ctx.JSON(http.StatusOK, userTasks)
+	core.ResponseOKArr(ctx, userTasks)
 }

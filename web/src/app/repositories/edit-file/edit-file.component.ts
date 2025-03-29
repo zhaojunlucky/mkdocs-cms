@@ -10,6 +10,7 @@ import * as yaml from 'js-yaml';
 import {FrontMatterEditorComponent} from '../../markdown/front-matter-editor/front-matter-editor.component';
 import {MatIcon} from '@angular/material/icon';
 import {MatTooltip} from '@angular/material/tooltip';
+import {ArrayResponse} from '../../shared/core/response';
 
 interface PathSegment {
   name: string;
@@ -126,8 +127,8 @@ export class EditFileComponent implements OnInit {
 
   loadCollection(): void {
     this.repositoryService.getRepositoryCollections(this.repositoryId).subscribe({
-      next: (collections: Collection[]) => {
-        this.collection = collections.find(c => c.name === this.collectionName);
+      next: (collections: ArrayResponse<Collection>) => {
+        this.collection = collections.entries.find(c => c.name === this.collectionName);
         if (this.collection) {
           this.loadFileContent()
         } else {

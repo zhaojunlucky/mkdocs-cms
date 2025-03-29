@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { RepositoryService, Repository } from '../../services/repository.service';
 import { ComponentsModule } from '../../components/components.module';
 import {MatInputModule} from '@angular/material/input';
+import {StrUtils} from '../../shared/utils/str.utils';
 
 @Component({
   selector: 'app-edit-repository',
@@ -60,7 +61,7 @@ export class EditRepositoryComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Error loading repository:', err);
-        this.error = 'Failed to load repository. Please try again later.';
+        this.error = `Failed to load repository. ${StrUtils.stringifyHTTPErr(err)}`;
         this.loading = false;
       }
     });
@@ -74,12 +75,12 @@ export class EditRepositoryComponent implements OnInit {
 
     this.repositoryService.getRepositoryBranches(this.repoId).subscribe({
       next: (branches) => {
-        this.branches = branches;
+        this.branches = branches.entries;
         this.branchesLoading = false;
       },
       error: (err: any) => {
         console.error('Error loading branches:', err);
-        this.branchError = 'Failed to load branches. Please try again later.';
+        this.branchError = `Failed to load branches. ${StrUtils.stringifyHTTPErr(err)}`;
         this.branchesLoading = false;
       }
     });
@@ -152,7 +153,7 @@ export class EditRepositoryComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Error updating repository:', err);
-        this.error = 'Failed to update repository. Please try again later.';
+        this.error = `Failed to update repository. ${StrUtils.stringifyHTTPErr(err)}`;
         this.saving = false;
       }
     });

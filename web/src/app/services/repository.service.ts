@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import {environment} from '../../environments/environment';
+import {ArrayResponse} from '../shared/core/response';
 
 export interface Repository {
   id: number;
@@ -81,10 +82,10 @@ export class RepositoryService {
   ) { }
 
   // Get all repositories for the current user
-  getUserRepositories(): Observable<Repository[]> {
+  getUserRepositories(): Observable<ArrayResponse<Repository>> {
     const headers = this.getAuthHeaders();
     const userId = this.authService.currentUser?.id;
-    return this.http.get<Repository[]>(`${this.apiUrl}/v1/users/repos/${userId}`, { headers });
+    return this.http.get<ArrayResponse<Repository>>(`${this.apiUrl}/v1/users/repos/${userId}`, { headers });
   }
 
   // Get a specific repository by ID
@@ -94,21 +95,15 @@ export class RepositoryService {
   }
 
   // Get branches for a repository
-  getRepositoryBranches(id: number): Observable<string[]> {
+  getRepositoryBranches(id: number): Observable<ArrayResponse<string>> {
     const headers = this.getAuthHeaders();
-    return this.http.get<string[]>(`${this.apiUrl}/v1/repos/${id}/branches`, { headers });
+    return this.http.get<ArrayResponse<string>>(`${this.apiUrl}/v1/repos/${id}/branches`, { headers });
   }
 
   // Get collections for a repository
-  getRepositoryCollections(repoId: number|string): Observable<Collection[]> {
+  getRepositoryCollections(repoId: number|string): Observable<ArrayResponse<Collection>> {
     const headers = this.getAuthHeaders();
-    return this.http.get<Collection[]>(`${this.apiUrl}/v1/collections/repo/${repoId}`, { headers });
-  }
-
-  // Create a new repository
-  createRepository(repository: Partial<Repository>): Observable<Repository> {
-    const headers = this.getAuthHeaders();
-    return this.http.post<Repository>(`${this.apiUrl}/v1/repos`, repository, { headers });
+    return this.http.get<ArrayResponse<Collection>>(`${this.apiUrl}/v1/collections/repo/${repoId}`, { headers });
   }
 
   // Update a repository
@@ -133,18 +128,6 @@ export class RepositoryService {
   getTask(taskId: string): Observable<AsyncTask> {
     const headers = this.getAuthHeaders();
     return this.http.get<AsyncTask>(`${this.apiUrl}/v1/tasks/${taskId}`, { headers });
-  }
-
-  // Get all tasks for the current user
-  getUserTasks(): Observable<AsyncTask[]> {
-    const headers = this.getAuthHeaders();
-    return this.http.get<AsyncTask[]>(`${this.apiUrl}/v1/tasks`, { headers });
-  }
-
-  // Get all tasks for a specific resource
-  getResourceTasks(resourceId: string): Observable<AsyncTask[]> {
-    const headers = this.getAuthHeaders();
-    return this.http.get<AsyncTask[]>(`${this.apiUrl}/v1/tasks/resource/${resourceId}`, { headers });
   }
 
   // Helper method to get authentication headers

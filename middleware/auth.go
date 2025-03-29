@@ -37,7 +37,7 @@ func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {
 		log.Warnf("Authorization header is required")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization header is required"})
+		core.ResponseErrStr(c, http.StatusUnauthorized, "Authorization header is required")
 		c.Abort()
 		return
 	}
@@ -46,7 +46,7 @@ func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 	parts := strings.Split(authHeader, " ")
 	if len(parts) != 2 || parts[0] != "Bearer" {
 		log.Warnf("Invalid authorization header format")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization header format"})
+		core.ResponseErrStr(c, http.StatusUnauthorized, "Invalid authorization header format")
 		c.Abort()
 		return
 	}
@@ -67,7 +67,7 @@ func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 
 	if err != nil {
 		log.Errorf("invalid token: %v", err)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token: " + err.Error()})
+		core.ResponseErrStr(c, http.StatusUnauthorized, "invalid token: "+err.Error())
 		c.Abort()
 		return
 	}
@@ -78,7 +78,7 @@ func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 		userId, ok := claims["sub"].(string)
 		if !ok {
 			log.Errorf("invalid token claims")
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token claims"})
+			core.ResponseErrStr(c, http.StatusUnauthorized, "invalid token claims")
 			c.Abort()
 			return
 		}
@@ -86,7 +86,7 @@ func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 		c.Set("userId", userId)
 		c.Next()
 	} else {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+		core.ResponseErrStr(c, http.StatusUnauthorized, "invalid token")
 		c.Abort()
 		return
 	}

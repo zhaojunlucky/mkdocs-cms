@@ -6,6 +6,8 @@ import { AuthService } from '../../auth/auth.service';
 import { catchError, finalize } from 'rxjs/operators';
 import { of } from 'rxjs';
 import {environment} from '../../../environments/environment';
+import {ArrayResponse} from '../../shared/core/response';
+import {StrUtils} from '../../shared/utils/str.utils';
 
 interface GithubAccount {
   login: string;
@@ -106,7 +108,7 @@ export class RepositoryImportComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error loading installations:', err);
-          this.error = 'Failed to load GitHub installations. Please make sure you have connected your GitHub account.';
+          this.error = `Failed to load GitHub installations. Please make sure you have connected your GitHub account. ${StrUtils.stringifyHTTPErr(err)}`;
           this.loading = false;
         }
       });
@@ -123,12 +125,12 @@ export class RepositoryImportComponent implements OnInit {
     this.error = '';
 
     const headers = this.getAuthHeaders();
-    this.http.get<GithubRepository[]>(
+    this.http.get<ArrayResponse<GithubRepository>>(
       `${environment.apiServer}/v1/github/installations/${installationId}/repositories`,
       { headers }
     ).subscribe({
       next: (repositories) => {
-        this.repositories = repositories.map(repo => ({
+        this.repositories = repositories.entries.map(repo => ({
           ...repo,
           selected: false
         }));
@@ -140,7 +142,7 @@ export class RepositoryImportComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error loading repositories:', err);
-        this.error = 'Failed to load repositories. Please try again.';
+        this.error = `Failed to load repositories. ${StrUtils.stringifyHTTPErr(err)}`;
         this.loading = false;
       }
     });
@@ -193,7 +195,7 @@ export class RepositoryImportComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error importing repositories:', err);
-        this.error = 'Failed to import repositories. Please try again.';
+        this.error = `Failed to import repositories. ${StrUtils.stringifyHTTPErr(err)}`;
       }
     });
   }
