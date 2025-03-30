@@ -60,16 +60,8 @@ export class RepositoryImportComponent implements OnInit {
     this.loadInstallations();
   }
 
-  getAuthHeaders(): HttpHeaders {
-    const token = this.authService.currentToken;
-    return new HttpHeaders({
-      'Authorization': `Bearer ${token}`
-    });
-  }
-
   loadGithubAppInfo(): void {
-    const headers = this.getAuthHeaders();
-    this.http.get<GithubAppInfo>(`${environment.apiServer}/v1/github/app`, { headers })
+    this.http.get<GithubAppInfo>(`${environment.apiServer}/v1/github/app`)
       .pipe(
         catchError(err => {
           console.error('Error loading GitHub App info:', err);
@@ -90,8 +82,7 @@ export class RepositoryImportComponent implements OnInit {
   loadInstallations(): void {
     this.error = '';
 
-    const headers = this.getAuthHeaders();
-    this.http.get<ArrayResponse<GithubInstallation>>(`${environment.apiServer}/v1/github/installations`, { headers })
+    this.http.get<ArrayResponse<GithubInstallation>>(`${environment.apiServer}/v1/github/installations`)
       .subscribe({
         next: (installations: ArrayResponse<GithubInstallation>) => {
           this.installations = installations.entries;
@@ -125,11 +116,8 @@ export class RepositoryImportComponent implements OnInit {
     this.loading = true;
     this.error = '';
 
-    const headers = this.getAuthHeaders();
     this.http.get<ArrayResponse<GithubRepository>>(
-      `${environment.apiServer}/v1/github/installations/${installationId}/repositories`,
-      { headers }
-    ).subscribe({
+      `${environment.apiServer}/v1/github/installations/${installationId}/repositories`).subscribe({
       next: (repositories) => {
         this.repositories = repositories.entries.map(repo => ({
           ...repo,
@@ -179,11 +167,9 @@ export class RepositoryImportComponent implements OnInit {
     this.loading = true;
     this.error = '';
 
-    const headers = this.getAuthHeaders();
     this.http.post(
       `${environment.apiServer}/v1/github/installations/${this.selectedInstallation}/import`,
-      { repositories: selectedRepos },
-      { headers }
+      { repositories: selectedRepos }
     ).pipe(
       finalize(() => this.loading = false)
     ).subscribe({

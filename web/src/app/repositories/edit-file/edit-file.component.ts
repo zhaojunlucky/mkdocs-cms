@@ -46,6 +46,7 @@ export class EditFileComponent implements OnInit {
   isLoading: boolean = true;
   error: string = '';
   fileError: string = '';
+  editorReady: boolean = false;
 
   // Editor state
   markdownContent: string = '';
@@ -209,6 +210,7 @@ export class EditFileComponent implements OnInit {
 
   onEditorReady(editor: any): void {
     this.editor = editor;
+    this.editorReady = true;
   }
 
   saveFile(): void {
