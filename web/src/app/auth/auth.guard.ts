@@ -6,12 +6,12 @@ import { map, take } from 'rxjs/operators';
 export const authGuard: CanActivateFn = (route, state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
-  
+
   // If user is already logged in, allow access
   if (authService.isLoggedIn) {
     return true;
   }
-  
+
   // Check auth status with backend
   return authService.checkAuthStatus().pipe(
     take(1),
@@ -20,7 +20,9 @@ export const authGuard: CanActivateFn = (route, state) => {
         return true;
       } else {
         // Redirect to login page
-        router.navigate(['/login']);
+        router.navigate(['/login'], {
+          queryParams: { returnUrl: state.url }
+        });
         return false;
       }
     })

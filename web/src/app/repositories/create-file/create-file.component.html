@@ -1,7 +1,7 @@
 <!-- Create File Component -->
 <div class="create-file-container">
   <!-- Loading overlay that blocks user interaction -->
-  <div *ngIf="isLoading" class="loading-overlay">
+  <div *ngIf="isLoading || !editorReady" class="loading-overlay">
     <div class="spinner-container">
       <mat-spinner diameter="50"></mat-spinner>
       <p>Loading...</p>

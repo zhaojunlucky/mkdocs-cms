@@ -40,8 +40,7 @@ export class CollectionService {
   private apiUrl = environment.apiServer;
 
   constructor(
-    private http: HttpClient,
-    private authService: AuthService
+    private http: HttpClient
   ) { }
 
   // Get all files in a collection
@@ -49,18 +48,17 @@ export class CollectionService {
     if (path) {
       return this.getCollectionFilesInPath(repoId, collectionName, path);
     }
-    return this.http.get<ArrayResponse<FileInfo>>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files`, this.getAuthHeaders());
+    return this.http.get<ArrayResponse<FileInfo>>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files`);
   }
 
   // Get files in a specific path within a collection
   getCollectionFilesInPath(repoId: string | number, collectionName: string, path: string): Observable<ArrayResponse<FileInfo>> {
-    return this.http.get<ArrayResponse<FileInfo>>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files?path=${path}`, this.getAuthHeaders());
+    return this.http.get<ArrayResponse<FileInfo>>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files?path=${path}`);
   }
 
   // Get file content
   getFileContent(repoId: string | number, collectionName: string, path: string): Observable<string> {
     return this.http.get(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files/content?path=${path}`, {
-      ...this.getAuthHeaders(),
       responseType: 'text'
     });
   }
@@ -70,12 +68,12 @@ export class CollectionService {
     return this.http.put<any>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files/content`, {
       path: path,
       content: content
-    }, this.getAuthHeaders());
+    });
   }
 
   // Delete file
   deleteFile(repoId: string | number, collectionName: string, path: string): Observable<any> {
-    return this.http.delete<any>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files?path=${path}`, this.getAuthHeaders());
+    return this.http.delete<any>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files?path=${path}`);
   }
 
   // Rename file
@@ -83,7 +81,7 @@ export class CollectionService {
     return this.http.put<any>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files/rename`, {
       oldPath: oldPath,
       newPath: newPath
-    }, this.getAuthHeaders());
+    });
   }
 
   // Upload file
@@ -91,24 +89,13 @@ export class CollectionService {
     return this.http.post<any>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files/upload`, {
       path: path,
       content: content
-    }, this.getAuthHeaders());
+    });
   }
 
   createFolder(repoId: string | number, collectionName: string, path: string, folderName: string) {
     return this.http.post<any>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files/folder`, {
       path: path,
       folder: folderName,
-    }, this.getAuthHeaders());
-  }
-
-  // Helper method to get authentication headers
-  private getAuthHeaders() {
-    const token = this.authService.currentToken;
-    return {
-      headers: new HttpHeaders({
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      })
-    };
+    });
   }
 }

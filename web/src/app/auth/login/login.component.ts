@@ -39,7 +39,14 @@ export class LoginComponent implements OnInit {
   ngOnInit(): void {
     // Check if user is already logged in
     if (this.authService.isLoggedIn) {
-      this.router.navigate(['/home']);
+      this.route.queryParams.subscribe(params => {
+        const returnUrl = params['returnUrl'];
+        if (returnUrl) {
+          this.router.navigate([returnUrl]);
+        } else {
+          this.router.navigate(['/home']);
+        }
+      })
       return;
     }
 
