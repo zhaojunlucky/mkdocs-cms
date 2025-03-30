@@ -2,12 +2,10 @@ package controllers
 
 import (
 	"encoding/base64"
-	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"net/http"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -42,7 +40,18 @@ func (ctrl *UserGitRepoCollectionController) Init(ctx *core.APPContext, router *
 
 // GetCollectionsByRepo returns all collections for a specific repository
 func (ctrl *UserGitRepoCollectionController) GetCollectionsByRepo(c *gin.Context) {
-	repoID, err := strconv.ParseUint(c.Param("repoId"), 10, 32)
+
+	reqParam := core.NewRequestParam()
+	userId := reqParam.AddContextParam("userId", false, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile("\\d+"))
+
+	if err := reqParam.Handle(c); err != nil {
+		core.HandleError(c, err)
+		return
+	}
+
+	repoID, err := repoIDParam.UInt64()
 	if err != nil {
 		log.Errorf("Failed to parse repository ID: %v", err)
 		core.ResponseErrStr(c, http.StatusBadRequest, "Invalid repository ID")
@@ -50,13 +59,14 @@ func (ctrl *UserGitRepoCollectionController) GetCollectionsByRepo(c *gin.Context
 	}
 
 	// Verify repository ownership
-	if !ctrl.VerifyRepoOwnership(c, uint(repoID)) {
+	repo, err := ctrl.service.VerifyRepoOwnership(userId.String(), uint(repoID))
+	if err != nil {
 		log.Errorf("Failed to verify repository ownership: %v", err)
-		core.ResponseErr(c, http.StatusForbidden, err)
+		core.HandleError(c, err)
 		return
 	}
 
-	collections, err := ctrl.service.GetCollectionsByRepo(uint(repoID))
+	collections, err := ctrl.service.GetCollectionsByRepo(repo)
 	if err != nil {
 		log.Errorf("Failed to get collections: %v", err)
 		core.ResponseErr(c, http.StatusInternalServerError, err)
@@ -73,7 +83,19 @@ func (ctrl *UserGitRepoCollectionController) GetCollectionsByRepo(c *gin.Context
 
 // GetCollectionFilesInPath returns all files in a specific path within a collection
 func (ctrl *UserGitRepoCollectionController) GetCollectionFilesInPath(c *gin.Context) {
-	repoID, err := strconv.ParseUint(c.Param("repoId"), 10, 32)
+	reqParam := core.NewRequestParam()
+	userId := reqParam.AddContextParam("userId", false, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile("\\d+"))
+	collectionName := reqParam.AddUrlParam("collectionName", true, nil)
+	pathParam := reqParam.AddQueryParam("path", true, nil)
+
+	if err := reqParam.Handle(c); err != nil {
+		core.HandleError(c, err)
+		return
+	}
+
+	repoID, err := repoIDParam.UInt64()
 	if err != nil {
 		log.Errorf("Failed to parse repository ID: %v", err)
 		core.ResponseErrStr(c, http.StatusBadRequest, "Invalid repository ID")
@@ -81,23 +103,16 @@ func (ctrl *UserGitRepoCollectionController) GetCollectionFilesInPath(c *gin.Con
 	}
 
 	// Verify repository ownership
-	if !ctrl.VerifyRepoOwnership(c, uint(repoID)) {
+	repo, err := ctrl.service.VerifyRepoOwnership(userId.String(), uint(repoID))
+	if err != nil {
 		log.Errorf("Failed to verify repository ownership: %v", err)
-		core.ResponseErr(c, http.StatusForbidden, err)
+		core.HandleError(c, err)
 		return
 	}
-
-	collectionName := c.Param("collectionName")
-	if collectionName == "" {
-		log.Errorf("Collection name is required")
-		core.ResponseErrStr(c, http.StatusBadRequest, "Collection name is required")
-		return
-	}
-
-	path := c.Query("path")
+	path := pathParam.String()
 	if path == "" {
 		// If no path is provided, return files at the root of the collection
-		files, err := ctrl.service.ListFilesInCollection(uint(repoID), collectionName)
+		files, err := ctrl.service.ListFilesInCollection(repo, collectionName.String())
 		if err != nil {
 			log.Errorf("Failed to list files in collection: %v", err)
 			core.ResponseErr(c, http.StatusInternalServerError, err)
@@ -110,7 +125,7 @@ func (ctrl *UserGitRepoCollectionController) GetCollectionFilesInPath(c *gin.Con
 	path = strings.Trim(path, "/")
 	path = strings.Trim(path, "\\")
 
-	files, err := ctrl.service.ListFilesInPath(uint(repoID), collectionName, path)
+	files, err := ctrl.service.ListFilesInPath(repo, collectionName.String(), path)
 	if err != nil {
 		log.Errorf("Failed to list files in collection: %v", err)
 		core.ResponseErr(c, http.StatusInternalServerError, err)
@@ -122,34 +137,40 @@ func (ctrl *UserGitRepoCollectionController) GetCollectionFilesInPath(c *gin.Con
 
 // GetFileContent returns the content of a file within a collection
 func (ctrl *UserGitRepoCollectionController) GetFileContent(c *gin.Context) {
-	repoID, err := strconv.ParseUint(c.Param("repoId"), 10, 32)
+	reqParam := core.NewRequestParam()
+	userId := reqParam.AddContextParam("userId", false, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile("\\d+"))
+	collectionName := reqParam.AddUrlParam("collectionName", false, nil)
+	pathParam := reqParam.AddQueryParam("path", false, nil)
+
+	if err := reqParam.Handle(c); err != nil {
+		core.HandleError(c, err)
+		return
+	}
+
+	repoID, err := repoIDParam.UInt64()
 	if err != nil {
 		log.Errorf("Failed to parse repository ID: %v", err)
 		core.ResponseErrStr(c, http.StatusBadRequest, "Invalid repository ID")
 		return
 	}
 	// Verify repository ownership
-	if !ctrl.VerifyRepoOwnership(c, uint(repoID)) {
+	repo, err := ctrl.service.VerifyRepoOwnership(userId.String(), uint(repoID))
+	if err != nil {
 		log.Errorf("Failed to verify repository ownership: %v", err)
-		core.ResponseErr(c, http.StatusForbidden, err)
+		core.HandleError(c, err)
 		return
 	}
 
-	collectionName := c.Param("collectionName")
-	if collectionName == "" {
-		log.Errorf("Collection name is required")
-		core.ResponseErrStr(c, http.StatusBadRequest, "Collection name is required")
-		return
-	}
-
-	filePath := c.Query("path")
+	filePath := pathParam.String()
 	if filePath == "" {
 		log.Errorf("File path is required")
 		core.ResponseErrStr(c, http.StatusBadRequest, "File path is required")
 		return
 	}
 
-	content, contentType, err := ctrl.service.GetFileContent(uint(repoID), collectionName, filePath)
+	content, contentType, err := ctrl.service.GetFileContent(repo, collectionName.String(), filePath)
 	if err != nil {
 		log.Errorf("Failed to get file content: %v", err)
 		core.ResponseErr(c, http.StatusInternalServerError, err)
@@ -157,7 +178,7 @@ func (ctrl *UserGitRepoCollectionController) GetFileContent(c *gin.Context) {
 	}
 	log.Infof("File %s content retrieved successfully", filePath)
 	// Set the content type and return the file content
-	c.Header("Content-Type", contentType)
+	c.Header("Content-paramType", contentType)
 	c.Data(http.StatusOK, contentType, content)
 }
 
@@ -168,32 +189,28 @@ type UpdateFileRequest struct {
 
 // UpdateFileContent updates the content of a file within a collection
 func (ctrl *UserGitRepoCollectionController) UpdateFileContent(c *gin.Context) {
-	repoID, err := strconv.ParseUint(c.Param("repoId"), 10, 32)
+	reqParam := core.NewRequestParam()
+	userId := reqParam.AddContextParam("userId", false, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile("\\d+"))
+	collectionName := reqParam.AddUrlParam("collectionName", false, nil)
+	var req UpdateFileRequest
+	if err := reqParam.HandleWithBody(c, &req); err != nil {
+		core.HandleError(c, err)
+		return
+	}
+
+	repoID, err := repoIDParam.UInt64()
 	if err != nil {
 		log.Errorf("Failed to parse repository ID: %v", err)
 		core.ResponseErrStr(c, http.StatusBadRequest, "Invalid repository ID")
 		return
 	}
-
 	// Verify repository ownership
-	if !ctrl.VerifyRepoOwnership(c, uint(repoID)) {
+	repo, err := ctrl.service.VerifyRepoOwnership(userId.String(), uint(repoID))
+	if err != nil {
 		log.Errorf("Failed to verify repository ownership: %v", err)
-		core.ResponseErr(c, http.StatusForbidden, err)
-		return
-	}
-
-	collectionName := c.Param("collectionName")
-	if collectionName == "" {
-		log.Errorf("Collection name is required")
-		core.ResponseErrStr(c, http.StatusBadRequest, "Collection name is required")
-		return
-	}
-
-	// Get file path and content from request body
-	var req UpdateFileRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		log.Errorf("Failed to bind request body: %v", err)
-		core.ResponseErr(c, http.StatusBadRequest, err)
+		core.HandleError(c, err)
 		return
 	}
 
@@ -202,66 +219,51 @@ func (ctrl *UserGitRepoCollectionController) UpdateFileContent(c *gin.Context) {
 
 	defer lock.Unlock()
 
-	if err := ctrl.service.UpdateFileContent(uint(repoID), collectionName, req.Path, []byte(req.Content)); err != nil {
+	if err := ctrl.service.UpdateFileContent(repo, collectionName.String(), req.Path, []byte(req.Content)); err != nil {
 		log.Errorf("Failed to update file content: %v", err)
 		core.ResponseErr(c, http.StatusInternalServerError, err)
 		return
 	}
 
-	// Get repository info for GitHub commit
-	repo, err := ctrl.service.GetRepo(uint(repoID))
-	if err != nil {
-		log.Errorf("Failed to get repository: %v", err)
-		core.ResponseErrStr(c, http.StatusInternalServerError, fmt.Sprintf("Failed to get repository: %v", err))
-		return
-	}
-
-	// Commit changes using GitHub app
-	commitMsg := fmt.Sprintf("Update file: %s", req.Path)
-	if err := ctrl.service.CommitWithGithubApp(repo, commitMsg); err != nil {
-		log.Errorf("Failed to commit changes: %v", err)
-		core.ResponseErrStr(c, http.StatusInternalServerError, fmt.Sprintf("Failed to commit changes: %v", err))
-		return
-	}
 	log.Infof("File %s updated and changes committed successfully", req.Path)
 	c.JSON(http.StatusOK, gin.H{"message": "File updated and changes committed successfully"})
 }
 
 // DeleteFile deletes a file or directory within a collection
 func (ctrl *UserGitRepoCollectionController) DeleteFile(c *gin.Context) {
-	repoID, err := strconv.ParseUint(c.Param("repoId"), 10, 32)
+	reqParam := core.NewRequestParam()
+	userId := reqParam.AddContextParam("userId", false, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile("\\d+"))
+	collectionName := reqParam.AddUrlParam("collectionName", true, nil)
+	pathParam := reqParam.AddQueryParam("path", false, nil)
+
+	if err := reqParam.Handle(c); err != nil {
+		core.HandleError(c, err)
+		return
+	}
+
+	repoID, err := repoIDParam.UInt64()
 	if err != nil {
 		log.Errorf("Failed to parse repository ID: %v", err)
 		core.ResponseErrStr(c, http.StatusBadRequest, "Invalid repository ID")
 		return
 	}
 	// Verify repository ownership
-	if !ctrl.VerifyRepoOwnership(c, uint(repoID)) {
+	repo, err := ctrl.service.VerifyRepoOwnership(userId.String(), uint(repoID))
+	if err != nil {
 		log.Errorf("Failed to verify repository ownership: %v", err)
-		core.ResponseErr(c, http.StatusForbidden, err)
+		core.HandleError(c, err)
 		return
 	}
-
-	collectionName := c.Param("collectionName")
-	if collectionName == "" {
-		log.Errorf("Collection name is required")
-		core.ResponseErrStr(c, http.StatusBadRequest, "Collection name is required")
-		return
-	}
-
-	filePath := c.Query("path")
-	if filePath == "" {
-		log.Errorf("File path is required")
-		core.ResponseErrStr(c, http.StatusBadRequest, "File path is required")
-		return
-	}
+	filePath := pathParam.String()
 
 	lock := ctrl.userGitRepoLockService.Acquire(c.Param("repoId"))
 	lock.Lock()
 
 	defer lock.Unlock()
 
-	if err := ctrl.service.DeleteFile(uint(repoID), collectionName, filePath); err != nil {
+	if err := ctrl.service.DeleteFile(repo, collectionName.String(), filePath); err != nil {
 		log.Errorf("Failed to delete file: %v", err)
 		core.ResponseErr(c, http.StatusInternalServerError, err)
 		return
@@ -272,30 +274,29 @@ func (ctrl *UserGitRepoCollectionController) DeleteFile(c *gin.Context) {
 
 // UploadFile uploads a file to a collection using JSON request
 func (ctrl *UserGitRepoCollectionController) UploadFile(c *gin.Context) {
-	repoID, err := strconv.ParseUint(c.Param("repoId"), 10, 32)
+	reqParam := core.NewRequestParam()
+	userId := reqParam.AddContextParam("userId", false, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile("\\d+"))
+	collectionName := reqParam.AddUrlParam("collectionName", false, nil)
+	var request models.FileUploadRequest
+
+	if err := reqParam.HandleWithBody(c, &request); err != nil {
+		core.HandleError(c, err)
+		return
+	}
+
+	repoID, err := repoIDParam.UInt64()
 	if err != nil {
 		log.Errorf("Failed to parse repository ID: %v", err)
 		core.ResponseErrStr(c, http.StatusBadRequest, "Invalid repository ID")
 		return
 	}
 	// Verify repository ownership
-	if !ctrl.VerifyRepoOwnership(c, uint(repoID)) {
+	repo, err := ctrl.service.VerifyRepoOwnership(userId.String(), uint(repoID))
+	if err != nil {
 		log.Errorf("Failed to verify repository ownership: %v", err)
-		core.ResponseErr(c, http.StatusForbidden, err)
-		return
-	}
-
-	collectionName := c.Param("collectionName")
-	if collectionName == "" {
-		log.Errorf("Collection name is required")
-		core.ResponseErrStr(c, http.StatusBadRequest, "Collection name is required")
-		return
-	}
-
-	var request models.FileUploadRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
-		log.Errorf("Failed to bind request body: %v", err)
-		core.ResponseErr(c, http.StatusBadRequest, err)
+		core.HandleError(c, err)
 		return
 	}
 
@@ -329,7 +330,7 @@ func (ctrl *UserGitRepoCollectionController) UploadFile(c *gin.Context) {
 
 	defer lock.Unlock()
 
-	if err := ctrl.service.UpdateFileContent(uint(repoID), collectionName, request.Path, content); err != nil {
+	if err := ctrl.service.UpdateFileContent(repo, collectionName.String(), request.Path, content); err != nil {
 		log.Errorf("Failed to update file content: %v", err)
 		core.ResponseErr(c, http.StatusInternalServerError, err)
 		return
@@ -352,27 +353,30 @@ type CreateFolderRequest struct {
 
 // RenameFile renames a file in a collection
 func (ctrl *UserGitRepoCollectionController) RenameFile(c *gin.Context) {
-	// Get repository ID and collection name from path
-	repoID, err := strconv.ParseUint(c.Param("repoId"), 10, 64)
+	reqParam := core.NewRequestParam()
+	userId := reqParam.AddContextParam("userId", false, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile("\\d+"))
+	collectionName := reqParam.AddUrlParam("collectionName", false, nil)
+	// Parse request body
+	var req RenameFileRequest
+
+	if err := reqParam.HandleWithBody(c, &req); err != nil {
+		core.HandleError(c, err)
+		return
+	}
+
+	repoID, err := repoIDParam.UInt64()
 	if err != nil {
 		log.Errorf("Failed to parse repository ID: %v", err)
 		core.ResponseErrStr(c, http.StatusBadRequest, "Invalid repository ID")
 		return
 	}
-	collectionName := c.Param("collectionName")
-
-	// Parse request body
-	var req RenameFileRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		log.Errorf("Failed to bind request body: %v", err)
-		core.ResponseErr(c, http.StatusBadRequest, err)
-		return
-	}
-
 	// Verify repository ownership
-	if !ctrl.VerifyRepoOwnership(c, uint(repoID)) {
+	repo, err := ctrl.service.VerifyRepoOwnership(userId.String(), uint(repoID))
+	if err != nil {
 		log.Errorf("Failed to verify repository ownership: %v", err)
-		core.ResponseErr(c, http.StatusForbidden, err)
+		core.HandleError(c, err)
 		return
 	}
 
@@ -382,7 +386,7 @@ func (ctrl *UserGitRepoCollectionController) RenameFile(c *gin.Context) {
 	defer lock.Unlock()
 
 	// Call service to rename file
-	err = ctrl.service.RenameFile(uint(repoID), collectionName, req.OldPath, req.NewPath)
+	err = ctrl.service.RenameFile(repo, collectionName.String(), req.OldPath, req.NewPath)
 	if err != nil {
 		log.Errorf("Failed to rename file: %v", err)
 		core.ResponseErr(c, http.StatusInternalServerError, err)
@@ -393,42 +397,31 @@ func (ctrl *UserGitRepoCollectionController) RenameFile(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-func (ctrl *UserGitRepoCollectionController) VerifyRepoOwnership(c *gin.Context, repoID uint) bool {
-	repo, err := ctrl.service.GetRepo(repoID)
-	if err != nil {
-		log.Errorf("Failed to get repository: %v", err)
-		core.ResponseErrStr(c, http.StatusInternalServerError, "Failed to get repository: "+err.Error())
-		return false
-	}
-	if repo.UserID != c.MustGet("userId") {
-		log.Errorf("You do not have permission to rename files in this repository")
-		core.ResponseErrStr(c, http.StatusForbidden, "You do not have permission to rename files in this repository")
-		return false
-	}
-	return true
-}
-
 func (ctrl *UserGitRepoCollectionController) CreateFolder(c *gin.Context) {
-	repoID, err := strconv.ParseUint(c.Param("repoId"), 10, 64)
+	reqParam := core.NewRequestParam()
+	userId := reqParam.AddContextParam("userId", false, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile("\\d+"))
+	collectionName := reqParam.AddUrlParam("collectionName", false, nil)
+	// Parse request body
+	var req CreateFolderRequest
+
+	if err := reqParam.HandleWithBody(c, &req); err != nil {
+		core.HandleError(c, err)
+		return
+	}
+
+	repoID, err := repoIDParam.UInt64()
 	if err != nil {
 		log.Errorf("Failed to parse repository ID: %v", err)
 		core.ResponseErrStr(c, http.StatusBadRequest, "Invalid repository ID")
 		return
 	}
-	collectionName := c.Param("collectionName")
-
-	// Parse request body
-	var req CreateFolderRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		log.Errorf("Failed to bind request body: %v", err)
-		core.ResponseErr(c, http.StatusBadRequest, err)
-		return
-	}
-
 	// Verify repository ownership
-	if !ctrl.VerifyRepoOwnership(c, uint(repoID)) {
+	repo, err := ctrl.service.VerifyRepoOwnership(userId.String(), uint(repoID))
+	if err != nil {
 		log.Errorf("Failed to verify repository ownership: %v", err)
-		core.ResponseErr(c, http.StatusForbidden, err)
+		core.HandleError(c, err)
 		return
 	}
 
@@ -445,7 +438,7 @@ func (ctrl *UserGitRepoCollectionController) CreateFolder(c *gin.Context) {
 	defer lock.Unlock()
 
 	// Call service to create folder
-	err = ctrl.service.CreateFolder(uint(repoID), collectionName, req.Path, req.Folder)
+	err = ctrl.service.CreateFolder(repo, collectionName.String(), req.Path, req.Folder)
 	if err != nil {
 		log.Errorf("Failed to create folder: %v", err)
 		core.HandleError(c, err)

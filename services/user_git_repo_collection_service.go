@@ -59,11 +59,11 @@ type Field struct {
 // GetAllCollections returns all collections
 func (s *UserGitRepoCollectionService) GetAllCollections() ([]models.UserGitRepoCollection, error) {
 	// This method is not applicable anymore as collections are read from veda/config.yml
-	return nil, errors.New("collections are now stored in veda/config.yml, use GetCollectionsByRepo instead")
+	return nil, errors.New("collections are now stored in veda/config.yml, use GetCollectionsByRepoID instead")
 }
 
-// GetCollectionsByRepo returns all collections for a specific repository
-func (s *UserGitRepoCollectionService) GetCollectionsByRepo(repoID uint) ([]models.UserGitRepoCollection, error) {
+// GetCollectionsByRepoID returns all collections for a specific repository
+func (s *UserGitRepoCollectionService) GetCollectionsByRepoID(repoID uint) ([]models.UserGitRepoCollection, error) {
 	// Get the repository to find its local path
 	var repo models.UserGitRepo
 	if err := database.DB.First(&repo, repoID).Error; err != nil {
@@ -75,6 +75,20 @@ func (s *UserGitRepoCollectionService) GetCollectionsByRepo(repoID uint) ([]mode
 	if err != nil {
 		log.Errorf("Failed to read collections from veda/config.yml: %v", err)
 		return nil, err
+	}
+
+	return collections, nil
+}
+
+// GetCollectionsByRepo returns all collections for a specific repository
+func (s *UserGitRepoCollectionService) GetCollectionsByRepo(repo *models.UserGitRepo) ([]models.UserGitRepoCollection, error) {
+	// Get the repository to find its local path
+
+	// Read collections from veda/config.yml
+	collections, err := s.readCollectionsFromConfig(*repo)
+	if err != nil {
+		log.Errorf("Failed to read collections from veda/config.yml: %v", err)
+		return nil, core.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	return collections, nil
@@ -167,8 +181,8 @@ func (s *UserGitRepoCollectionService) GetCollectionByID(id uint) (models.UserGi
 }
 
 // GetCollectionByName returns a collection by its name within a repository
-func (s *UserGitRepoCollectionService) GetCollectionByName(repoID uint, name string) (models.UserGitRepoCollection, error) {
-	collections, err := s.GetCollectionsByRepo(repoID)
+func (s *UserGitRepoCollectionService) GetCollectionByName(repo *models.UserGitRepo, name string) (models.UserGitRepoCollection, error) {
+	collections, err := s.GetCollectionsByRepo(repo)
 	if err != nil {
 		return models.UserGitRepoCollection{}, err
 	}
@@ -184,7 +198,7 @@ func (s *UserGitRepoCollectionService) GetCollectionByName(repoID uint, name str
 
 // GetCollectionByPath returns a collection by its path within a repository
 func (s *UserGitRepoCollectionService) GetCollectionByPath(repoID uint, path string) (models.UserGitRepoCollection, error) {
-	collections, err := s.GetCollectionsByRepo(repoID)
+	collections, err := s.GetCollectionsByRepoID(repoID)
 	if err != nil {
 		return models.UserGitRepoCollection{}, err
 	}
@@ -209,9 +223,9 @@ type FileInfo struct {
 }
 
 // ListFilesInCollection lists all files under a collection path
-func (s *UserGitRepoCollectionService) ListFilesInCollection(repoID uint, collectionName string) ([]FileInfo, error) {
+func (s *UserGitRepoCollectionService) ListFilesInCollection(repo *models.UserGitRepo, collectionName string) ([]FileInfo, error) {
 	// Get the collection
-	collection, err := s.GetCollectionByName(repoID, collectionName)
+	collection, err := s.GetCollectionByName(repo, collectionName)
 	if err != nil {
 		return nil, err
 	}
@@ -267,9 +281,9 @@ func (s *UserGitRepoCollectionService) ListFilesInCollection(repoID uint, collec
 }
 
 // ListFilesInPath lists all files under a specific path within a collection
-func (s *UserGitRepoCollectionService) ListFilesInPath(repoID uint, collectionName string, subPath string) ([]FileInfo, error) {
+func (s *UserGitRepoCollectionService) ListFilesInPath(repo *models.UserGitRepo, collectionName string, subPath string) ([]FileInfo, error) {
 	// Get the collection
-	collection, err := s.GetCollectionByName(repoID, collectionName)
+	collection, err := s.GetCollectionByName(repo, collectionName)
 	if err != nil {
 		return nil, err
 	}
@@ -342,9 +356,9 @@ func (s *UserGitRepoCollectionService) ListFilesInPath(repoID uint, collectionNa
 }
 
 // GetFileContent retrieves the content of a file within a collection
-func (s *UserGitRepoCollectionService) GetFileContent(repoID uint, collectionName string, filePath string) ([]byte, string, error) {
+func (s *UserGitRepoCollectionService) GetFileContent(repo *models.UserGitRepo, collectionName string, filePath string) ([]byte, string, error) {
 	// Get the collection
-	collection, err := s.GetCollectionByName(repoID, collectionName)
+	collection, err := s.GetCollectionByName(repo, collectionName)
 	if err != nil {
 		return nil, "", err
 	}
@@ -408,9 +422,9 @@ func (s *UserGitRepoCollectionService) GetFileContent(repoID uint, collectionNam
 }
 
 // UpdateFileContent updates the content of a file within a collection
-func (s *UserGitRepoCollectionService) UpdateFileContent(repoID uint, collectionName string, filePath string, content []byte) error {
+func (s *UserGitRepoCollectionService) UpdateFileContent(repo *models.UserGitRepo, collectionName string, filePath string, content []byte) error {
 	// Get the collection
-	collection, err := s.GetCollectionByName(repoID, collectionName)
+	collection, err := s.GetCollectionByName(repo, collectionName)
 	if err != nil {
 		return err
 	}
@@ -447,12 +461,6 @@ func (s *UserGitRepoCollectionService) UpdateFileContent(repoID uint, collection
 		return err
 	}
 
-	// Get repository information
-	repo, err := s.GetRepo(repoID)
-	if err != nil {
-		return fmt.Errorf("failed to get repository info: %v", err)
-	}
-
 	// Commit message based on whether it's a new file or update
 	commitMsg := fmt.Sprintf("Update file %s in collection %s", cleanFilePath, collectionName)
 	if isNewFile {
@@ -460,7 +468,7 @@ func (s *UserGitRepoCollectionService) UpdateFileContent(repoID uint, collection
 	}
 
 	// Commit the changes
-	if err := s.CommitWithGithubApp(repo, commitMsg); err != nil {
+	if err := s.CommitWithGithubApp(*repo, commitMsg); err != nil {
 		return fmt.Errorf("failed to commit changes: %v", err)
 	}
 
@@ -468,9 +476,9 @@ func (s *UserGitRepoCollectionService) UpdateFileContent(repoID uint, collection
 }
 
 // DeleteFile deletes a file or directory within a collection
-func (s *UserGitRepoCollectionService) DeleteFile(repoID uint, collectionName string, filePath string) error {
+func (s *UserGitRepoCollectionService) DeleteFile(repo *models.UserGitRepo, collectionName string, filePath string) error {
 	// Get the collection
-	collection, err := s.GetCollectionByName(repoID, collectionName)
+	collection, err := s.GetCollectionByName(repo, collectionName)
 	if err != nil {
 		return err
 	}
@@ -498,14 +506,8 @@ func (s *UserGitRepoCollectionService) DeleteFile(repoID uint, collectionName st
 		return err
 	}
 
-	// Get repository information
-	repo, err := s.GetRepo(repoID)
-	if err != nil {
-		return fmt.Errorf("failed to get repository info: %v", err)
-	}
-
 	// Commit the changes
-	if err := s.CommitWithGithubApp(repo, fmt.Sprintf("Delete %s from collection %s", filePath, collectionName)); err != nil {
+	if err := s.CommitWithGithubApp(*repo, fmt.Sprintf("Delete %s from collection %s", filePath, collectionName)); err != nil {
 		return fmt.Errorf("failed to commit changes: %v", err)
 	}
 
@@ -584,9 +586,9 @@ func (s *UserGitRepoCollectionService) CommitWithGithubApp(repo models.UserGitRe
 }
 
 // RenameFile renames a file in a collection
-func (s *UserGitRepoCollectionService) RenameFile(repoID uint, collectionName string, oldPath string, newPath string) error {
+func (s *UserGitRepoCollectionService) RenameFile(repo *models.UserGitRepo, collectionName string, oldPath string, newPath string) error {
 	// Get collection info
-	collection, err := s.GetCollectionByName(repoID, collectionName)
+	collection, err := s.GetCollectionByName(repo, collectionName)
 	if err != nil {
 		return err
 	}
@@ -629,24 +631,18 @@ func (s *UserGitRepoCollectionService) RenameFile(repoID uint, collectionName st
 		return err
 	}
 
-	// Get repository information
-	repo, err := s.GetRepo(repoID)
-	if err != nil {
-		return fmt.Errorf("failed to get repository info: %v", err)
-	}
-
 	// Commit the changes
 	commitMsg := fmt.Sprintf("Rename file from %s to %s in collection %s", cleanOldPath, cleanNewPath, collectionName)
-	if err := s.CommitWithGithubApp(repo, commitMsg); err != nil {
+	if err := s.CommitWithGithubApp(*repo, commitMsg); err != nil {
 		return fmt.Errorf("failed to commit changes: %v", err)
 	}
 
 	return nil
 }
 
-func (s *UserGitRepoCollectionService) CreateFolder(u uint, name string, path string, folder string) error {
+func (s *UserGitRepoCollectionService) CreateFolder(repo *models.UserGitRepo, name string, path string, folder string) error {
 	// Get the collection
-	collection, err := s.GetCollectionByName(u, name)
+	collection, err := s.GetCollectionByName(repo, name)
 	if err != nil {
 		return err
 	}
@@ -684,18 +680,25 @@ func (s *UserGitRepoCollectionService) CreateFolder(u uint, name string, path st
 		_ = fi.Close()
 	}
 
-	// Get repository information
-	repo, err := s.GetRepo(u)
-	if err != nil {
-		return fmt.Errorf("failed to get repository info: %v", err)
-	}
-
 	// Commit the changes
 	commitMsg := fmt.Sprintf("Create folder %s in collection %s", filepath.Join(cleanPath, cleanFolder), name)
-	if err := s.CommitWithGithubApp(repo, commitMsg); err != nil {
+	if err := s.CommitWithGithubApp(*repo, commitMsg); err != nil {
 		log.Errorf("Failed to commit changes: %v", err)
 		return fmt.Errorf("failed to commit changes: %v", err)
 	}
 
 	return nil
+}
+
+func (s *UserGitRepoCollectionService) VerifyRepoOwnership(userID string, repoID uint) (*models.UserGitRepo, error) {
+	repo, err := s.GetRepo(repoID)
+	if err != nil {
+		log.Errorf("Failed to get repository: %v", err)
+		return nil, core.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	if repo.UserID != userID {
+		log.Errorf("You do not have permission to rename files in this repository")
+		return nil, core.NewHTTPError(http.StatusForbidden, "You do not have permission to rename files in this repository")
+	}
+	return &repo, nil
 }

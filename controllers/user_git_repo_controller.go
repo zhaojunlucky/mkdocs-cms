@@ -4,6 +4,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"net/http"
+	"regexp"
 
 	"github.com/gin-gonic/gin"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
@@ -13,9 +14,10 @@ import (
 // UserGitRepoController handles git repository-related HTTP requests
 type UserGitRepoController struct {
 	BaseController
-	userGitRepoService     *services.UserGitRepoService
-	asyncTaskService       *services.AsyncTaskService
-	userGitRepoLockService *services.UserGitRepoLockService
+	userGitRepoService           *services.UserGitRepoService
+	userGitRepoCollectionService *services.UserGitRepoCollectionService
+	asyncTaskService             *services.AsyncTaskService
+	userGitRepoLockService       *services.UserGitRepoLockService
 }
 
 func (c *UserGitRepoController) Init(ctx *core.APPContext, router *gin.RouterGroup) {
@@ -23,9 +25,9 @@ func (c *UserGitRepoController) Init(ctx *core.APPContext, router *gin.RouterGro
 	c.userGitRepoService = ctx.MustGetService("userGitRepoService").(*services.UserGitRepoService)
 	c.asyncTaskService = ctx.MustGetService("asyncTaskService").(*services.AsyncTaskService)
 	c.userGitRepoLockService = ctx.MustGetService("userGitRepoLockService").(*services.UserGitRepoLockService)
+	c.userGitRepoCollectionService = ctx.MustGetService("userGitRepoCollectionService").(*services.UserGitRepoCollectionService)
 	repos := router.Group("/repos")
 	{
-		//repos.GET("", userGitRepoController.GetRepos)
 		repos.GET("/:id", c.GetRepo)
 		repos.PUT("/:id", c.UpdateRepo)
 		repos.DELETE("/:id", c.DeleteRepo)
@@ -40,54 +42,19 @@ func (c *UserGitRepoController) Init(ctx *core.APPContext, router *gin.RouterGro
 	}
 }
 
-// GetRepos returns all git repositories for the authenticated user
-func (c *UserGitRepoController) GetRepos(ctx *gin.Context) {
-	// Get the authenticated user ID from the context
-	authenticatedUserID, exists := ctx.Get("userId")
-	if !exists {
-		log.Errorf("Failed to get authenticated user ID from context")
-		core.ResponseErrStr(ctx, http.StatusUnauthorized, "User not authenticated")
-		return
-	}
-
-	// Get only the repositories owned by the authenticated user
-	repos, err := c.userGitRepoService.GetReposByUser(authenticatedUserID.(string))
-	if err != nil {
-		log.Errorf("Failed to get repositories: %v", err)
-		core.ResponseErr(ctx, http.StatusInternalServerError, err)
-		return
-	}
-
-	var response []models.UserGitRepoResponse
-	for _, repo := range repos {
-		response = append(response, repo.ToResponse(false))
-	}
-
-	core.ResponseOKArr(ctx, response)
-}
-
 // GetReposByUser returns all git repositories for a specific user
 func (c *UserGitRepoController) GetReposByUser(ctx *gin.Context) {
 	// Get the authenticated user ID from the context
-	authenticatedUserID, exists := ctx.Get("userId")
-	if !exists {
-		log.Errorf("Failed to get authenticated user ID from context")
-		core.ResponseErrStr(ctx, http.StatusUnauthorized, "User not authenticated")
+	reqParam := core.NewRequestParam()
+	userId := reqParam.AddContextParam("userId", true, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+
+	if err := reqParam.Handle(ctx); err != nil {
+		core.HandleError(ctx, err)
 		return
 	}
 
-	// Get the requested user ID from the URL parameter
-	requestedUserID := ctx.Param("user_id")
-
-	// Check if the authenticated user is trying to access their own repositories
-	// This ensures users can only see their own repositories
-	if authenticatedUserID.(string) != requestedUserID {
-		log.Errorf("User %s is trying to access user %s's repositories", authenticatedUserID, requestedUserID)
-		core.ResponseErrStr(ctx, http.StatusForbidden, "You can only access your own repositories")
-		return
-	}
-
-	repos, err := c.userGitRepoService.GetReposByUser(requestedUserID)
+	repos, err := c.userGitRepoService.GetReposByUser(userId.String())
 	if err != nil {
 		log.Errorf("Failed to get repositories: %v", err)
 		core.ResponseErr(ctx, http.StatusInternalServerError, err)
@@ -105,67 +72,64 @@ func (c *UserGitRepoController) GetReposByUser(ctx *gin.Context) {
 // GetRepo returns a specific git repository
 func (c *UserGitRepoController) GetRepo(ctx *gin.Context) {
 	// Get the authenticated user ID from the context
-	authenticatedUserID, exists := ctx.Get("userId")
-	if !exists {
-		log.Errorf("Failed to get authenticated user ID from context")
-		core.ResponseErrStr(ctx, http.StatusUnauthorized, "User not authenticated")
+	reqParam := core.NewRequestParam()
+	userId := reqParam.AddContextParam("userId", true, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+	repoIDParam := reqParam.AddUrlParam("id", true, regexp.MustCompile("\\d+"))
+
+	if err := reqParam.Handle(ctx); err != nil {
+		core.HandleError(ctx, err)
 		return
 	}
 
-	id := ctx.Param("id")
-	repo, err := c.userGitRepoService.GetRepoByID(id)
+	repoID, err := repoIDParam.UInt64()
 	if err != nil {
-		log.Errorf("Failed to get repository: %v", err)
-		core.ResponseErrStr(ctx, http.StatusNotFound, "Repository not found")
+		log.Errorf("Failed to parse repository ID: %v", err)
+		core.ResponseErrStr(ctx, http.StatusBadRequest, "Invalid repository ID")
 		return
 	}
 
-	// Check if the authenticated user owns this repository
-	if repo.UserID != authenticatedUserID.(string) {
-		log.Errorf("User %s is trying to access repository owned by user %s", authenticatedUserID, repo.UserID)
-		core.ResponseErrStr(ctx, http.StatusForbidden, "You can only access your own repositories")
+	// Verify repository ownership
+	repo, err := c.userGitRepoCollectionService.VerifyRepoOwnership(userId.String(), uint(repoID))
+	if err != nil {
+		log.Errorf("Failed to verify repository ownership: %v", err)
+		core.HandleError(ctx, err)
 		return
 	}
 
 	ctx.JSON(http.StatusOK, repo.ToResponse(true))
-
 }
 
 // UpdateRepo updates an existing git repository
 func (c *UserGitRepoController) UpdateRepo(ctx *gin.Context) {
 	// Get the authenticated user ID from the context
-	authenticatedUserID, exists := ctx.Get("userId")
-	if !exists {
-		log.Errorf("Failed to get authenticated user ID from context")
-		core.ResponseErrStr(ctx, http.StatusUnauthorized, "User not authenticated")
-		return
-	}
-
-	id := ctx.Param("id")
-
-	// First, get the existing repository to check ownership
-	existingRepo, err := c.userGitRepoService.GetRepoByID(id)
-	if err != nil {
-		log.Errorf("Failed to get repository: %v", err)
-		core.ResponseErrStr(ctx, http.StatusNotFound, "Repository not found")
-		return
-	}
-
-	// Check if the authenticated user owns this repository
-	if existingRepo.UserID != authenticatedUserID.(string) {
-		log.Errorf("User %s is trying to update repository owned by user %s", authenticatedUserID, existingRepo.UserID)
-		core.ResponseErrStr(ctx, http.StatusForbidden, "You can only update your own repositories")
-		return
-	}
-
+	reqParam := core.NewRequestParam()
+	userId := reqParam.AddContextParam("userId", true, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+	repoIDParam := reqParam.AddUrlParam("id", true, regexp.MustCompile("\\d+"))
 	var request models.UpdateUserGitRepoRequest
-	if err := ctx.ShouldBindJSON(&request); err != nil {
-		log.Errorf("Failed to bind JSON: %v", err)
-		core.ResponseErr(ctx, http.StatusBadRequest, err)
+
+	if err := reqParam.HandleWithBody(ctx, &request); err != nil {
+		core.HandleError(ctx, err)
 		return
 	}
 
-	repo, err := c.userGitRepoService.UpdateRepo(id, request)
+	repoID, err := repoIDParam.UInt64()
+	if err != nil {
+		log.Errorf("Failed to parse repository ID: %v", err)
+		core.ResponseErrStr(ctx, http.StatusBadRequest, "Invalid repository ID")
+		return
+	}
+
+	// Verify repository ownership
+	repo, err := c.userGitRepoCollectionService.VerifyRepoOwnership(userId.String(), uint(repoID))
+	if err != nil {
+		log.Errorf("Failed to verify repository ownership: %v", err)
+		core.HandleError(ctx, err)
+		return
+	}
+
+	repo, err = c.userGitRepoService.UpdateRepo(repo, request)
 	if err != nil {
 		log.Errorf("Failed to update repository: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -179,31 +143,33 @@ func (c *UserGitRepoController) UpdateRepo(ctx *gin.Context) {
 // DeleteRepo deletes a git repository
 func (c *UserGitRepoController) DeleteRepo(ctx *gin.Context) {
 	// Get the authenticated user ID from the context
-	authenticatedUserID, exists := ctx.Get("userId")
-	if !exists {
-		log.Errorf("Failed to get authenticated user ID from context")
-		core.ResponseErrStr(ctx, http.StatusUnauthorized, "User not authenticated")
+	reqParam := core.NewRequestParam()
+	userId := reqParam.AddContextParam("userId", true, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+	repoIDParam := reqParam.AddUrlParam("id", true, regexp.MustCompile("\\d+"))
+	var request models.UpdateUserGitRepoRequest
+
+	if err := reqParam.HandleWithBody(ctx, &request); err != nil {
+		core.HandleError(ctx, err)
 		return
 	}
 
-	id := ctx.Param("id")
-
-	// First, get the existing repository to check ownership
-	existingRepo, err := c.userGitRepoService.GetRepoByID(id)
+	repoID, err := repoIDParam.UInt64()
 	if err != nil {
-		log.Errorf("Failed to get repository: %v", err)
-		core.ResponseErrStr(ctx, http.StatusNotFound, "Repository not found")
+		log.Errorf("Failed to parse repository ID: %v", err)
+		core.ResponseErrStr(ctx, http.StatusBadRequest, "Invalid repository ID")
 		return
 	}
 
-	// Check if the authenticated user owns this repository
-	if existingRepo.UserID != authenticatedUserID.(string) {
-		log.Errorf("User %s is trying to delete repository owned by user %s", authenticatedUserID, existingRepo.UserID)
-		core.ResponseErrStr(ctx, http.StatusForbidden, "You can only delete your own repositories")
+	// Verify repository ownership
+	repo, err := c.userGitRepoCollectionService.VerifyRepoOwnership(userId.String(), uint(repoID))
+	if err != nil {
+		log.Errorf("Failed to verify repository ownership: %v", err)
+		core.HandleError(ctx, err)
 		return
 	}
 
-	if err := c.userGitRepoService.DeleteRepo(id); err != nil {
+	if err := c.userGitRepoService.DeleteRepo(repo); err != nil {
 		log.Errorf("Failed to delete repository: %v", err)
 		core.ResponseErr(ctx, http.StatusInternalServerError, err)
 		return
@@ -214,47 +180,48 @@ func (c *UserGitRepoController) DeleteRepo(ctx *gin.Context) {
 
 // SyncRepo synchronizes a git repository with its remote
 func (c *UserGitRepoController) SyncRepo(ctx *gin.Context) {
-	// Get authenticated user ID from context
+	// Get the authenticated user ID from the context
+	reqParam := core.NewRequestParam()
+	userId := reqParam.AddContextParam("userId", true, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+	repoIDParam := reqParam.AddUrlParam("id", true, regexp.MustCompile("\\d+"))
+	var request models.UpdateUserGitRepoRequest
 
-	authenticatedUserID, exists := ctx.Get("userId")
-	if !exists {
-		log.Errorf("Failed to get authenticated user ID from context")
-		core.ResponseErrStr(ctx, http.StatusUnauthorized, "User not authenticated")
+	if err := reqParam.HandleWithBody(ctx, &request); err != nil {
+		core.HandleError(ctx, err)
 		return
 	}
 
-	id := ctx.Param("id")
-
-	// First, get the existing repository to check ownership
-	repo, err := c.userGitRepoService.GetRepoByID(id)
+	repoID, err := repoIDParam.UInt64()
 	if err != nil {
-		log.Errorf("Failed to get repository: %v", err)
-		core.ResponseErrStr(ctx, http.StatusNotFound, "Repository not found")
+		log.Errorf("Failed to parse repository ID: %v", err)
+		core.ResponseErrStr(ctx, http.StatusBadRequest, "Invalid repository ID")
 		return
 	}
 
-	// Check if the authenticated user owns this repository
-	if repo.UserID != authenticatedUserID.(string) {
-		log.Errorf("User %s is trying to sync repository owned by user %s", authenticatedUserID, repo.UserID)
-		core.ResponseErrStr(ctx, http.StatusForbidden, "You can only sync your own repositories")
+	// Verify repository ownership
+	repo, err := c.userGitRepoCollectionService.VerifyRepoOwnership(userId.String(), uint(repoID))
+	if err != nil {
+		log.Errorf("Failed to verify repository ownership: %v", err)
+		core.HandleError(ctx, err)
 		return
 	}
 
 	// Create an async task for the sync operation
-	task, err := c.asyncTaskService.CreateTask(models.TaskTypeSync, id, authenticatedUserID.(string))
+	task, err := c.asyncTaskService.CreateTask(models.TaskTypeSync, repoIDParam.String(), userId.String())
 	if err != nil {
 		log.Errorf("Failed to create sync task: %v", err)
 		core.ResponseErrStr(ctx, http.StatusInternalServerError, "Failed to create sync task")
 		return
 	}
 
-	lock := c.userGitRepoLockService.Acquire(id)
+	lock := c.userGitRepoLockService.Acquire(repoIDParam.String())
 	lock.Lock()
 
 	defer lock.Unlock()
 
 	// Update status to syncing
-	if err := c.userGitRepoService.UpdateRepoStatus(id, models.StatusSyncing, ""); err != nil {
+	if err := c.userGitRepoService.UpdateRepoStatus(repo, models.StatusSyncing, ""); err != nil {
 		log.Errorf("Failed to update repository status: %v", err)
 		core.ResponseErr(ctx, http.StatusInternalServerError, err)
 		return
@@ -265,17 +232,17 @@ func (c *UserGitRepoController) SyncRepo(ctx *gin.Context) {
 		// Update task status to running
 		c.asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusRunning, "Repository sync in progress")
 
-		if err := c.userGitRepoService.SyncRepo(id, ""); err != nil {
+		if err := c.userGitRepoService.SyncRepo(repo, ""); err != nil {
 			// Update task status to failed
 			log.Errorf("Failed to sync repository: %v", err)
-			c.userGitRepoService.UpdateRepoStatus(id, models.StatusFailed, err.Error())
+			c.userGitRepoService.UpdateRepoStatus(repo, models.StatusFailed, err.Error())
 			c.asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusFailed, err.Error())
 			return
 		}
-		if err := c.userGitRepoService.CheckWebHooks(id); err != nil {
+		if err := c.userGitRepoService.CheckWebHooks(repo); err != nil {
 			// Update task status to failed
 			log.Errorf("Failed to check webhooks: %v", err)
-			c.userGitRepoService.UpdateRepoStatus(id, models.StatusFailed, err.Error())
+			c.userGitRepoService.UpdateRepoStatus(repo, models.StatusFailed, err.Error())
 			c.asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusFailed, err.Error())
 			return
 		}
@@ -284,7 +251,7 @@ func (c *UserGitRepoController) SyncRepo(ctx *gin.Context) {
 		// so we don't need to set it here again
 
 		// Get the updated repository to check its status
-		updatedRepo, _ := c.userGitRepoService.GetRepoByID(id)
+		updatedRepo, _ := c.userGitRepoService.GetRepoByID(repoIDParam.String())
 
 		if updatedRepo.Status == models.StatusWarning {
 			c.asyncTaskService.UpdateTaskStatus(task.ID, models.TaskStatusCompleted,
@@ -303,34 +270,33 @@ func (c *UserGitRepoController) SyncRepo(ctx *gin.Context) {
 
 // GetRepoBranches returns all branches for a specific git repository
 func (c *UserGitRepoController) GetRepoBranches(ctx *gin.Context) {
-	// Get the authenticated user ID from the context
-	authenticatedUserID, exists := ctx.Get("userId")
-	if !exists {
-		log.Errorf("Failed to get authenticated user ID from context")
-		core.ResponseErrStr(ctx, http.StatusUnauthorized, "User not authenticated")
+	reqParam := core.NewRequestParam()
+	userId := reqParam.AddContextParam("userId", true, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+	repoIDParam := reqParam.AddUrlParam("id", true, regexp.MustCompile("\\d+"))
+
+	if err := reqParam.Handle(ctx); err != nil {
+		core.HandleError(ctx, err)
 		return
 	}
 
-	// Get the repository ID from the URL
-	repoID := ctx.Param("id")
-
-	// Get the repository to verify ownership
-	repo, err := c.userGitRepoService.GetRepoByID(repoID)
+	repoID, err := repoIDParam.UInt64()
 	if err != nil {
-		log.Errorf("Failed to get repository: %v", err)
-		core.ResponseErrStr(ctx, http.StatusNotFound, "Repository not found")
+		log.Errorf("Failed to parse repository ID: %v", err)
+		core.ResponseErrStr(ctx, http.StatusBadRequest, "Invalid repository ID")
 		return
 	}
 
-	// Verify that the repository belongs to the authenticated user
-	if repo.UserID != authenticatedUserID.(string) {
-		log.Errorf("User %s is trying to access repository owned by user %s", authenticatedUserID, repo.UserID)
-		core.ResponseErrStr(ctx, http.StatusForbidden, "You do not have permission to access this repository")
+	// Verify repository ownership
+	repo, err := c.userGitRepoCollectionService.VerifyRepoOwnership(userId.String(), uint(repoID))
+	if err != nil {
+		log.Errorf("Failed to verify repository ownership: %v", err)
+		core.HandleError(ctx, err)
 		return
 	}
 
 	// Get the branches
-	branches, err := c.userGitRepoService.GetRepoBranches(repoID)
+	branches, err := c.userGitRepoService.GetRepoBranches(repo)
 	if err != nil {
 		log.Errorf("Failed to get repository branches: %v", err)
 		core.ResponseErr(ctx, http.StatusInternalServerError, err)

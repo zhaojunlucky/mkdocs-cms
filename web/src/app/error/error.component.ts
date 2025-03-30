@@ -10,7 +10,6 @@ import {MatCardModule} from '@angular/material/card';
     NavComponent,
     NgIf,
     MatCardModule,
-    RouterLink
   ],
   templateUrl: './error.component.html',
   styleUrl: './error.component.scss'

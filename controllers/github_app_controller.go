@@ -60,6 +60,14 @@ func (c *GitHubAppController) initConfig() {
 
 // GetAppInfo returns information about the GitHub App
 func (c *GitHubAppController) GetAppInfo(ctx *gin.Context) {
+	reqParam := core.NewRequestParam()
+	_ = reqParam.AddContextParam("userId", true, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+	if err := reqParam.Handle(ctx); err != nil {
+		core.HandleError(ctx, err)
+		return
+	}
+
 	appInfo := map[string]interface{}{
 		"app_id":      c.appID,
 		"name":        c.githubAppSettings.AppName,
@@ -73,11 +81,11 @@ func (c *GitHubAppController) GetAppInfo(ctx *gin.Context) {
 
 // GetInstallations returns installations of the GitHub App for the current user
 func (c *GitHubAppController) GetInstallations(ctx *gin.Context) {
-	// Get current user from context
-	userID, exists := ctx.Get("userId")
-	if !exists {
-		log.Error("User not authenticated")
-		core.ResponseErrStr(ctx, http.StatusUnauthorized, "User not authenticated")
+	reqParam := core.NewRequestParam()
+	userId := reqParam.AddContextParam("userId", false, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+	if err := reqParam.Handle(ctx); err != nil {
+		core.HandleError(ctx, err)
 		return
 	}
 
@@ -90,7 +98,7 @@ func (c *GitHubAppController) GetInstallations(ctx *gin.Context) {
 	}
 
 	// Get user's GitHub username from database
-	user, err := c.userService.GetUserByID(fmt.Sprintf("%v", userID))
+	user, err := c.userService.GetUserByID(fmt.Sprintf("%v", userId.String()))
 	if err != nil {
 		log.Errorf("Failed to get user information: %v", err)
 		core.ResponseErrStr(ctx, http.StatusInternalServerError, "Failed to get user information: "+err.Error())
@@ -122,10 +130,11 @@ func (c *GitHubAppController) GetInstallations(ctx *gin.Context) {
 // GetInstallationRepositories returns repositories for a specific installation
 func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 	// Get current user from context
-	userID, exists := ctx.Get("userId")
-	if !exists {
-		log.Error("User not authenticated")
-		core.ResponseErrStr(ctx, http.StatusUnauthorized, "User not authenticated")
+	reqParam := core.NewRequestParam()
+	userID := reqParam.AddContextParam("userId", false, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+	if err := reqParam.Handle(ctx); err != nil {
+		core.HandleError(ctx, err)
 		return
 	}
 
@@ -145,7 +154,7 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 	}
 
 	// Get user's GitHub username from database
-	user, err := c.userService.GetUserByID(fmt.Sprintf("%v", userID))
+	user, err := c.userService.GetUserByID(fmt.Sprintf("%v", userID.String()))
 	if err != nil {
 		log.Errorf("Failed to get user information: %v", err)
 		core.ResponseErrStr(ctx, http.StatusInternalServerError, "Failed to get user information: "+err.Error())
@@ -195,7 +204,7 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 		return
 	}
 
-	userExistingRepos, err := c.userGitRepoService.GetReposByUser(userID.(string))
+	userExistingRepos, err := c.userGitRepoService.GetReposByUser(userID.String())
 	if err != nil {
 		log.Errorf("Failed to get user existing repos: %v", err)
 		core.ResponseErrStr(ctx, http.StatusInternalServerError, "Failed to get user existing repos: "+err.Error())
@@ -232,10 +241,11 @@ func (c *GitHubAppController) GetInstallationRepositories(ctx *gin.Context) {
 
 // ImportRepositories imports repositories from a GitHub App installation
 func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
-	authenticatedUserID, exists := ctx.Get("userId")
-	if !exists {
-		log.Errorf("User not found in context")
-		core.ResponseErrStr(ctx, http.StatusUnauthorized, "User not authenticated")
+	reqParam := core.NewRequestParam()
+	userID := reqParam.AddContextParam("userId", false, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+	if err := reqParam.Handle(ctx); err != nil {
+		core.HandleError(ctx, err)
 		return
 	}
 
@@ -253,7 +263,7 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 		core.ResponseErr(ctx, http.StatusBadRequest, err)
 		return
 	}
-	request.UserID = authenticatedUserID.(string)
+	request.UserID = userID.String()
 
 	// Get an installation token
 	installationToken, _, err := c.ctx.GithubAppClient.Apps.CreateInstallationToken(ctx, installationID, nil)
