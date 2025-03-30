@@ -91,11 +91,7 @@ func (s *UserGitRepoService) CreateRepo(repo *models.UserGitRepo) error {
 }
 
 // UpdateRepo updates an existing git repository
-func (s *UserGitRepoService) UpdateRepo(id string, request models.UpdateUserGitRepoRequest) (models.UserGitRepo, error) {
-	var repo models.UserGitRepo
-	if err := database.DB.First(&repo, id).Error; err != nil {
-		return models.UserGitRepo{}, err
-	}
+func (s *UserGitRepoService) UpdateRepo(repo *models.UserGitRepo, request models.UpdateUserGitRepoRequest) (*models.UserGitRepo, error) {
 
 	// Check if branch is being changed
 	branchChanged := request.Branch != "" && request.Branch != repo.Branch
@@ -127,7 +123,7 @@ func (s *UserGitRepoService) UpdateRepo(id string, request models.UpdateUserGitR
 	}
 
 	repo.UpdatedAt = time.Now()
-	result := database.DB.Save(&repo)
+	result := database.DB.Save(repo)
 	if result.Error != nil {
 		return repo, result.Error
 	}
@@ -135,7 +131,7 @@ func (s *UserGitRepoService) UpdateRepo(id string, request models.UpdateUserGitR
 	// If branch was changed, sync the repo and checkout the new branch
 	if branchChanged {
 		// First sync the repository to ensure we have the latest changes
-		if err := s.SyncRepo(id, ""); err != nil {
+		if err := s.SyncRepo(repo, ""); err != nil {
 			return repo, fmt.Errorf("failed to sync repository after branch change: %v", err)
 		}
 
@@ -149,14 +145,9 @@ func (s *UserGitRepoService) UpdateRepo(id string, request models.UpdateUserGitR
 }
 
 // DeleteRepo deletes a git repository
-func (s *UserGitRepoService) DeleteRepo(id string) error {
-	var repo models.UserGitRepo
-	if err := database.DB.First(&repo, id).Error; err != nil {
-		return err
-	}
-
+func (s *UserGitRepoService) DeleteRepo(repo *models.UserGitRepo) error {
 	// Delete the repository from the database
-	if err := database.DB.Delete(&repo).Error; err != nil {
+	if err := database.DB.Delete(repo).Error; err != nil {
 		return err
 	}
 
@@ -170,11 +161,7 @@ func (s *UserGitRepoService) DeleteRepo(id string) error {
 }
 
 // UpdateRepoStatus updates the status of a git repository
-func (s *UserGitRepoService) UpdateRepoStatus(id string, status models.GitRepoStatus, errorMsg string) error {
-	var repo models.UserGitRepo
-	if err := database.DB.First(&repo, id).Error; err != nil {
-		return err
-	}
+func (s *UserGitRepoService) UpdateRepoStatus(repo *models.UserGitRepo, status models.GitRepoStatus, errorMsg string) error {
 
 	repo.Status = status
 	repo.ErrorMsg = errorMsg
@@ -183,7 +170,7 @@ func (s *UserGitRepoService) UpdateRepoStatus(id string, status models.GitRepoSt
 	}
 	repo.UpdatedAt = time.Now()
 
-	err := database.DB.Save(&repo).Error
+	err := database.DB.Save(repo).Error
 	if err != nil {
 		log.Errorf("Failed to update repository status: %v", err)
 	}
@@ -191,16 +178,10 @@ func (s *UserGitRepoService) UpdateRepoStatus(id string, status models.GitRepoSt
 }
 
 // SyncRepo synchronizes a git repository with its remote
-func (s *UserGitRepoService) SyncRepo(id string, commitId string) error {
-
-	var repo models.UserGitRepo
-	if err := database.DB.First(&repo, id).Error; err != nil {
-		log.Errorf("Failed to get repository by id %s: %v", id, err)
-		return err
-	}
+func (s *UserGitRepoService) SyncRepo(repo *models.UserGitRepo, commitId string) error {
 
 	// Update status to syncing
-	if err := s.UpdateRepoStatus(id, models.StatusSyncing, ""); err != nil {
+	if err := s.UpdateRepoStatus(repo, models.StatusSyncing, ""); err != nil {
 		log.Errorf("Failed to update repository status: %v", err)
 		return err
 	}
@@ -216,7 +197,7 @@ func (s *UserGitRepoService) SyncRepo(id string, commitId string) error {
 	if err != nil {
 		// Update status to failed
 		log.Errorf("Failed to sync repository: %v", err)
-		s.UpdateRepoStatus(id, models.StatusFailed, err.Error())
+		s.UpdateRepoStatus(repo, models.StatusFailed, err.Error())
 		return err
 	}
 
@@ -224,10 +205,10 @@ func (s *UserGitRepoService) SyncRepo(id string, commitId string) error {
 	if err := s.checkVedaConfig(repo); err != nil {
 		// Set error message but don't fail the sync
 		log.Errorf("Failed to check veda/config.yml: %v", err)
-		s.UpdateRepoStatus(id, models.StatusWarning, err.Error())
+		s.UpdateRepoStatus(repo, models.StatusWarning, err.Error())
 	} else {
 		// Update status to synced
-		if err := s.UpdateRepoStatus(id, models.StatusSynced, ""); err != nil {
+		if err := s.UpdateRepoStatus(repo, models.StatusSynced, ""); err != nil {
 			log.Errorf("Failed to update repository status: %v", err)
 			return err
 		}
@@ -237,7 +218,7 @@ func (s *UserGitRepoService) SyncRepo(id string, commitId string) error {
 }
 
 // syncWithGitCommand uses git command line to sync a repository
-func (s *UserGitRepoService) syncWithGitCommand(repo models.UserGitRepo) error {
+func (s *UserGitRepoService) syncWithGitCommand(repo *models.UserGitRepo) error {
 	// Check if repository directory exists
 	if _, err := os.Stat(repo.LocalPath); os.IsNotExist(err) {
 		// Clone the repository
@@ -259,7 +240,7 @@ func (s *UserGitRepoService) syncWithGitCommand(repo models.UserGitRepo) error {
 }
 
 // syncWithGitHubApp uses GitHub App authentication to sync a repository
-func (s *UserGitRepoService) syncWithGitHubApp(repo models.UserGitRepo, commitId string) error {
+func (s *UserGitRepoService) syncWithGitHubApp(repo *models.UserGitRepo, commitId string) error {
 	if commitId != "" {
 		log.Infof("Check repository with commit ID: %s", commitId)
 		if _, err := os.Stat(repo.LocalPath); err == nil {
@@ -332,18 +313,8 @@ func (s *UserGitRepoService) syncWithGitHubApp(repo models.UserGitRepo, commitId
 	return nil
 }
 
-// SyncRepository is an alias for SyncRepo for compatibility with the webhook controller
-func (s *UserGitRepoService) SyncRepository(id string, commitId string) error {
-	return s.SyncRepo(id, commitId)
-}
-
 // GetRepoBranches returns all branches for a specific git repository
-func (s *UserGitRepoService) GetRepoBranches(id string) ([]string, error) {
-	// Get the repository
-	repo, err := s.GetRepoByID(id)
-	if err != nil {
-		return nil, err
-	}
+func (s *UserGitRepoService) GetRepoBranches(repo *models.UserGitRepo) ([]string, error) {
 
 	// Check if the repository exists locally
 	if _, err := os.Stat(repo.LocalPath); os.IsNotExist(err) {
@@ -380,7 +351,7 @@ func (s *UserGitRepoService) GetRepoBranches(id string) ([]string, error) {
 }
 
 // checkoutBranch checks out the specified branch in the repository
-func (s *UserGitRepoService) checkoutBranch(repo models.UserGitRepo) error {
+func (s *UserGitRepoService) checkoutBranch(repo *models.UserGitRepo) error {
 	// Check if repository directory exists
 	if _, err := os.Stat(repo.LocalPath); os.IsNotExist(err) {
 		return fmt.Errorf("repository directory does not exist")
@@ -441,7 +412,7 @@ func (s *UserGitRepoService) checkoutBranch(repo models.UserGitRepo) error {
 }
 
 // checkVedaConfig checks if veda/config.yml exists and has a valid format
-func (s *UserGitRepoService) checkVedaConfig(repo models.UserGitRepo) error {
+func (s *UserGitRepoService) checkVedaConfig(repo *models.UserGitRepo) error {
 	configPath := filepath.Join(repo.LocalPath, "veda", "config.yml")
 
 	// Check if the config file exists
@@ -503,7 +474,7 @@ func (s *UserGitRepoService) checkVedaConfig(repo models.UserGitRepo) error {
 }
 
 // ensureVedaConfig checks if veda/config.yml exists and creates it if it doesn't
-func (s *UserGitRepoService) ensureVedaConfig(repo models.UserGitRepo) error {
+func (s *UserGitRepoService) ensureVedaConfig(repo *models.UserGitRepo) error {
 	configPath := filepath.Join(repo.LocalPath, "veda", "config.yml")
 
 	// Check if the config file already exists
@@ -525,21 +496,17 @@ func (s *UserGitRepoService) GetInstallationToken(installationID int64) (*github
 	return token, nil
 }
 
-func (s *UserGitRepoService) CheckWebHooks(id string) error {
-	var repo models.UserGitRepo
-	if err := database.DB.First(&repo, id).Error; err != nil {
-		return err
-	}
+func (s *UserGitRepoService) CheckWebHooks(repo *models.UserGitRepo) error {
 
 	// Update status to syncing
-	if err := s.UpdateRepoStatus(id, models.StatusSyncing, ""); err != nil {
+	if err := s.UpdateRepoStatus(repo, models.StatusSyncing, ""); err != nil {
 		return err
 	}
 
 	// Get installation token for GitHub API access
 	token, err := s.GetInstallationToken(repo.InstallationID)
 	if err != nil {
-		s.UpdateRepoStatus(id, models.StatusFailed, fmt.Sprintf("Failed to get installation token: %v", err))
+		s.UpdateRepoStatus(repo, models.StatusFailed, fmt.Sprintf("Failed to get installation token: %v", err))
 		return err
 	}
 
@@ -559,7 +526,7 @@ func (s *UserGitRepoService) CheckWebHooks(id string) error {
 	// List webhooks for the repository
 	hooks, _, err := client.Repositories.ListHooks(context.Background(), owner, repoName, nil)
 	if err != nil {
-		s.UpdateRepoStatus(id, models.StatusFailed, fmt.Sprintf("Failed to list webhooks: %v", err))
+		s.UpdateRepoStatus(repo, models.StatusFailed, fmt.Sprintf("Failed to list webhooks: %v", err))
 		return err
 	}
 
@@ -590,10 +557,10 @@ func (s *UserGitRepoService) CheckWebHooks(id string) error {
 
 		createdHook, _, err := client.Repositories.CreateHook(context.Background(), owner, repoName, hook)
 		if err != nil {
-			s.UpdateRepoStatus(id, models.StatusFailed, fmt.Sprintf("Failed to create webhook: %v", err))
+			s.UpdateRepoStatus(repo, models.StatusFailed, fmt.Sprintf("Failed to create webhook: %v", err))
 			return err
 		} else {
-			s.UpdateRepoStatus(id, models.StatusSynced, fmt.Sprintf("created wehbook: %d", createdHook.ID))
+			s.UpdateRepoStatus(repo, models.StatusSynced, fmt.Sprintf("created wehbook: %d", createdHook.ID))
 		}
 	} else if !*repoHook.Active {
 		// enable hook
@@ -601,14 +568,14 @@ func (s *UserGitRepoService) CheckWebHooks(id string) error {
 			Active: github.Bool(true),
 		})
 		if err != nil {
-			s.UpdateRepoStatus(id, models.StatusFailed, fmt.Sprintf("Failed to update webhook: %v", err))
+			s.UpdateRepoStatus(repo, models.StatusFailed, fmt.Sprintf("Failed to update webhook: %v", err))
 			return err
 		}
 		resp.Body.Close()
 	}
 
 	// Update status to synced
-	if err := s.UpdateRepoStatus(id, models.StatusSynced, ""); err != nil {
+	if err := s.UpdateRepoStatus(repo, models.StatusSynced, ""); err != nil {
 		return err
 	}
 

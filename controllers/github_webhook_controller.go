@@ -152,7 +152,7 @@ func (c *GitHubWebhookController) syncRepo(repo models.UserGitRepo, body []byte,
 	lock.Lock()
 
 	defer lock.Unlock()
-	if err := c.gitRepoService.SyncRepository(id, commitID); err != nil {
+	if err := c.gitRepoService.SyncRepo(&repo, commitID); err != nil {
 		log.Errorf("Failed to sync repository %s: %v", id, err)
 		return
 	}
@@ -208,7 +208,7 @@ func (c *GitHubWebhookController) handlePullRequestEvent(ctx *gin.Context, body 
 	// Sync each matching repository
 	for _, repo := range repos {
 		if repo.Branch == targetBranch {
-			if err := c.gitRepoService.SyncRepository(fmt.Sprintf("%d", repo.ID), ""); err != nil {
+			if err := c.gitRepoService.SyncRepo(&repo, ""); err != nil {
 				log.Errorf("Failed to sync repository %d: %v", repo.ID, err)
 				continue
 			}

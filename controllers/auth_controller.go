@@ -100,25 +100,24 @@ func (c *AuthController) GithubCallback(ctx *gin.Context) {
 	errUrl := fmt.Sprintf("%s/error", c.ctx.Config.FrontendURL)
 	frontendURL := fmt.Sprintf("%s/login", c.ctx.Config.FrontendURL)
 
-	// Get state from cookie
-	state, err := ctx.Cookie("oauth_state")
-	if err != nil {
-		log.Errorf("Failed to get state from cookie: %v", err)
-		ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?error=%s&redirect=%s", errUrl, "Invalid state", frontendURL))
-		return
+	reqParam := core.NewRequestParam()
+	oauth_state := reqParam.AddCookieParam("oauth_state", false, nil)
+	state := reqParam.AddQueryParam("state", false, nil)
+	code := reqParam.AddQueryParam("code", false, nil)
+
+	if err := reqParam.Handle(ctx); err != nil {
+		log.Errorf("error: %s", err)
+		ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?error=%s&redirect=%s", errUrl, err.Error(), frontendURL))
 	}
 
 	// Verify state
-	if state != ctx.Query("state") {
+	if oauth_state.String() != state.String() {
 		log.Errorf("State mismatch")
 		ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?error=%s&redirect=%s", errUrl, "Invalid state", frontendURL))
 
 		return
 	}
-
-	// Exchange code for token
-	code := ctx.Query("code")
-	token, err := c.githubOAuthConfig.Exchange(ctx, code)
+	token, err := c.githubOAuthConfig.Exchange(ctx, code.String())
 	if err != nil {
 		log.Errorf("Failed to exchange code for token: %v", err)
 		ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?error=%s&redirect=%s", errUrl, "Failed to exchange code for token", frontendURL))
@@ -321,14 +320,20 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 
 // GetCurrentUser returns the current authenticated user
 func (c *AuthController) GetCurrentUser(ctx *gin.Context) {
-	// Get user from context (set by AuthMiddleware)
-	user, exists := ctx.Get("user")
-	if !exists {
-		log.Error("User not found in context")
-		core.ResponseErrStr(ctx, http.StatusUnauthorized, "Unauthorized")
+	reqParam := core.NewRequestParam()
+	userId := reqParam.AddContextParam("userId", false, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+	if err := reqParam.Handle(ctx); err != nil {
+		core.HandleError(ctx, err)
 		return
 	}
 
+	user, err := c.userService.GetUserByID(userId.String())
+	if err != nil {
+		log.Errorf("Failed to retrieve user: %v", err)
+		core.ResponseErr(ctx, http.StatusInternalServerError, err)
+		return
+	}
 	ctx.JSON(http.StatusOK, user)
 }
 

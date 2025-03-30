@@ -28,24 +28,19 @@ func (c *AsyncTaskController) Init(ctx *core.APPContext, router *gin.RouterGroup
 
 // GetTask returns a specific task by ID
 func (c *AsyncTaskController) GetTask(ctx *gin.Context) {
-	// Get authenticated user ID from context
-	authenticatedUserID, exists := ctx.Get("userId")
-	if !exists {
-		log.Errorf("Failed to get authenticated user ID from context")
-		core.ResponseErrStr(ctx, http.StatusUnauthorized, "Authentication required")
-		return
-	}
+	reqParam := core.NewRequestParam()
 
-	// Get task ID from URL parameter
-	taskID := ctx.Param("id")
-	if taskID == "" {
-		log.Errorf("Task ID is required")
-		core.ResponseErrStr(ctx, http.StatusBadRequest, "Task ID is required")
+	userId := reqParam.AddContextParam("userId", false, nil).
+		SetError(http.StatusUnauthorized, "You must be logged in to view tasks")
+	taskId := reqParam.AddUrlParam("id", false, nil)
+
+	if err := reqParam.Handle(ctx); err != nil {
+		core.HandleError(ctx, err)
 		return
 	}
 
 	// Get the task
-	task, err := c.asyncTaskService.GetTaskByID(taskID)
+	task, err := c.asyncTaskService.GetTaskByID(taskId.String())
 	if err != nil {
 		log.Errorf("Failed to retrieve task: %v", err)
 		core.ResponseErrStr(ctx, http.StatusNotFound, "Task not found")
@@ -53,8 +48,8 @@ func (c *AsyncTaskController) GetTask(ctx *gin.Context) {
 	}
 
 	// Check if the authenticated user owns this task
-	if task.UserID != authenticatedUserID.(string) {
-		log.Errorf("User %s does not own task %s", authenticatedUserID, taskID)
+	if task.UserID != userId.String() {
+		log.Errorf("User %s does not own task %s", userId.String(), task.ID)
 		core.ResponseErrStr(ctx, http.StatusForbidden, "You can only view your own tasks")
 		return
 	}
@@ -64,16 +59,18 @@ func (c *AsyncTaskController) GetTask(ctx *gin.Context) {
 
 // GetUserTasks returns all tasks for the authenticated user
 func (c *AsyncTaskController) GetUserTasks(ctx *gin.Context) {
-	// Get authenticated user ID from context
-	authenticatedUserID, exists := ctx.Get("userId")
-	if !exists {
-		log.Errorf("Failed to get authenticated user ID from context")
-		core.ResponseErrStr(ctx, http.StatusUnauthorized, "Authentication required")
+
+	reqParam := core.NewRequestParam()
+	userId := reqParam.AddContextParam("userId", false, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+
+	if err := reqParam.Handle(ctx); err != nil {
+		core.HandleError(ctx, err)
 		return
 	}
 
 	// Get the tasks
-	tasks, err := c.asyncTaskService.GetTasksByUser(authenticatedUserID.(string))
+	tasks, err := c.asyncTaskService.GetTasksByUser(userId.String())
 	if err != nil {
 		log.Errorf("Failed to retrieve tasks: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve tasks"})
@@ -86,24 +83,18 @@ func (c *AsyncTaskController) GetUserTasks(ctx *gin.Context) {
 
 // GetResourceTasks returns all tasks for a specific resource
 func (c *AsyncTaskController) GetResourceTasks(ctx *gin.Context) {
-	// Get authenticated user ID from context
-	authenticatedUserID, exists := ctx.Get("userId")
-	if !exists {
-		log.Errorf("Failed to get authenticated user ID from context")
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
-		return
-	}
+	reqParam := core.NewRequestParam()
+	userId := reqParam.AddContextParam("userId", false, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+	resourceId := reqParam.AddUrlParam("resourceId", false, nil)
 
-	// Get resource ID from URL parameter
-	resourceID := ctx.Param("resourceId")
-	if resourceID == "" {
-		log.Errorf("Resource ID is required")
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Resource ID is required"})
+	if err := reqParam.Handle(ctx); err != nil {
+		core.HandleError(ctx, err)
 		return
 	}
 
 	// Get the tasks
-	tasks, err := c.asyncTaskService.GetTasksByResource(resourceID)
+	tasks, err := c.asyncTaskService.GetTasksByResource(resourceId.String())
 	if err != nil {
 		log.Errorf("Failed to retrieve tasks: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve tasks"})
@@ -113,7 +104,7 @@ func (c *AsyncTaskController) GetResourceTasks(ctx *gin.Context) {
 	// Filter tasks to only include those owned by the authenticated user
 	userTasks := make([]interface{}, 0)
 	for _, task := range tasks {
-		if task.UserID == authenticatedUserID.(string) {
+		if task.UserID == userId.String() {
 			userTasks = append(userTasks, task)
 		}
 	}

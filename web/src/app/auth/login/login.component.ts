@@ -8,6 +8,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { CommonModule } from '@angular/common';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import {NavComponent} from '../../nav/nav.component';
 
 @Component({
   selector: 'app-login',
@@ -19,14 +20,15 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     MatIconModule,
     MatDividerModule,
     MatProgressSpinnerModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    NavComponent
   ],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
 })
 export class LoginComponent implements OnInit {
   loading = false;
-  
+
   constructor(
     private authService: AuthService,
     private route: ActivatedRoute,
@@ -44,12 +46,12 @@ export class LoginComponent implements OnInit {
     // Handle OAuth callback
     this.route.queryParams.subscribe(params => {
       const token = params['token'];
-      
+
       if (token) {
         this.loading = true;
         const searchParams = new URLSearchParams();
         searchParams.set('token', token);
-        
+
         this.authService.handleAuthCallback(searchParams).subscribe({
           next: () => {
             this.loading = false;
