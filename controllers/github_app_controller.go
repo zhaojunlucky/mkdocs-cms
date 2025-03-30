@@ -366,7 +366,16 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 			Details:      fmt.Sprintf("GitHub repository webhook %d created", createdHook.ID),
 		})
 	}
-
+	go func() {
+		// Sync the imported repositories
+		for _, repo := range importedRepos {
+			log.Infof("Syncing repository %d", repo.ID)
+			err := c.userGitRepoService.SyncRepo(&repo, "")
+			if err != nil {
+				log.Errorf("Failed to sync repository %d: %v", repo.ID, err)
+			}
+		}
+	}()
 	// Convert to response format
 	var response []models.UserGitRepoResponse
 	for _, repo := range importedRepos {
