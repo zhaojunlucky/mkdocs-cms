@@ -37,7 +37,7 @@ import { MatChipInputEvent } from '@angular/material/chips';
     MatChipsModule
   ]
 })
-export class FrontMatterEditorComponent implements OnInit, OnChanges {
+export class FrontMatterEditorComponent implements OnInit {
   @Input() frontMatter: Record<string, any> = {};
   @Input() fields: CollectionFieldDefinition[] = [];
   @Output() frontMatterChange = new EventEmitter<Record<string, any>>();
@@ -50,12 +50,6 @@ export class FrontMatterEditorComponent implements OnInit, OnChanges {
 
   ngOnInit(): void {
     this.initForm();
-  }
-
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['frontMatter'] && !changes['frontMatter'].firstChange) {
-      this.initForm();
-    }
   }
 
   initForm(): void {
@@ -77,7 +71,7 @@ export class FrontMatterEditorComponent implements OnInit, OnChanges {
           }
           break;
         }
-        case 'boolean': defaultValue = defaultValue == 'true'; break
+        case 'boolean': defaultValue = defaultValue == true || defaultValue == 'true'; break
         default: break;
       }
 
