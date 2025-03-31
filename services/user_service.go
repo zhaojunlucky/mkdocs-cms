@@ -37,15 +37,13 @@ func (s *UserService) GetUserByID(id string) (*models.User, error) {
 func (s *UserService) CreateOrUpdateUser(user *models.User) (*models.User, error) {
 	// Check if user exists
 	var existingUser models.User
-	result := database.DB.Where("email = ?", user.Email).First(&existingUser)
+	result := database.DB.Where("provider = ? AND provider_id = ?", user.Provider, user.ProviderID).First(&existingUser)
 
 	if result.RowsAffected > 0 {
 		// User exists, update fields
 		existingUser.Username = user.Username
 		existingUser.Name = user.Name
 		existingUser.AvatarURL = user.AvatarURL
-		existingUser.Provider = user.Provider
-		existingUser.ProviderID = user.ProviderID
 
 		// Update user
 		result = database.DB.Save(&existingUser)
