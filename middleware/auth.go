@@ -4,11 +4,14 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 )
+
+var UIPathReg = regexp.MustCompile(`^(/([^/]+)?|/assets/.+)(\\.(js|css|html|ico|png|jpg|jpeg|svg))?$`)
 
 // AuthMiddleware is a middleware that checks if the user is authenticated
 type AuthMiddleware struct {
@@ -94,16 +97,17 @@ func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 
 func shouldSkipAuth(path string) bool {
 	// List of paths that should bypass auth
-	skipPaths := []string{
-		"/api/auth/github",
-		"/api/auth/github/callback",
-		"/api/auth/google",
-		"/api/auth/google/callback",
-		"/api/github/webhook",
+	skipPaths := []*regexp.Regexp{
+		regexp.MustCompile("^/api/auth/github"),
+		regexp.MustCompile("^/api/auth/github/callback"),
+		regexp.MustCompile("^/api/auth/google"),
+		regexp.MustCompile("^/api/auth/google/callback"),
+		regexp.MustCompile("^/api/github/webhook"),
+		UIPathReg,
 	}
 
 	for _, skipPath := range skipPaths {
-		if strings.HasSuffix(path, skipPath) {
+		if skipPath.MatchString(path) {
 			return true
 		}
 	}

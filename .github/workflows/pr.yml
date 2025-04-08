@@ -21,14 +21,6 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    - uses: actions/setup-go@v5
-      with:
-        go-version: '^1.24.0' # The Go version to download (if necessary) and use.
-    - run: |
-        go version
-        go build main.go
-        ls -l
-
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
@@ -41,14 +33,14 @@ jobs:
         yarn global add @angular/cli@19.x
         yarn install
         yarn version --no-git-tag-version --new-version 1.0.${{ github.run_number }}
-        ng build --configuration production --aot
+    - uses: actions/setup-go@v5
+      with:
+        go-version: '^1.24.0' # The Go version to download (if necessary) and use.
+    - run: |
+        go version
+        ./build.sh
     - run: | 
-        mkdir output
-        cp main output/mkdocs-cms
-        cp -r web/dist/mkdocs-cms-ui output/mkdocs-cms-ui
-        cd output
-        tar -czvf mkdocs-cms-PR-${{ github.event.pull_request.number }}-1.0.${{ github.run_number }}.tar.gz *
-        ls -al
+        tar -czvf mkdocs-cms-PR-${{ github.event.pull_request.number }}-1.0.${{ github.run_number }}.tar.gz mkdocs-cms
 
     - name: artifacts_retention
       env:
@@ -62,4 +54,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: mkdocs-cms-PR-${{ github.event.pull_request.number }}-1.0.${{ github.run_number }}.tar.gz
-        path: output/mkdocs-cms-PR-${{ github.event.pull_request.number }}-1.0.${{ github.run_number }}.tar.gz
+        path: mkdocs-cms-PR-${{ github.event.pull_request.number }}-1.0.${{ github.run_number }}.tar.gz
