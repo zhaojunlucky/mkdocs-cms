@@ -13,12 +13,11 @@ import { MatCardModule } from '@angular/material/card';
 import { Router } from '@angular/router';
 import {MatChipsModule} from '@angular/material/chips';
 import {StrUtils} from '../shared/utils/str.utils';
-import {NavComponent} from '../nav/nav.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule, ComponentsModule, MatButtonModule, MatIconModule, MatMenuModule, MatCardModule, MatChipsModule, NavComponent],
+  imports: [CommonModule, RouterModule, ComponentsModule, MatButtonModule, MatIconModule, MatMenuModule, MatCardModule, MatChipsModule],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
