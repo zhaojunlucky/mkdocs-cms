@@ -30,6 +30,7 @@ type APPContext struct {
 	GithubAppClient   *github.Client
 	RepoBasePath      string
 	LogDirPath        string
+	Version           string
 }
 
 func (c *APPContext) RegisterService(name string, service interface{}) {

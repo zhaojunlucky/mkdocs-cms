@@ -16,10 +16,12 @@ import (
 // UserService handles business logic related to users
 type UserService struct {
 	BaseService
+	siteService *SiteService
 }
 
 func (s *UserService) Init(ctx *core.APPContext) {
 	s.InitService("userService", ctx, s)
+	s.siteService = ctx.MustGetService("siteService").(*SiteService)
 }
 
 // GetUserByID retrieves a user by ID
@@ -40,10 +42,14 @@ func (s *UserService) CreateOrUpdateUser(user *models.User) (*models.User, error
 	result := database.DB.Where("provider = ? AND provider_id = ?", user.Provider, user.ProviderID).First(&existingUser)
 
 	if result.RowsAffected > 0 {
+		if existingUser.IsActive == false {
+			return nil, core.NewHTTPError(http.StatusUnprocessableEntity, "user is banned")
+		}
 		// User exists, update fields
 		existingUser.Username = user.Username
 		existingUser.Name = user.Name
 		existingUser.AvatarURL = user.AvatarURL
+		existingUser.Email = user.Email
 
 		// Update user
 		result = database.DB.Save(&existingUser)
@@ -55,7 +61,9 @@ func (s *UserService) CreateOrUpdateUser(user *models.User) (*models.User, error
 		return &existingUser, nil
 	} else {
 		log.Infof("User not found %s", user.Email)
-		return nil, core.NewHTTPError(http.StatusUnprocessableEntity, "register is temporary disabled")
+		if !s.siteService.AllowUserRegistration() {
+			return nil, core.NewHTTPError(http.StatusUnprocessableEntity, "register is disabled")
+		}
 	}
 
 	// User doesn't exist, create new one

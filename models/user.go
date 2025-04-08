@@ -14,10 +14,12 @@ type User struct {
 	FirstName  string    `json:"first_name"`
 	LastName   string    `json:"last_name"`
 	AvatarURL  string    `json:"avatar_url"`
-	Provider   string    `json:"provider"` // OAuth provider (github, google, etc.)
+	Provider   string    `json:"provider"`    // OAuth provider (github, google, etc.)
 	ProviderID string    `json:"provider_id"` // ID from the OAuth provider
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
+	IsActive   bool      `json:"is_active" gorm:"default:true"`
+	Roles      []*Role   `gorm:"many2many:user_roles;"` // Use pointer slice []*Role
 }
 
 // UserResponse is the structure returned to clients

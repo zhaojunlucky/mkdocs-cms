@@ -23,6 +23,7 @@ var v1Controllers = []Controller{
 var apiControllers = []Controller{
 	&GitHubWebhookController{},
 	&AuthController{},
+	&SiteController{},
 }
 
 // InitAPIControllers api

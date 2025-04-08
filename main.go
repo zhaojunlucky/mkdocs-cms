@@ -28,6 +28,7 @@ import (
 
 //go:embed web/dist/mkdocs-cms-ui/browser/*
 var UIFS embed.FS
+var Version string = "1.0.1-dev"
 
 func main() {
 	// Parse command line flags
@@ -74,21 +75,22 @@ func main() {
 	router := gin.New()
 
 	if env.IsProduction {
+		log.Infof("Using production mode for gin")
 		gin.SetMode(gin.ReleaseMode)
-		// Serve static files
-		subFS, err := fs.Sub(UIFS, "web/dist/mkdocs-cms-ui/browser")
-		if err != nil {
-			log.Fatalf("Failed to read UI files: %v", err)
-		}
-		router.NoRoute(func(c *gin.Context) {
-			if middleware.UIPathReg.MatchString(c.Request.URL.Path) {
-				c.FileFromFS(c.Request.URL.Path, http.FS(subFS))
-				return
-			} else {
-				c.JSON(http.StatusNotFound, gin.H{"error": "Not found"})
-			}
-		})
 	}
+	// Serve static files
+	subFS, err := fs.Sub(UIFS, "web/dist/mkdocs-cms-ui/browser")
+	if err != nil {
+		log.Fatalf("Failed to read UI files: %v", err)
+	}
+	router.NoRoute(func(c *gin.Context) {
+		if middleware.UIPathReg.MatchString(c.Request.URL.Path) {
+			c.FileFromFS(c.Request.URL.Path, http.FS(subFS))
+			return
+		} else {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Not found"})
+		}
+	})
 
 	// Apply middleware
 	router.Use(middleware.Logger())
@@ -126,6 +128,7 @@ func createContext(appConfig *config.Config) *core.APPContext {
 		RepoBasePath:      filepath.Join(appConfig.WorkingDir, "repos"),
 		LogDirPath:        filepath.Join(appConfig.WorkingDir, "log"),
 		ServiceMap:        make(map[string]interface{}),
+		Version:           Version,
 	}
 	ctx.GithubAppClient = utils.CreateGitHubAppClient(ctx)
 	return ctx

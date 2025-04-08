@@ -38,7 +38,7 @@ jobs:
         go-version: '^1.24.0' # The Go version to download (if necessary) and use.
     - run: |
         go version
-        ./build.sh
+        ./build.sh "1.0.${{ github.run_number }}"
     - run: | 
         tar -czvf mkdocs-cms-PR-${{ github.event.pull_request.number }}-1.0.${{ github.run_number }}.tar.gz mkdocs-cms
 
