@@ -26,7 +26,7 @@ jobs:
           go-version: '^1.24.0' # The Go version to download (if necessary) and use.
       - run: |
           go version
-          go build main.go
+          go build -tags=prod -ldflags "-X main.Version=1.0.${{ github.run_number }}" -o mkdocs-cms main.go
           ls -l
 
       - name: Use Node.js ${{ matrix.node-version }}
@@ -44,7 +44,7 @@ jobs:
           ng build --configuration production --aot
       - run: |
           mkdir output
-          cp main output/mkdocs-cms
+          cp mkdocs-cms output/mkdocs-cms
           cp -r web/dist/mkdocs-cms-ui output/mkdocs-cms-ui
           cd output
           tar -czvf mkdocs-cms-PR-${{ github.event.pull_request.number }}-1.0.${{ github.run_number }}.tar.gz *
