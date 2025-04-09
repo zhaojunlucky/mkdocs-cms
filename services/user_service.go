@@ -27,7 +27,7 @@ func (s *UserService) Init(ctx *core.APPContext) {
 // GetUserByID retrieves a user by ID
 func (s *UserService) GetUserByID(id string) (*models.User, error) {
 	var user models.User
-	result := database.DB.First(&user, "id = ?", id)
+	result := database.DB.Preload("Roles").First(&user, "id = ?", id)
 	if result.Error != nil {
 		log.Errorf("Failed to get user by ID: %s, %v", id, result.Error)
 		return nil, result.Error

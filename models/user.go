@@ -22,6 +22,15 @@ type User struct {
 	Roles      []*Role   `gorm:"many2many:user_roles;"` // Use pointer slice []*Role
 }
 
+func (u *User) GetQuotaRole() *Role {
+	for _, role := range u.Roles {
+		if role.Quota {
+			return role
+		}
+	}
+	return nil
+}
+
 // UserResponse is the structure returned to clients
 type UserResponse struct {
 	ID        string    `json:"id"`

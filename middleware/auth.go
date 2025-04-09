@@ -3,6 +3,8 @@ package middleware
 import (
 	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
+	"github.com/zhaojunlucky/mkdocs-cms/database"
+	"github.com/zhaojunlucky/mkdocs-cms/models"
 	"net/http"
 	"regexp"
 	"strings"
@@ -82,6 +84,20 @@ func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 		if !ok {
 			log.Errorf("invalid token claims")
 			core.ResponseErrStr(c, http.StatusUnauthorized, "invalid token claims")
+			c.Abort()
+			return
+		}
+		var user models.User
+		err := database.DB.Preload("Roles").First(&user).Where("id = ?", userId).Error
+		if err != nil {
+			log.Errorf("user not found: %v", err)
+			core.ResponseErrStr(c, http.StatusUnauthorized, "user not found: "+err.Error())
+			c.Abort()
+			return
+		}
+		if !user.IsActive {
+			log.Errorf("user is not active")
+			core.ResponseErrStr(c, http.StatusUnauthorized, "user is not active")
 			c.Abort()
 			return
 		}

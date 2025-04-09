@@ -6,6 +6,7 @@ type Role struct {
 	gorm.Model         // Includes fields ID, CreatedAt, UpdatedAt, DeletedAt
 	Name        string `gorm:"uniqueIndex;not null;size:50"` // Role name (e.g., "admin", "editor")
 	Description string `gorm:"size:255"`                     // Optional description
+	Quota       bool   `gorm:"default:false"`
 
 	// --- Relationships ---
 	// Many-to-Many relationship with User (inverse of User.Roles)
