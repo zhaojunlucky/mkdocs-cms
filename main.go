@@ -8,6 +8,7 @@ import (
 	"github.com/zhaojunlucky/mkdocs-cms/controllers"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"github.com/zhaojunlucky/mkdocs-cms/database"
+	"github.com/zhaojunlucky/mkdocs-cms/env"
 	"github.com/zhaojunlucky/mkdocs-cms/middleware"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
 	"github.com/zhaojunlucky/mkdocs-cms/services"
@@ -22,12 +23,15 @@ import (
 	"strings"
 )
 
+var Version string = "1.0.1-dev"
+
 func main() {
 	// Parse command line flags
 	configPath := os.Getenv("CONFIG_PATH")
 	if configPath == "" {
 		configPath = "./config/config-dev.yaml"
 	}
+	log.Infof("Using config path: %s", configPath)
 
 	port := 8080
 	var err error
@@ -50,6 +54,7 @@ func main() {
 
 	// Debug: Print loaded configuration
 	log.Infof("Loaded configuration:")
+	log.Infof("Production: %v", env.IsProduction)
 	log.Infof("Frontend URL: %s", appConfig.FrontendURL)
 	log.Infof("OAuth Redirect URL: %s", appConfig.OAuth.RedirectURL)
 	log.Infof("GitHub OAuth Client ID: %s", appConfig.GitHub.OAuth.ClientID)
@@ -63,6 +68,11 @@ func main() {
 
 	// Initialize Gin router
 	router := gin.New()
+
+	if env.IsProduction {
+		log.Infof("Using production mode for gin")
+		gin.SetMode(gin.ReleaseMode)
+	}
 
 	// Apply middleware
 	router.Use(middleware.Logger())
@@ -100,6 +110,7 @@ func createContext(appConfig *config.Config) *core.APPContext {
 		RepoBasePath:      filepath.Join(appConfig.WorkingDir, "repos"),
 		LogDirPath:        filepath.Join(appConfig.WorkingDir, "log"),
 		ServiceMap:        make(map[string]interface{}),
+		Version:           Version,
 	}
 	ctx.GithubAppClient = utils.CreateGitHubAppClient(ctx)
 	return ctx

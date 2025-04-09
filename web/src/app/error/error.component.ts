@@ -1,5 +1,4 @@
 import {Component, OnInit} from '@angular/core';
-import {NavComponent} from '../nav/nav.component';
 import {ActivatedRoute, RouterLink} from '@angular/router';
 import {NgIf} from '@angular/common';
 import {MatCardModule} from '@angular/material/card';
@@ -7,7 +6,6 @@ import {MatCardModule} from '@angular/material/card';
 @Component({
   selector: 'app-error',
   imports: [
-    NavComponent,
     NgIf,
     MatCardModule,
   ],

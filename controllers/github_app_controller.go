@@ -1,11 +1,10 @@
 package controllers
 
 import (
-	"context"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
-
+	"github.com/zhaojunlucky/mkdocs-cms/database"
 	"net/http"
 	"os"
 	"strconv"
@@ -252,7 +251,6 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 	installationID, err := strconv.ParseInt(ctx.Param("installation_id"), 10, 64)
 	if err != nil {
 		log.Errorf("Invalid installation ID: %v", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid installation ID"})
 		core.ResponseErrStr(ctx, http.StatusBadRequest, "Invalid installation ID")
 		return
 	}
@@ -264,6 +262,37 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 		return
 	}
 	request.UserID = userID.String()
+	user, err := c.userService.GetUserByID(userID.String())
+	if err != nil {
+		log.Errorf("Failed to get user information: %v", err)
+		core.ResponseErrStr(ctx, http.StatusBadRequest, "Failed to get user information: "+err.Error())
+		return
+	}
+	role := user.GetQuotaRole()
+	if role == nil {
+		log.Errorf("Failed to get user quota role: %v", err)
+		core.ResponseErrStr(ctx, http.StatusForbidden, "user quota role not found")
+		return
+	}
+	var roleQuota models.UserRoleQuota
+	err = database.DB.Preload("Role").First(&roleQuota).Where("role_id = ?", role.ID).Error
+	if err != nil {
+		log.Errorf("Failed to get user quota role: %v", err)
+		core.ResponseErrStr(ctx, http.StatusForbidden, "user quota role not found")
+		return
+	}
+	var userGitRepos []models.UserGitRepo
+	err = database.DB.Where("user_id = ?", userID.String()).Find(&userGitRepos).Error
+	if err != nil {
+		log.Errorf("Failed to list user git repo: %v", err)
+		core.ResponseErrStr(ctx, http.StatusInternalServerError, "Failed to list user git repo: "+err.Error())
+		return
+	}
+	if roleQuota.RepoCount != 0 && len(userGitRepos) >= roleQuota.RepoCount {
+		log.Errorf("User quota exceeded: %v", err)
+		core.ResponseErrStr(ctx, http.StatusForbidden, "user quota exceeded, contact admin")
+		return
+	}
 
 	// Get an installation token
 	installationToken, _, err := c.ctx.GithubAppClient.Apps.CreateInstallationToken(ctx, installationID, nil)
@@ -339,32 +368,6 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 			ResourceType: "repository",
 			Details:      fmt.Sprintf("GitHub repository %s imported", selectedRepo.GetFullName()),
 		})
-
-		hook := &github.Hook{
-			Config: map[string]interface{}{
-				"url":          c.githubAppSettings.WebhookURL,
-				"content_type": "json",
-				"secret":       c.githubAppSettings.WebhookSecret,
-			},
-			Events: []string{"push"},
-			Active: github.Bool(true),
-		}
-
-		parts := strings.Split(*selectedRepo.FullName, "/")
-		createdHook, _, err := client.Repositories.CreateHook(context.Background(), parts[0], parts[1], hook)
-		if err != nil {
-			log.Errorf("Failed to create webhook: %v", err)
-			core.ResponseErrStr(ctx, http.StatusInternalServerError, "Failed to create webhook: "+err.Error())
-			return
-		}
-		c.eventService.CreateEvent(models.CreateEventRequest{
-			Level:        models.EventLevelInfo,
-			Source:       models.EventSourceGitRepo,
-			Message:      fmt.Sprintf("GitHub repository webhook created: %d", createdHook.ID),
-			ResourceID:   &newRepo.ID,
-			ResourceType: "repository",
-			Details:      fmt.Sprintf("GitHub repository webhook %d created", createdHook.ID),
-		})
 	}
 	go func() {
 		// Sync the imported repositories
@@ -373,6 +376,14 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 			err := c.userGitRepoService.SyncRepo(&repo, "")
 			if err != nil {
 				log.Errorf("Failed to sync repository %d: %v", repo.ID, err)
+				c.userGitRepoService.UpdateRepoStatus(&repo, models.StatusFailed, err.Error())
+			}
+
+			if err := c.userGitRepoService.CheckWebHooks(&repo); err != nil {
+				// Update task status to failed
+				log.Errorf("Failed to check webhooks: %v", err)
+				c.userGitRepoService.UpdateRepoStatus(&repo, models.StatusFailed, err.Error())
+				return
 			}
 		}
 	}()

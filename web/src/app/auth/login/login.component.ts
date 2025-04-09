@@ -8,7 +8,6 @@ import { MatDividerModule } from '@angular/material/divider';
 import { CommonModule } from '@angular/common';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import {NavComponent} from '../../nav/nav.component';
 
 @Component({
   selector: 'app-login',
@@ -21,7 +20,6 @@ import {NavComponent} from '../../nav/nav.component';
     MatDividerModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
-    NavComponent
   ],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']

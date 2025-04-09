@@ -28,3 +28,4 @@ config/*.yml
 .idea
 .DS_Store
 config/config*.yaml
+mkdocs-cms

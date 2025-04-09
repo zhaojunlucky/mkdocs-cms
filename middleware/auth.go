@@ -3,7 +3,10 @@ package middleware
 import (
 	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
+	"github.com/zhaojunlucky/mkdocs-cms/database"
+	"github.com/zhaojunlucky/mkdocs-cms/models"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -82,6 +85,20 @@ func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 			c.Abort()
 			return
 		}
+		var user models.User
+		err := database.DB.Preload("Roles").First(&user).Where("id = ?", userId).Error
+		if err != nil {
+			log.Errorf("user not found: %v", err)
+			core.ResponseErrStr(c, http.StatusUnauthorized, "user not found: "+err.Error())
+			c.Abort()
+			return
+		}
+		if !user.IsActive {
+			log.Errorf("user is not active")
+			core.ResponseErrStr(c, http.StatusUnauthorized, "user is not active")
+			c.Abort()
+			return
+		}
 
 		c.Set("userId", userId)
 		c.Next()
@@ -94,16 +111,17 @@ func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 
 func shouldSkipAuth(path string) bool {
 	// List of paths that should bypass auth
-	skipPaths := []string{
-		"/api/auth/github",
-		"/api/auth/github/callback",
-		"/api/auth/google",
-		"/api/auth/google/callback",
-		"/api/github/webhook",
+	skipPaths := []*regexp.Regexp{
+		regexp.MustCompile("^/api/auth/github"),
+		regexp.MustCompile("^/api/auth/github/callback"),
+		regexp.MustCompile("^/api/auth/google"),
+		regexp.MustCompile("^/api/auth/google/callback"),
+		regexp.MustCompile("^/api/github/webhook"),
+		regexp.MustCompile("^/api/site/version"),
 	}
 
 	for _, skipPath := range skipPaths {
-		if strings.HasSuffix(path, skipPath) {
+		if skipPath.MatchString(path) {
 			return true
 		}
 	}

@@ -136,7 +136,7 @@ func (s *UserGitRepoService) UpdateRepo(repo *models.UserGitRepo, request models
 		}
 
 		// Then checkout the new branch
-		if err := s.checkoutBranch(repo); err != nil {
+		if err := s.SyncRepo(repo, ""); err != nil {
 			return repo, fmt.Errorf("failed to checkout new branch: %v", err)
 		}
 	}
@@ -241,6 +241,7 @@ func (s *UserGitRepoService) syncWithGitCommand(repo *models.UserGitRepo) error 
 
 // syncWithGitHubApp uses GitHub App authentication to sync a repository
 func (s *UserGitRepoService) syncWithGitHubApp(repo *models.UserGitRepo, commitId string) error {
+
 	if commitId != "" {
 		log.Infof("Check repository with commit ID: %s", commitId)
 		if _, err := os.Stat(repo.LocalPath); err == nil {
@@ -309,6 +310,10 @@ func (s *UserGitRepoService) syncWithGitHubApp(repo *models.UserGitRepo, commitI
 			return fmt.Errorf("failed to reset remote URL: %v", err)
 		}
 	}
+	err = s.checkoutBranch(repo)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -357,6 +362,16 @@ func (s *UserGitRepoService) checkoutBranch(repo *models.UserGitRepo) error {
 		return fmt.Errorf("repository directory does not exist")
 	}
 
+	branchCmd := exec.Command("git", "-C", repo.LocalPath, "branch", "--show-current")
+	output, err := branchCmd.Output()
+	if err != nil {
+		return fmt.Errorf("failed to get current branche: %v", err)
+	}
+	if strings.TrimSpace(string(output)) == repo.Branch {
+		log.Infof("Branch '%s' already checked out", repo.Branch)
+		return nil
+	}
+
 	// Fetch all branches to ensure the branch exists locally
 	fetchCmd := exec.Command("git", "-C", repo.LocalPath, "fetch", "origin")
 	if err := fetchCmd.Run(); err != nil {
@@ -365,7 +380,7 @@ func (s *UserGitRepoService) checkoutBranch(repo *models.UserGitRepo) error {
 
 	// Check if the branch exists
 	checkBranchCmd := exec.Command("git", "-C", repo.LocalPath, "branch", "-r")
-	output, err := checkBranchCmd.Output()
+	output, err = checkBranchCmd.Output()
 	if err != nil {
 		return fmt.Errorf("failed to list remote branches: %v", err)
 	}

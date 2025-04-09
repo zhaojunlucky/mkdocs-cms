@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../auth/auth.service';
 import { catchError, finalize } from 'rxjs/operators';
@@ -8,7 +8,6 @@ import { of } from 'rxjs';
 import {environment} from '../../../environments/environment';
 import {ArrayResponse} from '../../shared/core/response';
 import {StrUtils} from '../../shared/utils/str.utils';
-import {NavComponent} from '../../nav/nav.component';
 
 interface GithubAccount {
   login: string;
@@ -37,7 +36,7 @@ interface GithubAppInfo {
 @Component({
   selector: 'app-repository-import',
   standalone: true,
-  imports: [CommonModule, RouterModule, NavComponent],
+  imports: [CommonModule, RouterModule],
   templateUrl: './repository-import.component.html',
   styleUrls: ['./repository-import.component.scss'],
   providers: [AuthService]

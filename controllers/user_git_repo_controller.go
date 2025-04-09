@@ -147,9 +147,8 @@ func (c *UserGitRepoController) DeleteRepo(ctx *gin.Context) {
 	userId := reqParam.AddContextParam("userId", true, nil).
 		SetError(http.StatusUnauthorized, "Unauthorized")
 	repoIDParam := reqParam.AddUrlParam("id", true, regexp.MustCompile("\\d+"))
-	var request models.UpdateUserGitRepoRequest
 
-	if err := reqParam.HandleWithBody(ctx, &request); err != nil {
+	if err := reqParam.Handle(ctx); err != nil {
 		core.HandleError(ctx, err)
 		return
 	}

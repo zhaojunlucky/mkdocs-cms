@@ -16,16 +16,18 @@ import (
 // UserService handles business logic related to users
 type UserService struct {
 	BaseService
+	siteService *SiteService
 }
 
 func (s *UserService) Init(ctx *core.APPContext) {
 	s.InitService("userService", ctx, s)
+	s.siteService = ctx.MustGetService("siteService").(*SiteService)
 }
 
 // GetUserByID retrieves a user by ID
 func (s *UserService) GetUserByID(id string) (*models.User, error) {
 	var user models.User
-	result := database.DB.First(&user, "id = ?", id)
+	result := database.DB.Preload("Roles").First(&user, "id = ?", id)
 	if result.Error != nil {
 		log.Errorf("Failed to get user by ID: %s, %v", id, result.Error)
 		return nil, result.Error
@@ -40,10 +42,14 @@ func (s *UserService) CreateOrUpdateUser(user *models.User) (*models.User, error
 	result := database.DB.Where("provider = ? AND provider_id = ?", user.Provider, user.ProviderID).First(&existingUser)
 
 	if result.RowsAffected > 0 {
+		if existingUser.IsActive == false {
+			return nil, core.NewHTTPError(http.StatusUnprocessableEntity, "user is banned")
+		}
 		// User exists, update fields
 		existingUser.Username = user.Username
 		existingUser.Name = user.Name
 		existingUser.AvatarURL = user.AvatarURL
+		existingUser.Email = user.Email
 
 		// Update user
 		result = database.DB.Save(&existingUser)
@@ -55,7 +61,9 @@ func (s *UserService) CreateOrUpdateUser(user *models.User) (*models.User, error
 		return &existingUser, nil
 	} else {
 		log.Infof("User not found %s", user.Email)
-		return nil, core.NewHTTPError(http.StatusUnprocessableEntity, "register is temporary disabled")
+		if !s.siteService.AllowUserRegistration() {
+			return nil, core.NewHTTPError(http.StatusUnprocessableEntity, "register is disabled")
+		}
 	}
 
 	// User doesn't exist, create new one
@@ -77,7 +85,14 @@ func (s *UserService) CreateOrUpdateUser(user *models.User) (*models.User, error
 			user.ID = fmt.Sprintf("%x", randomBytes)
 		}
 	}
-
+	var role models.Role
+	err := database.DB.First(&role, "name = ?", "user")
+	if err != nil {
+		log.Errorf("Failed to get user role: %v", err)
+		return nil, errors.New("failed to get user role")
+	}
+	// Assign the user to the "user" role
+	user.Roles = append(user.Roles, &role)
 	// Create the user
 	result = database.DB.Create(user)
 	if result.Error != nil {
