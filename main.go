@@ -1,7 +1,6 @@
 package main
 
 import (
-	"embed"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
@@ -16,8 +15,6 @@ import (
 	"github.com/zhaojunlucky/mkdocs-cms/utils"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"io"
-	"io/fs"
-	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -26,8 +23,6 @@ import (
 	"strings"
 )
 
-//go:embed web/dist/mkdocs-cms-ui/browser/*
-var UIFS embed.FS
 var Version string = "1.0.1-dev"
 
 func main() {
@@ -78,19 +73,6 @@ func main() {
 		log.Infof("Using production mode for gin")
 		gin.SetMode(gin.ReleaseMode)
 	}
-	// Serve static files
-	subFS, err := fs.Sub(UIFS, "web/dist/mkdocs-cms-ui/browser")
-	if err != nil {
-		log.Fatalf("Failed to read UI files: %v", err)
-	}
-	router.NoRoute(func(c *gin.Context) {
-		if middleware.UIPathReg.MatchString(c.Request.URL.Path) {
-			c.FileFromFS(c.Request.URL.Path, http.FS(subFS))
-			return
-		} else {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Not found"})
-		}
-	})
 
 	// Apply middleware
 	router.Use(middleware.Logger())

@@ -13,8 +13,6 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-var UIPathReg = regexp.MustCompile(`^(/([^/]+)?|/assets/.+)(\\.(js|css|html|ico|png|jpg|jpeg|svg|xml))?$`)
-
 // AuthMiddleware is a middleware that checks if the user is authenticated
 type AuthMiddleware struct {
 	jwtSecret []byte
@@ -120,7 +118,6 @@ func shouldSkipAuth(path string) bool {
 		regexp.MustCompile("^/api/auth/google/callback"),
 		regexp.MustCompile("^/api/github/webhook"),
 		regexp.MustCompile("^/api/site/version"),
-		UIPathReg,
 	}
 
 	for _, skipPath := range skipPaths {
