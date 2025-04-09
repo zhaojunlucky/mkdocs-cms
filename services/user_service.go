@@ -85,7 +85,14 @@ func (s *UserService) CreateOrUpdateUser(user *models.User) (*models.User, error
 			user.ID = fmt.Sprintf("%x", randomBytes)
 		}
 	}
-
+	var role models.Role
+	err := database.DB.First(&role, "name = ?", "user")
+	if err != nil {
+		log.Errorf("Failed to get user role: %v", err)
+		return nil, errors.New("failed to get user role")
+	}
+	// Assign the user to the "user" role
+	user.Roles = append(user.Roles, &role)
 	// Create the user
 	result = database.DB.Create(user)
 	if result.Error != nil {
