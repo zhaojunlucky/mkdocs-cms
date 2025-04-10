@@ -53,7 +53,7 @@ export class CreateFileComponent implements OnInit {
 
   // Global loading state for spinner overlay
   isLoading: boolean = true;
-  editorReady: boolean = false;
+  editor: any = null;
 
   // Editor options
   editorOptions = {
@@ -161,9 +161,8 @@ export class CreateFileComponent implements OnInit {
     this.markdownContent = content;
   }
 
-  onEditorReady(event: any): void {
-    console.log('Editor is ready', event);
-    this.editorReady = true
+  onEditorReady(editor: any): void {
+    this.editor = editor
   }
 
   createFile(): void {

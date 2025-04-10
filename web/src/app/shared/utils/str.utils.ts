@@ -4,6 +4,11 @@ export class StrUtils {
       return "Unknown error!!!"
     }
 
+    if (err.hasOwnProperty('message')) {
+      // @ts-ignore
+      return err['message']
+    }
+
     if (err.hasOwnProperty("error")) {
       // @ts-ignore
       err = err.error
