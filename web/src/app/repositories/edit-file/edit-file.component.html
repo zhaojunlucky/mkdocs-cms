@@ -1,12 +1,17 @@
 <div class="edit-file-container">
   <!-- Loading overlay that blocks user interaction -->
-  <div *ngIf="isLoading || !editorReady" class="loading-overlay">
+  <div *ngIf="isLoading" class="loading-overlay">
     <div class="spinner-container">
       <mat-spinner diameter="50"></mat-spinner>
       <p>Loading...</p>
     </div>
   </div>
-
+  <div *ngIf="!isLoading && editor == null" class="loading-overlay">
+    <div class="spinner-container">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p>Loading...</p>
+    </div>
+  </div>
   <div *ngIf="error" class="error-message">
     <p>{{ error }}</p>
     <a [routerLink]="['/repositories', repositoryId]" class="back-btn">Back to Repository</a>
@@ -46,8 +51,7 @@
         <p>{{ fileError }}</p>
       </div>
 
-      <!-- Editor Content (only show when not loading) -->
-      <div *ngIf="!isLoading && !fileError" class="file-editor-content">
+      <div class="file-editor-content">
         <!-- Front Matter Editor -->
         <app-front-matter-editor *ngIf="collection && collection.fields"
           [frontMatter]="frontMatter"

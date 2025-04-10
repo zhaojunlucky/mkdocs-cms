@@ -11,6 +11,7 @@ import {FrontMatterEditorComponent} from '../../markdown/front-matter-editor/fro
 import {MatIcon} from '@angular/material/icon';
 import {MatTooltip} from '@angular/material/tooltip';
 import {ArrayResponse} from '../../shared/core/response';
+import {StrUtils} from '../../shared/utils/str.utils';
 
 interface PathSegment {
   name: string;
@@ -46,7 +47,6 @@ export class EditFileComponent implements OnInit {
   isLoading: boolean = true;
   error: string = '';
   fileError: string = '';
-  editorReady: boolean = false;
 
   // Editor state
   markdownContent: string = '';
@@ -210,7 +210,6 @@ export class EditFileComponent implements OnInit {
 
   onEditorReady(editor: any): void {
     this.editor = editor;
-    this.editorReady = true;
   }
 
   saveFile(): void {
@@ -235,7 +234,7 @@ export class EditFileComponent implements OnInit {
       },
       error: (err: any) => {
         this.savingFile = false;
-        this.fileError = `Failed to save file: ${err.message || 'Unknown error'}`;
+        this.fileError = `Failed to save file: ${StrUtils.stringifyHTTPErr(err)}`;
       }
     });
   }
