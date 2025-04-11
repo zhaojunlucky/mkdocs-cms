@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, NgZone, OnInit} from '@angular/core';
 import { CommonModule, NgIf, NgFor } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -13,6 +13,8 @@ import { MatInputModule} from '@angular/material/input';
 import {MatIcon} from '@angular/material/icon';
 import {MatTooltip} from '@angular/material/tooltip';
 import {StrUtils} from '../../shared/utils/str.utils';
+import {CanComponentDeactivate} from '../../shared/guard/can-deactivate-form.guard';
+import {Observable, of} from 'rxjs';
 
 @Component({
   selector: 'app-create-file',
@@ -34,7 +36,7 @@ import {StrUtils} from '../../shared/utils/str.utils';
   templateUrl: './create-file.component.html',
   styleUrls: ['./create-file.component.scss']
 })
-export class CreateFileComponent implements OnInit {
+export class CreateFileComponent implements OnInit, CanComponentDeactivate {
   collection: Collection | null = null;
   error = '';
   repositoryId: string = '';
@@ -54,6 +56,7 @@ export class CreateFileComponent implements OnInit {
   // Global loading state for spinner overlay
   isLoading: boolean = true;
   editor: any = null;
+  editorRendered = false;
 
   // Editor options
   editorOptions = {
@@ -78,14 +81,20 @@ export class CreateFileComponent implements OnInit {
       actions: [
         "desktop"
       ]
-    }
+    },
+    after: ()=> this.zone.run(()=> {
+      this.editorRendered = true;
+      console.log("editor rendered");
+    }),
   };
+  changed = true;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private repositoryService: RepositoryService,
-    private collectionService: CollectionService
+    private collectionService: CollectionService,
+    private zone: NgZone
   ) { }
 
   ngOnInit(): void {
@@ -157,8 +166,8 @@ export class CreateFileComponent implements OnInit {
     this.frontMatter = { ...newFrontMatter };
   }
 
-  onMarkdownChange(content: string): void {
-    this.markdownContent = content;
+  onFrontMatterInit(frontMatter: Record<string, any>): void {
+    this.frontMatter = frontMatter;
   }
 
   onEditorReady(editor: any): void {
@@ -178,7 +187,6 @@ export class CreateFileComponent implements OnInit {
       finalFileName += '.md';
     }
 
-    this.isLoading = true;
     this.isCreating = true;
     this.fileError = '';
 
@@ -198,8 +206,8 @@ export class CreateFileComponent implements OnInit {
       fileContent
     ).subscribe({
       next: () => {
-        this.isLoading = false;
         this.isCreating = false;
+        this.changed = false; // Reset changed
         // Navigate back to collection view
         this.router.navigate(['/repositories', this.repositoryId, 'collection', this.collectionName], {
           queryParams: { path: this.currentPath }
@@ -208,7 +216,6 @@ export class CreateFileComponent implements OnInit {
       error: (error: any) => {
         console.error('Error creating file:', error);
         this.fileError = `Failed to create file. ${StrUtils.stringifyHTTPErr(error)}`;
-        this.isLoading = false;
         this.isCreating = false;
       }
     });
@@ -219,5 +226,13 @@ export class CreateFileComponent implements OnInit {
     this.router.navigate(['/repositories', this.repositoryId, 'collection', this.collectionName], {
       queryParams: { path: this.currentPath }
     });
+  }
+
+  canDeactivate(): Observable<boolean> | Promise<boolean> | boolean {
+    if (!this.changed) {
+      return true;
+    }
+    const confirmation = window.confirm('You have unsaved changes. Do you really want to leave?');
+    return of(confirmation); // Return Observable<boolean>
   }
 }
