@@ -41,6 +41,7 @@ export class FrontMatterEditorComponent implements OnInit {
   @Input() frontMatter: Record<string, any> = {};
   @Input() fields: CollectionFieldDefinition[] = [];
   @Output() frontMatterChange = new EventEmitter<Record<string, any>>();
+  @Output() frontMatterInit = new EventEmitter<Record<string, any>>();
 
   frontMatterForm!: FormGroup;
   readonly separatorKeysCodes = [ENTER, COMMA] as const;
@@ -79,7 +80,7 @@ export class FrontMatterEditorComponent implements OnInit {
         [field.name]: defaultValue
       })
     });
-    this.updateFrontMatter();
+    this.updateFrontMatter(true);
     // Listen for changes to update front matter
     this.frontMatterForm.valueChanges.subscribe(() => {
       this.updateFrontMatter();
@@ -103,7 +104,7 @@ export class FrontMatterEditorComponent implements OnInit {
     }
   }
 
-  updateFrontMatter(): void {
+  updateFrontMatter(init:boolean = false): void {
     if (!this.frontMatterForm.valid) return;
 
     const formValue = this.frontMatterForm.value;
@@ -111,7 +112,10 @@ export class FrontMatterEditorComponent implements OnInit {
     Object.entries(formValue).forEach(([key, value]) => {
       updatedFrontMatter[key] = value
     });
-
-    this.frontMatterChange.emit(updatedFrontMatter);
+    if (init) {
+      this.frontMatterInit.emit(updatedFrontMatter);
+    } else {
+      this.frontMatterChange.emit(updatedFrontMatter);
+    }
   }
 }

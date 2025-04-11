@@ -7,7 +7,7 @@
       <p>Loading...</p>
     </div>
   </div>
-  <div *ngIf="!isLoading && editor == null" class="loading-overlay">
+  <div *ngIf="!isLoading && (editor == null || !editorRendered)" class="loading-overlay">
     <div class="spinner-container">
       <mat-spinner diameter="50"></mat-spinner>
       <p>Loading...</p>
@@ -56,7 +56,8 @@
       <app-front-matter-editor *ngIf="collection && collection.fields"
         [frontMatter]="frontMatter"
         [fields]="collection.fields"
-        (frontMatterChange)="onFrontMatterChange($event)">
+        (frontMatterChange)="onFrontMatterChange($event)"
+        (frontMatterInit)="onFrontMatterInit($event)">
       </app-front-matter-editor>
 
       <!-- Markdown Editor -->

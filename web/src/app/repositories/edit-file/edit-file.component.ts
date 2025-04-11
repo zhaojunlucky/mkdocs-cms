@@ -1,17 +1,19 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, NgZone, OnInit} from '@angular/core';
 import { CommonModule, NgIf, NgForOf } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { NuMarkdownComponent } from '@ng-util/markdown';
-import {Collection, Repository, RepositoryService} from '../../services/repository.service';
-import {CollectionService, FileInfo} from '../../services/collection.service';
+import {Collection, RepositoryService} from '../../services/repository.service';
+import {CollectionService} from '../../services/collection.service';
 import * as yaml from 'js-yaml';
 import {FrontMatterEditorComponent} from '../../markdown/front-matter-editor/front-matter-editor.component';
 import {MatIcon} from '@angular/material/icon';
 import {MatTooltip} from '@angular/material/tooltip';
 import {ArrayResponse} from '../../shared/core/response';
 import {StrUtils} from '../../shared/utils/str.utils';
+import {CanComponentDeactivate} from '../../shared/guard/can-deactivate-form.guard';
+import {Observable, of} from 'rxjs';
 
 interface PathSegment {
   name: string;
@@ -36,7 +38,7 @@ interface PathSegment {
   templateUrl: './edit-file.component.html',
   styleUrls: ['./edit-file.component.scss']
 })
-export class EditFileComponent implements OnInit {
+export class EditFileComponent implements OnInit, CanComponentDeactivate {
   repositoryId: string = '';
   collectionName: string = '';
   filePath: string = '';
@@ -49,12 +51,14 @@ export class EditFileComponent implements OnInit {
   fileError: string = '';
 
   // Editor state
-  markdownContent: string = '';
+  _markdownContent: string = '';
   frontMatter: Record<string, any> = {};
   savingFile: boolean = false;
 
   // Path navigation
   pathSegments: PathSegment[] = [];
+  editorRendered = false;
+  changed = false;
 
   // Editor options
   editorOptions = {
@@ -79,7 +83,10 @@ export class EditFileComponent implements OnInit {
       actions: [
         "desktop"
       ]
-    }
+    },
+    after: ()=> this.zone.run(()=> {
+      this.editorRendered = true;
+    }),
   };
 
   editor: any = null;
@@ -89,7 +96,17 @@ export class EditFileComponent implements OnInit {
     private router: Router,
     private collectionService: CollectionService,
     private repositoryService: RepositoryService,
+    private zone: NgZone
   ) {}
+
+  get markdownContent(): string {
+    return this._markdownContent;
+  }
+
+  set markdownContent(value: string) {
+    this._markdownContent = value;
+    this.changed = true;
+  }
 
   ngOnInit(): void {
     if (this.route.parent) {
@@ -169,19 +186,19 @@ export class EditFileComponent implements OnInit {
         const frontMatterText = content.substring(3, endOfFrontMatter).trim();
         try {
           this.frontMatter = yaml.load(frontMatterText) as Record<string, any>;
-          this.markdownContent = content.substring(endOfFrontMatter + 3).trim();
+          this._markdownContent = content.substring(endOfFrontMatter + 3).trim();
         } catch (e) {
           console.error('Error parsing front matter:', e);
           this.frontMatter = {};
-          this.markdownContent = content;
+          this._markdownContent = content;
         }
       } else {
         this.frontMatter = {};
-        this.markdownContent = content;
+        this._markdownContent = content;
       }
     } else {
       this.frontMatter = {};
-      this.markdownContent = content;
+      this._markdownContent = content;
     }
   }
 
@@ -206,6 +223,11 @@ export class EditFileComponent implements OnInit {
 
   onFrontMatterChange(frontMatter: Record<string, any>): void {
     this.frontMatter = frontMatter;
+    this.changed = true;
+  }
+
+  onFrontMatterInit(frontMatter: Record<string, any>): void {
+    this.frontMatter = frontMatter;
   }
 
   onEditorReady(editor: any): void {
@@ -229,8 +251,10 @@ export class EditFileComponent implements OnInit {
     ).subscribe({
       next: () => {
         this.savingFile = false;
+        this.changed = false;
         // Navigate back to the collection view
         this.navigateToCollection();
+
       },
       error: (err: any) => {
         this.savingFile = false;
@@ -263,5 +287,13 @@ export class EditFileComponent implements OnInit {
         path: pathWithoutFile
       }
     });
+  }
+
+  canDeactivate(): Observable<boolean> | Promise<boolean> | boolean {
+    if (!this.changed) {
+      return true;
+    }
+    const confirmation = window.confirm('You have unsaved changes. Do you really want to leave?');
+    return of(confirmation); // Return Observable<boolean>
   }
 }

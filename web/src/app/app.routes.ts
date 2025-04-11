@@ -10,6 +10,7 @@ import { CreateFileComponent } from './repositories/create-file/create-file.comp
 import { authGuard } from './auth/auth.guard';
 import {NotFoundComponent} from './not-found/not-found.component';
 import {ErrorComponent} from './error/error.component';
+import {CanDeactivateFormGuard} from './shared/guard/can-deactivate-form.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/home', pathMatch: 'full' },
@@ -19,8 +20,8 @@ export const routes: Routes = [
   { path: 'repositories/:id', component: RepositoryDetailComponent, canActivate: [authGuard] ,
     children: [
       { path: 'collection/:collectionName', component: CollectionComponent, canActivate: [authGuard] },
-      { path: 'collection/:collectionName/edit', component: EditFileComponent, canActivate: [authGuard] },
-      { path: 'collection/:collectionName/create', component: CreateFileComponent, canActivate: [authGuard] },
+      { path: 'collection/:collectionName/edit', component: EditFileComponent, canActivate: [authGuard], canDeactivate: [CanDeactivateFormGuard]  },
+      { path: 'collection/:collectionName/create', component: CreateFileComponent, canActivate: [authGuard], canDeactivate: [CanDeactivateFormGuard] },
     ]
   },
   { path: 'repositories/:id/edit', component: EditRepositoryComponent, canActivate: [authGuard] },
