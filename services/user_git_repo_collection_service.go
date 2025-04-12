@@ -193,7 +193,7 @@ func (s *UserGitRepoCollectionService) GetCollectionByName(repo *models.UserGitR
 		}
 	}
 
-	return models.UserGitRepoCollection{}, errors.New("collection not found")
+	return models.UserGitRepoCollection{}, core.NewHTTPError(http.StatusNotFound, "collection not found")
 }
 
 // GetCollectionByPath returns a collection by its path within a repository
@@ -232,7 +232,7 @@ func (s *UserGitRepoCollectionService) ListFilesInCollection(repo *models.UserGi
 
 	// Check if the path exists
 	if _, err := os.Stat(collection.Path); os.IsNotExist(err) {
-		return nil, errors.New("collection path does not exist")
+		return nil, core.NewHTTPError(http.StatusBadRequest, "collection path does not exist")
 	}
 
 	// Read the directory
