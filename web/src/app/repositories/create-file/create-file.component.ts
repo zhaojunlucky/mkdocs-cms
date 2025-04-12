@@ -15,6 +15,7 @@ import {MatTooltip} from '@angular/material/tooltip';
 import {StrUtils} from '../../shared/utils/str.utils';
 import {CanComponentDeactivate} from '../../shared/guard/can-deactivate-form.guard';
 import {Observable, of} from 'rxjs';
+import * as yaml from 'js-yaml';
 
 @Component({
   selector: 'app-create-file',
@@ -174,6 +175,16 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
     this.editor = editor
   }
 
+  generateFileContent(): string {
+    // Only include front matter if it's not empty
+    if (Object.keys(this.frontMatter).length === 0) {
+      return this.markdownContent;
+    }
+
+    const frontMatterYaml = yaml.dump(this.frontMatter);
+    return `---\n${frontMatterYaml}---\n\n${this.markdownContent}`;
+  }
+
   createFile(): void {
     if (!this.repositoryId || !this.collection) return;
     if (!this.fileName.trim()) {
@@ -195,9 +206,7 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
       ? `${this.currentPath}/${finalFileName}`
       : finalFileName;
 
-    // Build YAML front matter
-    const yamlFrontMatter = `---\n${jsYaml.dump(this.frontMatter)}---\n`;
-    const fileContent = `${yamlFrontMatter}${this.markdownContent}`;
+    const fileContent = this.generateFileContent()
 
     this.collectionService.uploadFile(
       this.repositoryId.toString(),
