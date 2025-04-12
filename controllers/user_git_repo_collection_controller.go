@@ -115,7 +115,7 @@ func (ctrl *UserGitRepoCollectionController) GetCollectionFilesInPath(c *gin.Con
 		files, err := ctrl.service.ListFilesInCollection(repo, collectionName.String())
 		if err != nil {
 			log.Errorf("Failed to list files in collection: %v", err)
-			core.ResponseErr(c, http.StatusInternalServerError, err)
+			core.HandleError(c, err)
 			return
 		}
 		core.ResponseOKArr(c, files)
