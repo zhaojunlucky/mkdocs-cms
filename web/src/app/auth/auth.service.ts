@@ -26,14 +26,7 @@ export class AuthService {
     private http: HttpClient,
     private router: Router
   ) {
-    // Check if user is already logged in (from localStorage)
-    const storedUser = localStorage.getItem('user');
-    const storedToken = localStorage.getItem('auth_token');
-
-    if (storedUser && storedToken) {
-      this.userSubject.next(JSON.parse(storedUser));
-      this.tokenSubject.next(storedToken);
-    }
+    this.refreshToken();
   }
 
   get user(): Observable<User | null> {
@@ -45,6 +38,7 @@ export class AuthService {
   }
 
   get currentToken(): string | null {
+    this.refreshToken();
     return this.tokenSubject.value;
   }
 
@@ -144,5 +138,19 @@ export class AuthService {
     this.userSubject.next(null);
     this.tokenSubject.next(null);
     this.router.navigate(['/login']);
+  }
+
+  private refreshToken() {
+    // Check if user is already logged in (from localStorage)
+    const storedUser = localStorage.getItem('user');
+    const storedToken = localStorage.getItem('auth_token');
+
+    if (storedUser && storedToken) {
+      this.userSubject.next(JSON.parse(storedUser));
+      this.tokenSubject.next(storedToken);
+    } else {
+      this.userSubject.next(null);
+      this.tokenSubject.next(null);
+    }
   }
 }
