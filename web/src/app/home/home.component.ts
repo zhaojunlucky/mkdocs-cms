@@ -13,6 +13,7 @@ import { MatCardModule } from '@angular/material/card';
 import { Router } from '@angular/router';
 import {MatChipsModule} from '@angular/material/chips';
 import {StrUtils} from '../shared/utils/str.utils';
+import {PageTitleService} from '../services/page.title.service';
 
 @Component({
   selector: 'app-home',
@@ -30,10 +31,13 @@ export class HomeComponent implements OnInit {
   constructor(
     private repositoryService: RepositoryService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private pageTitleService: PageTitleService
+
   ) {}
 
   ngOnInit(): void {
+    this.pageTitleService.title = 'Home';
     this.loadRepositories();
   }
 

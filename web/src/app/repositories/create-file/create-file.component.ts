@@ -16,6 +16,7 @@ import {StrUtils} from '../../shared/utils/str.utils';
 import {CanComponentDeactivate} from '../../shared/guard/can-deactivate-form.guard';
 import {Observable, of} from 'rxjs';
 import * as yaml from 'js-yaml';
+import {PageTitleService} from '../../services/page.title.service';
 
 @Component({
   selector: 'app-create-file',
@@ -95,10 +96,13 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
     private router: Router,
     private repositoryService: RepositoryService,
     private collectionService: CollectionService,
-    private zone: NgZone
+    private zone: NgZone,
+    private pageTitleService: PageTitleService
+
   ) { }
 
   ngOnInit(): void {
+    this.pageTitleService.title = 'Create File';
     if (this.route.parent) {
       this.repositoryId = this.route.parent.snapshot.paramMap.get('id') || '';
     }
@@ -109,6 +113,7 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
         this.collectionName = collectionName;
         this.route.queryParams.subscribe(params => {
           this.currentPath = params['path'] || '';
+          this.pageTitleService.title = `Create File - ${this.collectionName} - ${this.currentPath}`
           this.fileName = new Date().toISOString().slice(0, 10) + '-';
           this.loadCollection();
         });

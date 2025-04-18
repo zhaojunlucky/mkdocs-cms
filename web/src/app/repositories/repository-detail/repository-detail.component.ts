@@ -9,6 +9,7 @@ import { Repository, Collection } from '../../services/repository.service';
 import {RouteParameterService} from '../../services/routeparameter.service';
 import {MatChipsModule} from '@angular/material/chips';
 import {StrUtils} from '../../shared/utils/str.utils';
+import {PageTitleService} from '../../services/page.title.service';
 
 @Component({
   selector: 'app-repository-detail',
@@ -36,10 +37,13 @@ export class RepositoryDetailComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private repositoryService: RepositoryService,
-    private routeParameterService: RouteParameterService
+    private routeParameterService: RouteParameterService,
+    private pageTitleService: PageTitleService
+
   ) { }
 
   ngOnInit(): void {
+    this.pageTitleService.title = 'Repository';
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
       if (id) {
@@ -65,6 +69,7 @@ export class RepositoryDetailComponent implements OnInit {
     this.repositoryService.getRepository(id).subscribe({
       next: (repo) => {
         this.repository = repo;
+        this.pageTitleService.title = `Repository - ${repo.name}`;
         this.loadCollections(id);
       },
       error: (err) => {

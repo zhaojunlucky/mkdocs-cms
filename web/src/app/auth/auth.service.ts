@@ -40,7 +40,8 @@ export class AuthService {
             if (this.router.url.startsWith('/login')) {
               let returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
               if (returnUrl) {
-                this.router.navigate([returnUrl]);
+                let routeParams = StrUtils.parseRedirectUrl(returnUrl);
+                this.router.navigate(routeParams['paths'], { queryParams: routeParams['queryParams'] });
               } else {
                 this.router.navigate(['/home']);
               }

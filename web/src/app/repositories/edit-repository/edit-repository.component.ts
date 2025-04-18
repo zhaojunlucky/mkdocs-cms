@@ -6,6 +6,7 @@ import { RepositoryService, Repository } from '../../services/repository.service
 import { ComponentsModule } from '../../components/components.module';
 import {MatInputModule} from '@angular/material/input';
 import {StrUtils} from '../../shared/utils/str.utils';
+import {PageTitleService} from '../../services/page.title.service';
 
 @Component({
   selector: 'app-edit-repository',
@@ -29,7 +30,9 @@ export class EditRepositoryComponent implements OnInit {
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private router: Router,
-    private repositoryService: RepositoryService
+    private repositoryService: RepositoryService,
+    private pageTitleService: PageTitleService
+
   ) {
     this.repoForm = this.fb.group({
       name: ['', [Validators.required]],
@@ -41,6 +44,7 @@ export class EditRepositoryComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.pageTitleService.title = 'Edit Repository';
     this.loadRepository();
   }
 
@@ -51,6 +55,7 @@ export class EditRepositoryComponent implements OnInit {
     this.repositoryService.getRepository(this.repoId).subscribe({
       next: (repo) => {
         this.repository = repo;
+        this.pageTitleService.title = `Edit Repository - ${repo.name}`;
         this.repoForm.patchValue({
           name: repo.name,
           description: repo.description || '',

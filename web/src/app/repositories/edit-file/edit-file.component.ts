@@ -14,6 +14,7 @@ import {ArrayResponse} from '../../shared/core/response';
 import {StrUtils} from '../../shared/utils/str.utils';
 import {CanComponentDeactivate} from '../../shared/guard/can-deactivate-form.guard';
 import {Observable, of} from 'rxjs';
+import {PageTitleService} from '../../services/page.title.service';
 
 interface PathSegment {
   name: string;
@@ -96,7 +97,9 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
     private router: Router,
     private collectionService: CollectionService,
     private repositoryService: RepositoryService,
-    private zone: NgZone
+    private zone: NgZone,
+    private pageTitleService: PageTitleService
+
   ) {}
 
   get markdownContent(): string {
@@ -109,6 +112,7 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
   }
 
   ngOnInit(): void {
+    this.pageTitleService.title = 'Edit File';
     if (this.route.parent) {
       this.repositoryId = this.route.parent.snapshot.paramMap.get('id') || '';
     }
@@ -119,6 +123,7 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
         this.filePath = queryParams.get('path') || '';
         if (this.repositoryId && this.collectionName && this.filePath) {
           this.fileName = this.filePath.split('/').pop() || '';
+          this.pageTitleService.title = `Edit File - ${this.collectionName} - ${this.fileName}`
           this.setupPathSegments();
           this.loadData();
         } else {
