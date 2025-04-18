@@ -2,15 +2,17 @@ package controllers
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
+	"github.com/zhaojunlucky/mkdocs-cms/env"
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -19,14 +21,12 @@ import (
 	"github.com/zhaojunlucky/mkdocs-cms/services"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/github"
-	"golang.org/x/oauth2/google"
 )
 
 type AuthController struct {
 	BaseController
 	userService        *services.UserService
 	githubOAuthConfig  *oauth2.Config
-	googleOAuthConfig  *oauth2.Config
 	jwtSecret          []byte
 	jwtExpirationHours int
 }
@@ -49,16 +49,6 @@ func (c *AuthController) initConfig() {
 	}
 	c.githubOAuthConfig = githubConfig
 
-	// Initialize Google OAuth config
-	googleConfig := &oauth2.Config{
-		ClientID:     c.ctx.Config.Google.OAuth.ClientID,
-		ClientSecret: c.ctx.Config.Google.OAuth.ClientSecret,
-		RedirectURL:  c.ctx.Config.OAuth.RedirectURL,
-		Scopes:       c.ctx.Config.Google.OAuth.Scopes,
-		Endpoint:     google.Endpoint,
-	}
-	c.googleOAuthConfig = googleConfig
-
 	// Get JWT secret from configuration
 	jwtSecret := []byte(c.ctx.Config.JWT.Secret)
 	c.jwtSecret = jwtSecret
@@ -71,9 +61,8 @@ func (c *AuthController) registerRoutes(router *gin.RouterGroup) {
 	{
 		auth.GET("/github", c.GithubLogin)
 		auth.GET("/github/callback", c.GithubCallback)
-		auth.GET("/google", c.GoogleLogin)
-		auth.GET("/google/callback", c.GoogleCallback)
-		auth.GET("/user", c.AuthMiddleware(), c.GetCurrentUser)
+		auth.GET("/user", c.GetCurrentUser)
+		auth.DELETE("/logout", c.Logout)
 	}
 }
 
@@ -205,116 +194,12 @@ func (c *AuthController) GithubCallback(ctx *gin.Context) {
 		ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?error=%s&redirect=%s", errUrl, "Failed to generate token", frontendURL))
 		return
 	}
-
+	hash := sha256.Sum256([]byte(savedUser.ID))
+	hashHex := hex.EncodeToString(hash[:])
 	// Redirect to frontend with token
-	redirectURL := fmt.Sprintf("%s?token=%s", frontendURL, url.QueryEscape(jwtToken))
-	ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
-}
+	redirectURL := fmt.Sprintf("%s?token=%s", frontendURL, url.QueryEscape(hashHex))
 
-// GoogleLogin initiates Google OAuth flow
-func (c *AuthController) GoogleLogin(ctx *gin.Context) {
-	// Generate a random state
-	state, err := generateRandomState()
-	if err != nil {
-		log.Errorf("Failed to generate state: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate state"})
-		return
-	}
-
-	// Store state in cookie
-	ctx.SetCookie("oauth_state", state, 3600, "/", "", false, true)
-
-	// Redirect to Google OAuth page
-	url := c.googleOAuthConfig.AuthCodeURL(state)
-	ctx.Redirect(http.StatusTemporaryRedirect, url)
-}
-
-// GoogleCallback handles Google OAuth callback
-func (c *AuthController) GoogleCallback(ctx *gin.Context) {
-	// Get state from cookie
-	state, err := ctx.Cookie("oauth_state")
-	if err != nil {
-		log.Errorf("Failed to get state from cookie: %v", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid state"})
-		return
-	}
-
-	// Verify state
-	if state != ctx.Query("state") {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid state"})
-		return
-	}
-
-	// Exchange code for token
-	code := ctx.Query("code")
-	token, err := c.googleOAuthConfig.Exchange(ctx, code)
-	if err != nil {
-		log.Errorf("Failed to exchange code for token: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to exchange code for token"})
-		return
-	}
-
-	// Get user info from Google
-	client := c.googleOAuthConfig.Client(ctx, token)
-	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
-	if err != nil {
-		log.Errorf("Failed to get user info: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
-		return
-	}
-	defer resp.Body.Close()
-
-	// Read response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Errorf("Failed to read response body: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read response body"})
-		return
-	}
-
-	// Parse user info
-	var googleUser struct {
-		ID      string `json:"id"`
-		Email   string `json:"email"`
-		Name    string `json:"name"`
-		Picture string `json:"picture"`
-	}
-
-	if err := json.Unmarshal(body, &googleUser); err != nil {
-		log.Errorf("Failed to parse user info: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse user info"})
-		return
-	}
-
-	// Create or update user in database
-	user := &models.User{
-		Username:   googleUser.Email,
-		Name:       googleUser.Name,
-		Email:      googleUser.Email,
-		AvatarURL:  googleUser.Picture,
-		Provider:   "google",
-		ProviderID: googleUser.ID,
-	}
-
-	// Save user to database
-	savedUser, err := c.userService.CreateOrUpdateUser(user)
-	if err != nil {
-		log.Errorf("Failed to save user: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save user"})
-		return
-	}
-
-	// Generate JWT token
-	jwtToken, err := c.generateJWT(savedUser)
-	if err != nil {
-		log.Errorf("Failed to generate token: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
-		return
-	}
-
-	// Redirect to frontend with token
-	frontendURL := fmt.Sprintf("%s/login", c.ctx.Config.FrontendURL)
-	redirectURL := fmt.Sprintf("%s?token=%s", frontendURL, url.QueryEscape(jwtToken))
+	ctx.SetCookie("session_id", jwtToken, 3600*c.jwtExpirationHours, "/", c.ctx.CookieDomain, env.IsProduction, true)
 	ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }
 
@@ -322,6 +207,8 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 func (c *AuthController) GetCurrentUser(ctx *gin.Context) {
 	reqParam := core.NewRequestParam()
 	userId := reqParam.AddContextParam("userId", false, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+	userExpiresAt := reqParam.AddContextParam("userExpiresAt", false, nil).
 		SetError(http.StatusUnauthorized, "Unauthorized")
 	if err := reqParam.Handle(ctx); err != nil {
 		core.HandleError(ctx, err)
@@ -334,88 +221,15 @@ func (c *AuthController) GetCurrentUser(ctx *gin.Context) {
 		core.ResponseErr(ctx, http.StatusInternalServerError, err)
 		return
 	}
-	ctx.JSON(http.StatusOK, user)
-}
 
-// AuthMiddleware is a middleware to authenticate requests
-func (c *AuthController) AuthMiddleware() gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		// Get token from header
-		authHeader := ctx.GetHeader("Authorization")
-		if authHeader == "" {
-			log.Error("Authorization header is required")
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized,
-				core.NewErrorMessageDTOStr(http.StatusUnauthorized, "Authorization header is required"))
-			return
-		}
-
-		// Check if the header has the Bearer prefix
-		if !strings.HasPrefix(authHeader, "Bearer ") {
-			log.Error("Invalid authorization format")
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized,
-				core.NewErrorMessageDTOStr(http.StatusUnauthorized, "Invalid authorization format"))
-			return
-		}
-
-		// Extract the token
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-
-		// Parse and validate the token
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			// Validate the signing method
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				log.Errorf("Unexpected signing method: %v", token.Header["alg"])
-				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-			}
-			return []byte(c.jwtSecret), nil
-		})
-
-		if err != nil {
-			log.Errorf("Failed to parse token: %v", err)
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, core.NewErrorMessageDTO(http.StatusUnauthorized, err))
-			return
-		}
-
-		// Extract claims
-		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			// Check token expiration
-			if exp, ok := claims["exp"].(float64); ok {
-				if time.Now().Unix() > int64(exp) {
-					log.Error("Token expired")
-					ctx.AbortWithStatusJSON(http.StatusUnauthorized,
-						core.NewErrorMessageDTOStr(http.StatusUnauthorized, "Token expired"))
-					return
-				}
-			}
-
-			// Get user ID from claims
-			userIDStr, ok := claims["sub"].(string)
-			if !ok {
-				log.Error("Invalid token claims")
-				ctx.AbortWithStatusJSON(http.StatusUnauthorized,
-					core.NewErrorMessageDTOStr(http.StatusUnauthorized, "Invalid token claims"))
-				return
-			}
-
-			// Get user from database
-			user, err := c.userService.GetUserByID(userIDStr)
-			if err != nil {
-				log.Errorf("Failed to get user: %v", err)
-				ctx.AbortWithStatusJSON(http.StatusUnauthorized,
-					core.NewErrorMessageDTOStr(http.StatusUnauthorized, "Failed to get user"))
-				return
-			}
-
-			// Set user in context
-			ctx.Set("user", user)
-			ctx.Next()
-		} else {
-			log.Error("Invalid token")
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized,
-				core.NewErrorMessageDTOStr(http.StatusUnauthorized, "Invalid token"))
-			return
-		}
+	expireInt, err := userExpiresAt.Int64()
+	if err != nil {
+		log.Errorf("Failed to convert expiresAt: %v", err)
+		core.ResponseErr(ctx, http.StatusUnprocessableEntity, err)
+		return
 	}
+
+	ctx.JSON(http.StatusOK, user.ToResponseWithExpires(expireInt))
 }
 
 // Helper function to generate a random state
@@ -482,4 +296,9 @@ func (c *AuthController) getGithubEmails(client *http.Client) ([]struct {
 	}
 
 	return emails, nil
+}
+
+func (c *AuthController) Logout(context *gin.Context) {
+	context.SetCookie("session_id", "", -1, "/", c.ctx.CookieDomain, env.IsProduction, true)
+	context.Status(http.StatusNoContent)
 }

@@ -43,6 +43,7 @@ type UserResponse struct {
 	Provider  string    `json:"provider"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+	ExpiresAt int64     `json:"expires_at"`
 }
 
 // ToResponse converts a User to a UserResponse
@@ -58,6 +59,22 @@ func (u *User) ToResponse() UserResponse {
 		Provider:  u.Provider,
 		CreatedAt: u.CreatedAt,
 		UpdatedAt: u.UpdatedAt,
+	}
+}
+
+func (u *User) ToResponseWithExpires(expireInt int64) UserResponse {
+	return UserResponse{
+		ID:        u.ID,
+		Username:  u.Username,
+		Email:     u.Email,
+		Name:      u.Name,
+		FirstName: u.FirstName,
+		LastName:  u.LastName,
+		AvatarURL: u.AvatarURL,
+		Provider:  u.Provider,
+		CreatedAt: u.CreatedAt,
+		UpdatedAt: u.UpdatedAt,
+		ExpiresAt: expireInt,
 	}
 }
 

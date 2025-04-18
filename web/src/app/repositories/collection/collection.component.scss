@@ -55,6 +55,9 @@
   align-items: center;
   flex-wrap: wrap;
   font-size: 14px;
+  a {
+    text-decoration: none;
+  }
 }
 
 .breadcrumb-item {
@@ -116,7 +119,7 @@ mat-icon {
   justify-content: center;
   align-items: center;
   overflow: visible;
-  
+
   /* Fix for mobile devices */
   @media (max-width: 768px) {
     width: 24px !important;

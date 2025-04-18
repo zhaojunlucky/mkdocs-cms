@@ -21,7 +21,7 @@
           <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" matTooltip="Home"><mat-icon>home</mat-icon></a>
           <span *ngFor="let segment of pathSegments">
             <span class="breadcrumb-separator">/</span>
-            <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName, segment.path]">{{ segment.name }}</a>
+            <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" [queryParams]="{path: segment.path}">{{ segment.name }}</a>
           </span>
         </div>
       </div>
