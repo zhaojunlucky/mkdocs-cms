@@ -129,8 +129,15 @@ export class AuthService {
   }
 
   // Store user in localStorage and update subject
-  setUser(user: User, token: string|null): void {
-    // validate token
+  async setUser(user: User, token: string | null): Promise<void> {
+    if (token ) {
+      const userIdHash = await StrUtils.sha256(user.id);
+      if (userIdHash !== token) {
+        alert("Authentication failed, invalid token. Please try again.");
+        throw new Error('Authentication failed');
+      }
+
+    }
     sessionStorage.setItem('user', JSON.stringify(user));
     this.userSubject.next(user);
 
