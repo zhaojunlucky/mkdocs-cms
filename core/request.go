@@ -49,6 +49,14 @@ func (p *ParamDef) UInt64() (uint64, error) {
 	return repoID, nil
 }
 
+func (p *ParamDef) Int64() (int64, error) {
+	repoID, err := strconv.ParseInt(p.String(), 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return repoID, nil
+}
+
 func (p *ParamDef) SetError(code int, errorMsg string) *ParamDef {
 	p.statusCode = code
 	p.errorMsg = errorMsg

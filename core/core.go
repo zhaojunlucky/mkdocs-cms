@@ -31,6 +31,7 @@ type APPContext struct {
 	RepoBasePath      string
 	LogDirPath        string
 	Version           string
+	CookieDomain      string
 }
 
 func (c *APPContext) RegisterService(name string, service interface{}) {

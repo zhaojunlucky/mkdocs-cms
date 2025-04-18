@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import {NavComponent} from '../nav/nav.component';
+import {PageTitleService} from '../services/page.title.service';
 
 @Component({
   selector: 'app-not-found',
@@ -10,5 +11,8 @@ import {NavComponent} from '../nav/nav.component';
   styleUrl: './not-found.component.scss'
 })
 export class NotFoundComponent {
-
+  constructor(     private pageTitleService: PageTitleService
+  ) {
+    this.pageTitleService.title = 'Not Found';
+  }
 }

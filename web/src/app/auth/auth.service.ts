@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
-import { Router } from '@angular/router';
-import { BehaviorSubject, Observable, of } from 'rxjs';
+import {ActivatedRoute, Router} from '@angular/router';
+import {BehaviorSubject, Observable, of, shareReplay} from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { catchError, map, tap } from 'rxjs/operators';
 import {environment} from '../../environments/environment';
+import {StrUtils} from '../shared/utils/str.utils';
 
 export interface User {
   id: string;
@@ -12,6 +13,7 @@ export interface User {
   email: string;
   avatar_url?: string;
   provider: 'github' | 'google';
+  expires_at: number;
 }
 
 @Injectable({
@@ -19,51 +21,57 @@ export interface User {
 })
 export class AuthService {
   private userSubject = new BehaviorSubject<User | null>(null);
-  private tokenSubject = new BehaviorSubject<string | null>(null);
   private apiUrl = environment.apiServer; // Base URL for our backend API
 
   constructor(
     private http: HttpClient,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {
-    this.refreshToken();
+    this.refreshUserAuth()
+  }
+
+  refreshUserAuth() {
+      this.getUserInfo().pipe(
+        shareReplay()
+      ).subscribe( {
+          next: (user: User) => {
+            this.setUser(user, null);
+            if (this.router.url.startsWith('/login')) {
+              let returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+              if (returnUrl) {
+                let routeParams = StrUtils.parseRedirectUrl(returnUrl);
+                this.router.navigate(routeParams['paths'], { queryParams: routeParams['queryParams'] });
+              } else {
+                this.router.navigate(['/home']);
+              }
+            }
+          },
+          error: (err) => {
+            this.logout();
+            throw err
+          }
+        }
+
+      )
+
   }
 
   get user(): Observable<User | null> {
     return this.userSubject.asObservable();
   }
 
-  get token(): Observable<string | null> {
-    return this.tokenSubject.asObservable();
-  }
-
-  get currentToken(): string | null {
-    this.refreshToken();
-    return this.tokenSubject.value;
-  }
 
   get currentUser(): User | null {
     return this.userSubject.value;
   }
 
   get isLoggedIn(): boolean {
-    const token = this.tokenSubject.value;
-    if (!this.userSubject.value || !token) {
+    if (!this.userSubject.value) {
       return false;
     }
-
-    try {
-      const tokenParts = token.split('.');
-      if (tokenParts.length !== 3) {
-        return false;
-      }
-
-      const payload = JSON.parse(atob(tokenParts[1]));
-      const expirationTime = payload.exp * 1000; // Convert to milliseconds
-      return Date.now() < expirationTime;
-    } catch {
-      return false;
-    }
+    const expirationTime = this.userSubject.value.expires_at * 1000; // Convert to milliseconds
+    return Date.now() < expirationTime;
   }
 
   loginWithGithub(): void {
@@ -82,14 +90,14 @@ export class AuthService {
     if (!token) {
       throw new Error('Authentication failed');
     }
-
-    // Store token
-    localStorage.setItem('auth_token', token);
-    this.tokenSubject.next(token);
+    // token is user id sha256
 
     // Get user info
-    return this.getUserInfo(token).pipe(
-      tap(user => this.setUser(user)),
+    return this.getUserInfo().pipe(
+      tap(user => {
+        this.setUser(user, token);
+        this.router.navigate(['/home']);
+      }),
       catchError(error => {
         this.logout();
         throw error;
@@ -98,24 +106,19 @@ export class AuthService {
   }
 
   // Get user info from token
-  getUserInfo(token: string): Observable<User> {
-    return this.http.get<User>(`${this.apiUrl}/auth/user`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
+  getUserInfo(): Observable<User> {
+    return this.http.get<User>(`${this.apiUrl}/auth/user`);
   }
 
   // Check if token is valid and refresh user info
   checkAuthStatus(): Observable<boolean> {
-    const token = this.currentToken;
-    if (!token) {
+    if (!this.userSubject.value) {
       return of(false);
     }
 
-    return this.getUserInfo(token).pipe(
+    return this.getUserInfo().pipe(
       map(user => {
-        this.setUser(user);
+        this.setUser(user, null);
         return true;
       }),
       catchError(() => {
@@ -126,31 +129,32 @@ export class AuthService {
   }
 
   // Store user in localStorage and update subject
-  setUser(user: User): void {
-    localStorage.setItem('user', JSON.stringify(user));
+  async setUser(user: User, token: string | null): Promise<void> {
+    if (token ) {
+      const userIdHash = await StrUtils.sha256(user.id);
+      if (userIdHash !== token) {
+        alert("Authentication failed, invalid token. Please try again.");
+        throw new Error('Authentication failed');
+      }
+
+    }
+    sessionStorage.setItem('user', JSON.stringify(user));
     this.userSubject.next(user);
-    this.router.navigate(['/home']);
+
   }
 
   logout(): void {
-    localStorage.removeItem('user');
-    localStorage.removeItem('auth_token');
-    this.userSubject.next(null);
-    this.tokenSubject.next(null);
-    this.router.navigate(['/login']);
-  }
+    this.http.delete(`${this.apiUrl}/auth/logout`).subscribe({
+      next: () => {
+        sessionStorage.removeItem('user');
+        this.userSubject.next(null);
+        this.router.navigate(['/login']);
+      },
+      error: (error) => {
+        console.error('Error logging out:', error);
+        alert(StrUtils.stringifyHTTPErr(error));
+      }
+    });
 
-  private refreshToken() {
-    // Check if user is already logged in (from localStorage)
-    const storedUser = localStorage.getItem('user');
-    const storedToken = localStorage.getItem('auth_token');
-
-    if (storedUser && storedToken) {
-      this.userSubject.next(JSON.parse(storedUser));
-      this.tokenSubject.next(storedToken);
-    } else {
-      this.userSubject.next(null);
-      this.tokenSubject.next(null);
-    }
   }
 }

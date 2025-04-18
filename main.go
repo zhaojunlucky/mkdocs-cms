@@ -18,6 +18,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -104,6 +105,12 @@ func createContext(appConfig *config.Config) *core.APPContext {
 		WebhookSecret:  appConfig.GitHub.App.WebhookSecret,
 		PrivateKeyPath: appConfig.GitHub.App.PrivateKeyPath,
 	}
+	cookieDomainRegex := regexp.MustCompile("^https?://([^/:]+)(:\\d+)?")
+	matches := cookieDomainRegex.FindStringSubmatch(appConfig.FrontendURL)
+	if len(matches) < 2 {
+		log.Fatalf("Invalid frontend URL: %s", appConfig.FrontendURL)
+	}
+	cookieDomain := matches[1]
 	ctx := &core.APPContext{
 		GithubAppSettings: githubAppSettings,
 		Config:            appConfig,
@@ -111,6 +118,7 @@ func createContext(appConfig *config.Config) *core.APPContext {
 		LogDirPath:        filepath.Join(appConfig.WorkingDir, "log"),
 		ServiceMap:        make(map[string]interface{}),
 		Version:           Version,
+		CookieDomain:      cookieDomain,
 	}
 	ctx.GithubAppClient = utils.CreateGitHubAppClient(ctx)
 	return ctx

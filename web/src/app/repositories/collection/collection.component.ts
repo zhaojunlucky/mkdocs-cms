@@ -14,6 +14,7 @@ import {MatCardModule} from '@angular/material/card';
 import {MatFormField, MatInput, MatInputModule} from '@angular/material/input';
 import {ArrayResponse} from '../../shared/core/response';
 import {StrUtils} from '../../shared/utils/str.utils';
+import {PageTitleService} from '../../services/page.title.service';
 
 @Pipe({
   name: 'fileSize',
@@ -86,10 +87,13 @@ export class CollectionComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private repositoryService: RepositoryService,
-    private collectionService: CollectionService
+    private collectionService: CollectionService,
+    private pageTitleService: PageTitleService
+
   ) { }
 
   ngOnInit(): void {
+    this.pageTitleService.title = 'Collection';
     if (this.route.parent) {
       this.repositoryId = this.route.parent.snapshot.paramMap.get('id') || '';
     }
@@ -99,8 +103,11 @@ export class CollectionComponent implements OnInit {
 
       if (this.repositoryId && collectionName) {
         this.collectionName = collectionName;
+        this.pageTitleService.title = `Collection - ${this.collectionName}`
         this.route.queryParams.subscribe(params => {
           this.currentPath = params['path'] || '';
+          this.pageTitleService.title = `Collection - ${this.collectionName}${this.currentPath? ' - ' + this.currentPath : ''}`
+
           this.loadFiles();
         });
 

@@ -8,6 +8,8 @@ import { MatDividerModule } from '@angular/material/divider';
 import { CommonModule } from '@angular/common';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import {PageTitleService} from '../../services/page.title.service';
+import {StrUtils} from '../../shared/utils/str.utils';
 
 @Component({
   selector: 'app-login',
@@ -31,16 +33,19 @@ export class LoginComponent implements OnInit {
     private authService: AuthService,
     private route: ActivatedRoute,
     private router: Router,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private pageTitleService: PageTitleService
   ) {}
 
   ngOnInit(): void {
+    this.pageTitleService.title = 'Login';
     // Check if user is already logged in
     if (this.authService.isLoggedIn) {
       this.route.queryParams.subscribe(params => {
         const returnUrl = params['returnUrl'];
         if (returnUrl) {
-          this.router.navigate([returnUrl]);
+          let routeParams = StrUtils.parseRedirectUrl(returnUrl);
+          this.router.navigate(routeParams['paths'], { queryParams: routeParams['queryParams'] });
         } else {
           this.router.navigate(['/home']);
         }

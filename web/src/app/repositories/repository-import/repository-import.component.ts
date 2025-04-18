@@ -8,6 +8,7 @@ import { of } from 'rxjs';
 import {environment} from '../../../environments/environment';
 import {ArrayResponse} from '../../shared/core/response';
 import {StrUtils} from '../../shared/utils/str.utils';
+import {PageTitleService} from '../../services/page.title.service';
 
 interface GithubAccount {
   login: string;
@@ -54,7 +55,12 @@ export class RepositoryImportComponent implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
 
+  constructor(    private pageTitleService: PageTitleService
+  ) {
+  }
+
   ngOnInit(): void {
+    this.pageTitleService.title = 'Import Repository';
     this.loadGithubAppInfo();
     this.loadInstallations();
   }

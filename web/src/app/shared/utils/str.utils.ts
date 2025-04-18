@@ -1,3 +1,5 @@
+import {GenericMap} from '../core/data.type';
+
 export class StrUtils {
   static stringifyHTTPErr(err: object): string {
     if (!err) {
@@ -32,5 +34,48 @@ export class StrUtils {
       msgs.push(`Message: ${errorMessages.map(v => v['message']).join(" ")}`)
     }
     return msgs.join("")
+  }
+
+  static parseRedirectUrl(encodedUrl: string): GenericMap {
+    if (!encodedUrl) {
+      return {
+        paths: ['/'],
+        queryParams: {}
+      }
+    }
+
+    let url = decodeURIComponent(encodedUrl)
+
+    let qIndex = url.indexOf('?')
+    let queryParams = {}
+    if (qIndex > 0) {
+      let q = url.substring(qIndex + 1)
+      let args = q.split("&")
+      for (let arg of args) {
+        let parts = arg.split("=");
+        // @ts-ignore
+        queryParams[parts[0]] = parts.length > 1 ? parts[1] : ''
+      }
+    }
+    url = url.substring(0, qIndex).replace(/^\/+|\/+$/g, '');
+    let paths = url.split("/").filter(s=>s.length>0);
+    if (paths.length == 0) {
+      paths = ['/']
+    } else {
+      paths[0] = '/' + paths[0]
+    }
+    return {
+      'paths': paths,
+      'queryParams': queryParams
+    }
+
+  }
+
+  static async sha256(input: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(input);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
   }
 }

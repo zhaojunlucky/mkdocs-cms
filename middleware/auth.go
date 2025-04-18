@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"github.com/zhaojunlucky/mkdocs-cms/database"
@@ -37,28 +38,23 @@ func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 	}
 
 	// Get the Authorization header
-	authHeader := c.GetHeader("Authorization")
+	authHeader, err := c.Cookie("session_id")
+	if err != nil {
+		log.Warnf("cookie session_id is required")
+		core.ResponseErrStr(c, http.StatusUnauthorized, "cookie session_id is required")
+		c.Abort()
+		return
+	}
+	authHeader = strings.TrimSpace(authHeader)
 	if authHeader == "" {
-		log.Warnf("Authorization header is required")
-		core.ResponseErrStr(c, http.StatusUnauthorized, "Authorization header is required")
+		log.Warnf("cookie session_id is required")
+		core.ResponseErrStr(c, http.StatusUnauthorized, "cookie session_id is required")
 		c.Abort()
 		return
 	}
-
-	// Check if the header format is valid
-	parts := strings.Split(authHeader, " ")
-	if len(parts) != 2 || parts[0] != "Bearer" {
-		log.Warnf("Invalid authorization header format")
-		core.ResponseErrStr(c, http.StatusUnauthorized, "Invalid authorization header format")
-		c.Abort()
-		return
-	}
-
-	// Extract the token
-	tokenString := parts[1]
 
 	// Parse the token
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.Parse(authHeader, func(token *jwt.Token) (interface{}, error) {
 		// Validate the signing method
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			log.Errorf("unable to find signing method: %v", token.Header["alg"])
@@ -99,8 +95,9 @@ func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 			c.Abort()
 			return
 		}
-
+		expires := claims["exp"].(float64)
 		c.Set("userId", userId)
+		c.Set("userExpiresAt", fmt.Sprintf("%d", int64(expires)))
 		c.Next()
 	} else {
 		core.ResponseErrStr(c, http.StatusUnauthorized, "invalid token")
@@ -114,8 +111,7 @@ func shouldSkipAuth(path string) bool {
 	skipPaths := []*regexp.Regexp{
 		regexp.MustCompile("^/api/auth/github"),
 		regexp.MustCompile("^/api/auth/github/callback"),
-		regexp.MustCompile("^/api/auth/google"),
-		regexp.MustCompile("^/api/auth/google/callback"),
+		regexp.MustCompile("^/api/auth/logout"),
 		regexp.MustCompile("^/api/github/webhook"),
 		regexp.MustCompile("^/api/site/version"),
 	}

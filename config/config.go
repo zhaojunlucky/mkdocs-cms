@@ -14,7 +14,6 @@ type Config struct {
 	JWT         JWTConfig      `yaml:"jwt"`
 	OAuth       OAuthConfig    `yaml:"oauth"`
 	GitHub      GitHubConfig   `yaml:"github"`
-	Google      GoogleConfig   `yaml:"google"`
 	Security    SecurityConfig `yaml:"security"`
 	WorkingDir  string         `yaml:"working_dir"`
 	LogLevel    string         `yaml:"log_level"`
@@ -53,18 +52,6 @@ type GitHubAppConfig struct {
 	Description    string `yaml:"description"`
 	HomepageURL    string `yaml:"homepage_url"`
 	WebhookURL     string `yaml:"webhook_url"`
-}
-
-// GoogleConfig represents Google configuration
-type GoogleConfig struct {
-	OAuth GoogleOAuthConfig `yaml:"oauth"`
-}
-
-// GoogleOAuthConfig represents Google OAuth configuration
-type GoogleOAuthConfig struct {
-	ClientID     string   `yaml:"client_id"`
-	ClientSecret string   `yaml:"client_secret"`
-	Scopes       []string `yaml:"scopes"`
 }
 
 // SecurityConfig represents security configuration
@@ -150,13 +137,5 @@ func overrideWithEnvVars(config *Config) {
 	}
 	if val := os.Getenv("GITHUB_WEBHOOK_SECRET"); val != "" {
 		config.GitHub.App.WebhookSecret = val
-	}
-
-	// Google OAuth
-	if val := os.Getenv("GOOGLE_OAUTH_CLIENT_ID"); val != "" {
-		config.Google.OAuth.ClientID = val
-	}
-	if val := os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"); val != "" {
-		config.Google.OAuth.ClientSecret = val
 	}
 }
