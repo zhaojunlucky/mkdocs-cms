@@ -19,19 +19,12 @@ export class VditorUploadService {
         if (Object.keys(res.errorFiles).length > 0) {
           console.log(res.errorFiles);
         }
-        let uploadedFiles = res.uploadedFiles;
-        if (!environment.production) {
-          let prefix = environment.apiServer.replaceAll("/api", "");
-          for (const key in uploadedFiles) {
-            uploadedFiles[key] = prefix + uploadedFiles[key];
-          }
-        }
         return JSON.stringify({
           "msg": "",
           "code": 0,
           "data": {
             "errFiles": Object.keys(res.errorFiles),
-            "succMap": uploadedFiles
+            "succMap": res.uploadedFiles
           }
         });
       } catch (error) {

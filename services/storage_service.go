@@ -92,7 +92,7 @@ func (s *StorageService) AttachFile(userId string, files []*multipart.FileHeader
 
 		noDirPath := strings.ReplaceAll(filePath, "/", "-")
 
-		fileUrl := fmt.Sprintf("/api/v1/storage/%s", noDirPath)
+		fileUrl := fmt.Sprintf("%s/api/v1/storage/%s/%s", s.ctx.Config.APIURL, userStorge.UserID, noDirPath)
 		log.Info(fileUrl)
 
 		uploadedFiles[file.Filename] = fileUrl

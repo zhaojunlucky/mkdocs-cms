@@ -114,6 +114,7 @@ func shouldSkipAuth(path string) bool {
 		regexp.MustCompile("^/api/auth/logout"),
 		regexp.MustCompile("^/api/github/webhook"),
 		regexp.MustCompile("^/api/site/version"),
+		regexp.MustCompile("^/api/v1/storage/.+"),
 	}
 
 	for _, skipPath := range skipPaths {

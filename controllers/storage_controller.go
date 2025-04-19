@@ -21,7 +21,7 @@ func (s *StorageController) Init(ctx *core.APPContext, router *gin.RouterGroup) 
 	collections := router.Group("/storage")
 	{
 		collections.POST("", s.AttachFile)
-		collections.GET("/:fileName", s.GetAttachedFile)
+		collections.GET("/:userId/:fileName", s.GetAttachedFile)
 	}
 }
 
@@ -60,8 +60,7 @@ func (s *StorageController) AttachFile(c *gin.Context) {
 
 func (s *StorageController) GetAttachedFile(c *gin.Context) {
 	reqParam := core.NewRequestParam()
-	userId := reqParam.AddContextParam("userId", false, nil).
-		SetError(http.StatusUnauthorized, "Unauthorized")
+	userId := reqParam.AddUrlParam("userId", false, nil)
 	fileName := reqParam.AddUrlParam("fileName", false, nil)
 
 	if err := reqParam.Handle(c); err != nil {

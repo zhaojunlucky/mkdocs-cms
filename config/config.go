@@ -18,6 +18,7 @@ type Config struct {
 	WorkingDir  string         `yaml:"working_dir"`
 	LogLevel    string         `yaml:"log_level"`
 	FrontendURL string         `yaml:"frontend_url"`
+	APIURL      string         `yaml:"api_url"`
 	MinIOConfig MinIOConfig    `yaml:"minio"`
 	RateLimit   RateLimit      `yaml:"rate_limit"`
 }
