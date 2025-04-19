@@ -42,7 +42,7 @@ func (s *StorageService) AttachFile(userId string, files []*multipart.FileHeader
 		}
 	}
 	if userStorge == nil {
-		var bucketPrexix = "mkdocs-cms-"
+		var bucketPrexix = "mkdocs-cms"
 		if !env.IsProduction {
 			bucketPrexix = "mkdocs-cms-test"
 		}
@@ -68,7 +68,7 @@ func (s *StorageService) AttachFile(userId string, files []*multipart.FileHeader
 		return nil, core.NewHTTPErrorStr(http.StatusBadGateway, err.Error())
 	}
 	if !found {
-		return nil, core.NewHTTPErrorStr(http.StatusUnprocessableEntity, "bucket not found, please contact admin.")
+		return nil, core.NewHTTPErrorStr(http.StatusUnprocessableEntity, fmt.Sprintf("bucket %s not found, please contact admin.", userStorge.BucketName))
 	}
 	uploadedFiles := map[string]string{}
 	errorFiles := map[string]string{}
