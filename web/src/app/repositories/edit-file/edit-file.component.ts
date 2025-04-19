@@ -1,4 +1,4 @@
-import {Component, NgZone, OnInit} from '@angular/core';
+import {Component, HostListener, NgZone, OnInit} from '@angular/core';
 import { CommonModule, NgIf, NgForOf } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -15,6 +15,7 @@ import {StrUtils} from '../../shared/utils/str.utils';
 import {CanComponentDeactivate} from '../../shared/guard/can-deactivate-form.guard';
 import {Observable, of} from 'rxjs';
 import {PageTitleService} from '../../services/page.title.service';
+import {VditorUploadService} from '../../services/vditor.upload.service';
 
 interface PathSegment {
   name: string;
@@ -98,9 +99,23 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
     private collectionService: CollectionService,
     private repositoryService: RepositoryService,
     private zone: NgZone,
-    private pageTitleService: PageTitleService
+    private pageTitleService: PageTitleService,
+    private vditorUploadService: VditorUploadService
 
-  ) {}
+  ) {
+    this.editorOptions = {...this.editorOptions, ...this.vditorUploadService.getVditorOptions()};
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  handleKeyDown(event: KeyboardEvent) {
+    if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+      event.preventDefault(); // Prevent browser's default Save action
+      if (this.changed) {
+        this.saveFile();
+
+      }
+    }
+  }
 
   get markdownContent(): string {
     return this._markdownContent;
@@ -258,7 +273,7 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
         this.savingFile = false;
         this.changed = false;
         // Navigate back to the collection view
-        this.navigateToCollection();
+        //this.navigateToCollection();
 
       },
       error: (err: any) => {

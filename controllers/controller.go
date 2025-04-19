@@ -18,6 +18,7 @@ var v1Controllers = []Controller{
 	&UserGitRepoCollectionController{},
 	&UserGitRepoController{},
 	&GitHubAppController{},
+	&StorageController{},
 }
 
 var apiControllers = []Controller{

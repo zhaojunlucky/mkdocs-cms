@@ -79,6 +79,7 @@ func main() {
 	router.Use(middleware.Logger())
 	router.Use(middleware.CORSWithConfig(appConfig))
 	router.Use(middleware.NewAuthMiddleware(ctx)) // Update to use new auth middleware
+	router.Use(middleware.NewRateLimit(ctx))
 	router.Use(gin.Recovery())
 
 	services.InitServices(ctx)

@@ -1,10 +1,12 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 	"github.com/google/go-github/v45/github"
 	"github.com/zhaojunlucky/mkdocs-cms/config"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
+	"gorm.io/gorm"
 )
 
 type HTTPError struct {
@@ -16,10 +18,32 @@ func (e *HTTPError) Error() string {
 	return fmt.Sprintf("HTTPError: StatusCode=%d, Message=%s", e.StatusCode, e.Message)
 }
 
-func NewHTTPError(code int, message string) error {
+func NewHTTPErrorStr(code int, message string) error {
 	return &HTTPError{
 		StatusCode: code,
 		Message:    message,
+	}
+}
+
+func NewHTTPError(code int, err error) error {
+	return &HTTPError{
+		StatusCode: code,
+		Message:    err.Error(),
+	}
+}
+
+func NewGormHTTPError(err error) *HTTPError {
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return &HTTPError{
+			StatusCode: 404,
+			Message:    err.Error(),
+		}
+	}
+
+	return &HTTPError{
+		StatusCode: 500,
+		Message:    err.Error(),
 	}
 }
 

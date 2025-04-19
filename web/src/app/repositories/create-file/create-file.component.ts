@@ -1,4 +1,4 @@
-import {Component, NgZone, OnInit} from '@angular/core';
+import {Component, HostListener, NgZone, OnInit} from '@angular/core';
 import { CommonModule, NgIf, NgFor } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -17,6 +17,8 @@ import {CanComponentDeactivate} from '../../shared/guard/can-deactivate-form.gua
 import {Observable, of} from 'rxjs';
 import * as yaml from 'js-yaml';
 import {PageTitleService} from '../../services/page.title.service';
+import {VditorUploadService} from '../../services/vditor.upload.service';
+import {MatSnackBar} from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-create-file',
@@ -97,9 +99,21 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
     private repositoryService: RepositoryService,
     private collectionService: CollectionService,
     private zone: NgZone,
-    private pageTitleService: PageTitleService
+    private pageTitleService: PageTitleService,
+    private vditorUploadService: VditorUploadService,
+  ) {
+    this.editorOptions = {...this.editorOptions, ...this.vditorUploadService.getVditorOptions()};
+  }
 
-  ) { }
+  @HostListener('document:keydown', ['$event'])
+  handleKeyDown(event: KeyboardEvent) {
+    if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+      event.preventDefault(); // Prevent browser's default Save action
+      if (this.changed) {
+        this.createFile();
+      }
+    }
+  }
 
   ngOnInit(): void {
     this.pageTitleService.title = 'Create File';
@@ -223,8 +237,8 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
         this.isCreating = false;
         this.changed = false; // Reset changed
         // Navigate back to collection view
-        this.router.navigate(['/repositories', this.repositoryId, 'collection', this.collectionName], {
-          queryParams: { path: this.currentPath }
+        this.router.navigate(['/repositories', this.repositoryId, 'collection', this.collectionName, 'edit'], {
+          queryParams: { path: filePath }
         });
       },
       error: (error: any) => {

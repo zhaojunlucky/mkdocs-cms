@@ -30,7 +30,7 @@ func (s *UserService) GetUserByID(id string) (*models.User, error) {
 	result := database.DB.Preload("Roles").First(&user, "id = ?", id)
 	if result.Error != nil {
 		log.Errorf("Failed to get user by ID: %s, %v", id, result.Error)
-		return nil, result.Error
+		return nil, core.NewGormHTTPError(result.Error)
 	}
 	return &user, nil
 }
@@ -43,7 +43,7 @@ func (s *UserService) CreateOrUpdateUser(user *models.User) (*models.User, error
 
 	if result.RowsAffected > 0 {
 		if existingUser.IsActive == false {
-			return nil, core.NewHTTPError(http.StatusUnprocessableEntity, "user is banned")
+			return nil, core.NewHTTPErrorStr(http.StatusUnprocessableEntity, "user is banned")
 		}
 		// User exists, update fields
 		existingUser.Username = user.Username
@@ -62,7 +62,7 @@ func (s *UserService) CreateOrUpdateUser(user *models.User) (*models.User, error
 	} else {
 		log.Infof("User not found %s", user.Email)
 		if !s.siteService.AllowUserRegistration() {
-			return nil, core.NewHTTPError(http.StatusUnprocessableEntity, "register is disabled")
+			return nil, core.NewHTTPErrorStr(http.StatusUnprocessableEntity, "register is disabled")
 		}
 	}
 
@@ -101,4 +101,49 @@ func (s *UserService) CreateOrUpdateUser(user *models.User) (*models.User, error
 	}
 
 	return user, nil
+}
+
+func (s *UserService) GetUserStorage(userId string) (*models.UserStorage, error) {
+	var userStorage models.UserStorage
+	result := database.DB.Preload("User").First(&userStorage, "user_id = ?", userId)
+	if result.Error != nil {
+
+		log.Errorf("Failed to get user storage by ID: %s, %v", userId, result.Error)
+		return nil, core.NewGormHTTPError(result.Error)
+	}
+	return &userStorage, nil
+}
+
+func (s *UserService) CreateUserStorage(storge *models.UserStorage) (*models.UserStorage, error) {
+	result := database.DB.Create(storge)
+	if result.Error != nil {
+		log.Errorf("Failed to create user storage: %v", result.Error)
+		return nil, core.NewGormHTTPError(result.Error)
+	}
+	return storge, nil
+}
+
+func (s *UserService) CreateUserStorageFile(file *models.UserStorageFile) (*models.UserStorageFile, error) {
+	result := database.DB.Create(file)
+	if result.Error != nil {
+		log.Errorf("Failed to create user storage file: %v", result.Error)
+		return nil, core.NewGormHTTPError(result.Error)
+	}
+	return file, nil
+}
+
+func (s *UserService) GetUserStorageFile(id string, path string) (*models.UserStorageFile, error) {
+	var userStorage models.UserStorage
+	var userStorageFile models.UserStorageFile
+	result := database.DB.Preload("User").First(&userStorage, "user_id = ?", id)
+	if result.Error != nil {
+		log.Errorf("Failed to get user storage by ID: %s, %v", id, result.Error)
+		return nil, core.NewGormHTTPError(result.Error)
+	}
+	result = database.DB.Preload("UserStorage").First(&userStorageFile, "user_storage_id = ? and url = ?", userStorage.ID, path)
+	if result.Error != nil {
+		log.Errorf("Failed to get user storage file by path: %s, %v", path, result.Error)
+		return nil, core.NewGormHTTPError(result.Error)
+	}
+	return &userStorageFile, nil
 }

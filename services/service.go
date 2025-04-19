@@ -18,13 +18,15 @@ func (s *BaseService) InitService(name string, ctx *core.APPContext, instance Se
 }
 
 var service = []Service{
+	&MinIOService{},
 	&SiteService{},
+	&UserService{},
+	&StorageService{},
 	&UserGitRepoLockService{},
 	&AsyncTaskService{},
 	&UserGitRepoService{},
 	&UserGitRepoCollectionService{},
 	&EventService{},
-	&UserService{},
 }
 
 func InitServices(ctx *core.APPContext) {

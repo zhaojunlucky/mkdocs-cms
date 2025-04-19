@@ -6,7 +6,7 @@
       <p>Loading...</p>
     </div>
   </div>
-  <div *ngIf="!isLoading && (editor == null || !editorRendered)" class="loading-overlay">
+  <div *ngIf="!error && !isLoading && (editor == null || !editorRendered)" class="loading-overlay">
     <div class="spinner-container">
       <mat-spinner diameter="50"></mat-spinner>
       <p>Loading...</p>

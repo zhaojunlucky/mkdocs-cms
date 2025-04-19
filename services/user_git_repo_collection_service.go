@@ -88,7 +88,7 @@ func (s *UserGitRepoCollectionService) GetCollectionsByRepo(repo *models.UserGit
 	collections, err := s.readCollectionsFromConfig(*repo)
 	if err != nil {
 		log.Errorf("Failed to read collections from veda/config.yml: %v", err)
-		return nil, core.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return nil, core.NewHTTPErrorStr(http.StatusInternalServerError, err.Error())
 	}
 
 	return collections, nil
@@ -193,7 +193,7 @@ func (s *UserGitRepoCollectionService) GetCollectionByName(repo *models.UserGitR
 		}
 	}
 
-	return models.UserGitRepoCollection{}, core.NewHTTPError(http.StatusNotFound, "collection not found")
+	return models.UserGitRepoCollection{}, core.NewHTTPErrorStr(http.StatusNotFound, "collection not found")
 }
 
 // GetCollectionByPath returns a collection by its path within a repository
@@ -232,7 +232,7 @@ func (s *UserGitRepoCollectionService) ListFilesInCollection(repo *models.UserGi
 
 	// Check if the path exists
 	if _, err := os.Stat(collection.Path); os.IsNotExist(err) {
-		return nil, core.NewHTTPError(http.StatusBadRequest, "collection path does not exist")
+		return nil, core.NewHTTPErrorStr(http.StatusBadRequest, "collection path does not exist")
 	}
 
 	// Read the directory
@@ -516,7 +516,7 @@ func (s *UserGitRepoCollectionService) DeleteFile(repo *models.UserGitRepo, coll
 
 func (s *UserGitRepoCollectionService) GetRepo(repoID uint) (models.UserGitRepo, error) {
 	var repo models.UserGitRepo
-	if err := database.DB.First(&repo, repoID).Error; err != nil {
+	if err := database.DB.Preload("User").First(&repo, repoID).Error; err != nil {
 		return models.UserGitRepo{}, errors.New("repository not found")
 	}
 	return repo, nil
@@ -650,13 +650,13 @@ func (s *UserGitRepoCollectionService) CreateFolder(repo *models.UserGitRepo, na
 	// Ensure the path doesn't try to escape the collection directory
 	cleanPath := filepath.Clean(path)
 	if cleanPath == ".." || filepath.IsAbs(cleanPath) || strings.HasPrefix(cleanPath, "../") {
-		return core.NewHTTPError(http.StatusBadRequest, "invalid path")
+		return core.NewHTTPErrorStr(http.StatusBadRequest, "invalid path")
 	}
 
 	// Ensure the folder name is valid
 	cleanFolder := filepath.Clean(folder)
 	if cleanFolder == ".." || filepath.IsAbs(cleanFolder) || strings.HasPrefix(cleanFolder, "../") || strings.Contains(cleanFolder, "/") {
-		return core.NewHTTPError(http.StatusBadRequest, "invalid folder name")
+		return core.NewHTTPErrorStr(http.StatusBadRequest, "invalid folder name")
 	}
 
 	// Construct the full path
@@ -665,7 +665,7 @@ func (s *UserGitRepoCollectionService) CreateFolder(repo *models.UserGitRepo, na
 	// Check if the folder already exists
 	if _, err := os.Stat(fullPath); !os.IsNotExist(err) {
 		if err == nil {
-			return core.NewHTTPError(http.StatusBadRequest, "folder already exists")
+			return core.NewHTTPErrorStr(http.StatusBadRequest, "folder already exists")
 		}
 		return err
 	}
@@ -694,11 +694,11 @@ func (s *UserGitRepoCollectionService) VerifyRepoOwnership(userID string, repoID
 	repo, err := s.GetRepo(repoID)
 	if err != nil {
 		log.Errorf("Failed to get repository: %v", err)
-		return nil, core.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return nil, core.NewHTTPErrorStr(http.StatusInternalServerError, err.Error())
 	}
 	if repo.UserID != userID {
 		log.Errorf("You do not have permission to rename files in this repository")
-		return nil, core.NewHTTPError(http.StatusForbidden, "You do not have permission to rename files in this repository")
+		return nil, core.NewHTTPErrorStr(http.StatusForbidden, "You do not have permission to rename files in this repository")
 	}
 	return &repo, nil
 }

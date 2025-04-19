@@ -18,6 +18,19 @@ type Config struct {
 	WorkingDir  string         `yaml:"working_dir"`
 	LogLevel    string         `yaml:"log_level"`
 	FrontendURL string         `yaml:"frontend_url"`
+	MinIOConfig MinIOConfig    `yaml:"minio"`
+	RateLimit   RateLimit      `yaml:"rate_limit"`
+}
+
+type MinIOConfig struct {
+	APIURL    string `yaml:"api_url"`
+	AccessKey string `yaml:"access_key"`
+	SecretKey string `yaml:"secret_key"`
+}
+
+type RateLimit struct {
+	MaxRequests       int `yaml:"max_requests"`
+	RequestsPerSecond int `yaml:"per_second"`
 }
 
 // JWTConfig represents JWT configuration
