@@ -29,7 +29,7 @@ func (p *ParamDef) Handle(c *gin.Context) error {
 	case "cookie":
 		return p.getCookie(c)
 	default:
-		return NewHTTPError(http.StatusBadRequest, "invalid param type")
+		return NewHTTPErrorStr(http.StatusBadRequest, "invalid param type")
 	}
 }
 
@@ -74,10 +74,10 @@ func (p *ParamDef) getContext(c *gin.Context) error {
 	}
 	value, exists := c.Get(p.name)
 	if !exists {
-		return NewHTTPError(errCode, errMsg)
+		return NewHTTPErrorStr(errCode, errMsg)
 	}
 	if !p.empty && value == "" {
-		return NewHTTPError(errCode, errMsg)
+		return NewHTTPErrorStr(errCode, errMsg)
 	}
 
 	p.value = value.(string)
@@ -88,7 +88,7 @@ func (p *ParamDef) getContext(c *gin.Context) error {
 func (p *ParamDef) getQuery(c *gin.Context) error {
 	p.value = c.Query(p.name)
 	if !p.empty && p.value == "" {
-		return NewHTTPError(http.StatusBadRequest, fmt.Sprintf("param %s is empty", p.name))
+		return NewHTTPErrorStr(http.StatusBadRequest, fmt.Sprintf("param %s is empty", p.name))
 	}
 	return p.checkPattern()
 }
@@ -96,7 +96,7 @@ func (p *ParamDef) getQuery(c *gin.Context) error {
 func (p *ParamDef) getUrl(c *gin.Context) error {
 	p.value = c.Param(p.name)
 	if !p.empty && p.value == "" {
-		return NewHTTPError(http.StatusBadRequest, fmt.Sprintf("param %s is empty", p.name))
+		return NewHTTPErrorStr(http.StatusBadRequest, fmt.Sprintf("param %s is empty", p.name))
 	}
 	return p.checkPattern()
 }
@@ -105,11 +105,11 @@ func (p *ParamDef) getCookie(c *gin.Context) error {
 	value, err := c.Cookie(p.name)
 
 	if err != nil {
-		return NewHTTPError(http.StatusBadRequest, fmt.Sprintf("param %s not found", p.name))
+		return NewHTTPErrorStr(http.StatusBadRequest, fmt.Sprintf("param %s not found", p.name))
 	}
 	p.value = value
 	if !p.empty && p.value == "" {
-		return NewHTTPError(http.StatusBadRequest, fmt.Sprintf("param %s is empty", p.name))
+		return NewHTTPErrorStr(http.StatusBadRequest, fmt.Sprintf("param %s is empty", p.name))
 	}
 	return p.checkPattern()
 }
@@ -119,7 +119,7 @@ func (p *ParamDef) checkPattern() error {
 		// TODO need enhance
 		match := p.pattern.MatchString(p.value.(string))
 		if !match {
-			return NewHTTPError(http.StatusBadRequest, fmt.Sprintf("param %s does not match pattern %s", p.name, p.pattern.String()))
+			return NewHTTPErrorStr(http.StatusBadRequest, fmt.Sprintf("param %s does not match pattern %s", p.name, p.pattern.String()))
 		}
 	}
 	return nil
@@ -170,7 +170,7 @@ func (p *RequestParam) HandleWithBody(c *gin.Context, body interface{}) error {
 	}
 
 	if err := c.ShouldBindJSON(&body); err != nil {
-		return NewHTTPError(http.StatusBadRequest, err.Error())
+		return NewHTTPErrorStr(http.StatusBadRequest, err.Error())
 	}
 
 	return nil

@@ -7,4 +7,5 @@ type UserRoleQuota struct {
 	Role      *Role `gorm:"foreignKey:RoleID"`
 	RoleID    string
 	RepoCount int
+	DocSize   int `gorm:"type:bigint;default:100"` // MB
 }
