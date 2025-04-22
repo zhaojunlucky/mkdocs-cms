@@ -2,7 +2,10 @@
   margin-bottom: 1rem;
   width: 100%;
 }
-
+.disabled-form {
+  opacity: 0.5; /* Gray out the form */
+  pointer-events: none; /* Prevent clicks on form elements */
+}
 .front-matter-form {
   display: flex;
   flex-direction: column;

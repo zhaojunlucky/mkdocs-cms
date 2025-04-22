@@ -260,6 +260,7 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
 
     this.fileError = '';
     this.savingFile = true;
+    this.editor.disabled();
 
     // Combine front matter and markdown content
     const content = this.generateFileContent();
@@ -272,6 +273,7 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
     ).subscribe({
       next: () => {
         this.savingFile = false;
+        this.editor.enable();
         this.changed = false;
         // Navigate back to the collection view
         //this.navigateToCollection();
@@ -279,6 +281,7 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
       },
       error: (err: any) => {
         this.savingFile = false;
+        this.editor.enable();
         this.fileError = `Failed to save file: ${StrUtils.stringifyHTTPErr(err)}`;
       }
     });

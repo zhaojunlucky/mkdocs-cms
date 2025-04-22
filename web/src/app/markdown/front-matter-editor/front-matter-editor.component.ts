@@ -42,6 +42,7 @@ export class FrontMatterEditorComponent implements OnInit {
   @Input() fields: CollectionFieldDefinition[] = [];
   @Output() frontMatterChange = new EventEmitter<Record<string, any>>();
   @Output() frontMatterInit = new EventEmitter<Record<string, any>>();
+  @Input() disabled = false
 
   frontMatterForm!: FormGroup;
   readonly separatorKeysCodes = [ENTER, COMMA] as const;
