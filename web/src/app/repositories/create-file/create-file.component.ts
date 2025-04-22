@@ -219,6 +219,7 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
     }
 
     this.isCreating = true;
+    this.editor.disabled();
     this.fileError = '';
 
     // Build file path
@@ -236,6 +237,7 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
     ).subscribe({
       next: () => {
         this.isCreating = false;
+        this.editor.enable();
         this.changed = false; // Reset changed
         // Navigate back to collection view
         this.router.navigate(['/repositories', this.repositoryId, 'collection', this.collectionName, 'edit'], {
@@ -246,6 +248,7 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
         console.error('Error creating file:', error);
         this.fileError = `Failed to create file. ${StrUtils.stringifyHTTPErr(error)}`;
         this.isCreating = false;
+        this.editor.enable();
       }
     });
   }

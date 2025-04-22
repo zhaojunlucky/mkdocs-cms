@@ -57,7 +57,8 @@
           [frontMatter]="frontMatter"
           [fields]="collection.fields"
           (frontMatterChange)="onFrontMatterChange($event)"
-          (frontMatterInit)="onFrontMatterInit($event)">
+          (frontMatterInit)="onFrontMatterInit($event)"
+          [disabled]="savingFile">
         </app-front-matter-editor>
 
         <!-- Markdown Editor -->

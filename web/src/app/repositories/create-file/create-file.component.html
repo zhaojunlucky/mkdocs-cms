@@ -47,7 +47,7 @@
         <label for="fileName">File Name</label>
         <mat-form-field>
           <mat-label>File Name</mat-label>
-          <input matInput id="fileName" [(ngModel)]="fileName" placeholder="Enter file name (e.g. my-document.md)" class="form-input">
+          <input matInput id="fileName" [(ngModel)]="fileName" placeholder="Enter file name (e.g. my-document.md)" class="form-input" [attr.disabled]="isCreating">
         </mat-form-field>
         <div *ngIf="fileError" class="error-text">{{ fileError }}</div>
       </div>
@@ -57,7 +57,8 @@
         [frontMatter]="frontMatter"
         [fields]="collection.fields"
         (frontMatterChange)="onFrontMatterChange($event)"
-        (frontMatterInit)="onFrontMatterInit($event)">
+        (frontMatterInit)="onFrontMatterInit($event)"
+        [disabled]="isCreating">
       </app-front-matter-editor>
 
       <!-- Markdown Editor -->
