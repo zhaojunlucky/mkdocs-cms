@@ -61,6 +61,8 @@ export class CollectionComponent implements OnInit {
   collectionName: string = '';
   currentPath: string = '';
   files: FileInfo[] = [];
+  filteredFiles: FileInfo[] = [];
+  searchTerm: string = '';
   pathSegments: { name: string; path: string }[] = [];
 
   selectedFile: FileInfo | null = null;
@@ -129,6 +131,7 @@ export class CollectionComponent implements OnInit {
     fileInfoObservable.subscribe({
       next: (files) => {
         this.files = files.entries;
+        this.filteredFiles = [...this.files];
         this.updatePathSegments();
         this.isLoading = false;
       },
@@ -138,7 +141,6 @@ export class CollectionComponent implements OnInit {
         this.isLoading = false;
       }
     });
-
   }
 
   updatePathSegments(): void {
@@ -314,5 +316,24 @@ export class CollectionComponent implements OnInit {
       }
     });
 
+  }
+
+  // File search functionality
+  filterFiles(): void {
+    if (!this.searchTerm || this.searchTerm.trim() === '') {
+      this.filteredFiles = [...this.files];
+      return;
+    }
+    
+    const term = this.searchTerm.toLowerCase().trim();
+    this.filteredFiles = this.files.filter(file => 
+      file.name.toLowerCase().includes(term)
+    );
+  }
+
+  // Clear search field and reset filtered files
+  clearSearch(): void {
+    this.searchTerm = '';
+    this.filteredFiles = [...this.files];
   }
 }
