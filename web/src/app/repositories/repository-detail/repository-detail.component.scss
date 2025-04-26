@@ -324,6 +324,41 @@
   padding: 20px;
   background-color: white;
   overflow-y: auto;
+  position: relative; /* Added for positioning the back-to-top button */
+}
+
+.back-to-top-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: #3f51b5;
+  color: white;
+  border: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  transition: background-color 0.3s, transform 0.3s;
+
+  &:hover {
+    background-color: #303f9f;
+    transform: translateY(-3px);
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
 }
 
 .info-message-large {

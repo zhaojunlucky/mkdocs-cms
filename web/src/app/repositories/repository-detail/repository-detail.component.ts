@@ -1,9 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {ActivatedRoute, Router, RouterLink, RouterOutlet} from '@angular/router';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { RepositoryService } from '../../services/repository.service';
 import { Repository, Collection } from '../../services/repository.service';
 import {RouteParameterService} from '../../services/routeparameter.service';
@@ -21,17 +23,22 @@ import {PageTitleService} from '../../services/page.title.service';
     MatProgressSpinnerModule,
     RouterLink,
     RouterOutlet,
-    MatChipsModule
+    MatChipsModule,
+    MatIconModule,
+    MatTooltipModule
   ],
   templateUrl: './repository-detail.component.html',
   styleUrls: ['./repository-detail.component.scss']
 })
-export class RepositoryDetailComponent implements OnInit {
+export class RepositoryDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   repository: Repository | null = null;
   collections: Collection[] = [];
   isLoading = true;
   error = '';
   selectedColName: string | null = '';
+  showBackToTop = false;
+  private scrollListener: any;
+  @ViewChild('mainContent', { static: false }) mainContentRef?: ElementRef;
 
   constructor(
     private route: ActivatedRoute,
@@ -60,6 +67,43 @@ export class RepositoryDetailComponent implements OnInit {
     this.routeParameterService.childId$.subscribe(childId => {
       this.selectedColName = childId;
     });
+  }
+
+  ngAfterViewInit(): void {
+    // Set up scroll listener for the main content div
+    setTimeout(() => {
+      const mainContentElement = document.querySelector('.main-content');
+      if (mainContentElement) {
+        this.scrollListener = this.handleScroll.bind(this);
+        mainContentElement.addEventListener('scroll', this.scrollListener);
+      }
+    }, 500);
+  }
+
+  ngOnDestroy(): void {
+    // Clean up scroll listener
+    if (this.scrollListener) {
+      const mainContentElement = document.querySelector('.main-content');
+      if (mainContentElement) {
+        mainContentElement.removeEventListener('scroll', this.scrollListener);
+      }
+    }
+  }
+
+  handleScroll(event: Event): void {
+    const target = event.target as HTMLElement;
+    // Show back-to-top button when scrolled down 300px or more
+    this.showBackToTop = target.scrollTop > 300;
+  }
+
+  scrollToTop(): void {
+    const mainContentElement = document.querySelector('.main-content');
+    if (mainContentElement) {
+      mainContentElement.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
   }
 
   loadRepository(id: number): void {
