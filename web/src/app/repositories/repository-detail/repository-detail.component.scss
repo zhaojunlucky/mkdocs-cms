@@ -492,6 +492,9 @@
     width: 40px;
     height: 40px;
     z-index: 1000; /* Ensure higher z-index for mobile */
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 
