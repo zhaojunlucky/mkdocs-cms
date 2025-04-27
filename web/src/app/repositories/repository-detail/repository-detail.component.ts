@@ -38,6 +38,7 @@ export class RepositoryDetailComponent implements OnInit, AfterViewInit, OnDestr
   selectedColName: string | null = '';
   showBackToTop = false;
   private scrollListener: any;
+  private windowScrollListener: any;
   @ViewChild('mainContent', { static: false }) mainContentRef?: ElementRef;
 
   constructor(
@@ -77,16 +78,25 @@ export class RepositoryDetailComponent implements OnInit, AfterViewInit, OnDestr
         this.scrollListener = this.handleScroll.bind(this);
         mainContentElement.addEventListener('scroll', this.scrollListener);
       }
+      
+      // Add window scroll listener for mobile devices
+      this.windowScrollListener = this.handleWindowScroll.bind(this);
+      window.addEventListener('scroll', this.windowScrollListener);
     }, 500);
   }
 
   ngOnDestroy(): void {
-    // Clean up scroll listener
+    // Clean up scroll listeners
     if (this.scrollListener) {
       const mainContentElement = document.querySelector('.main-content');
       if (mainContentElement) {
         mainContentElement.removeEventListener('scroll', this.scrollListener);
       }
+    }
+    
+    // Clean up window scroll listener
+    if (this.windowScrollListener) {
+      window.removeEventListener('scroll', this.windowScrollListener);
     }
   }
 
@@ -94,6 +104,11 @@ export class RepositoryDetailComponent implements OnInit, AfterViewInit, OnDestr
     const target = event.target as HTMLElement;
     // Show back-to-top button when scrolled down 300px or more
     this.showBackToTop = target.scrollTop > 300;
+  }
+  
+  handleWindowScroll(): void {
+    // Show back-to-top button when window is scrolled down 300px or more
+    this.showBackToTop = window.scrollY > 300;
   }
 
   scrollToTop(): void {
@@ -104,6 +119,12 @@ export class RepositoryDetailComponent implements OnInit, AfterViewInit, OnDestr
         behavior: 'smooth'
       });
     }
+    
+    // Also scroll window to top for mobile devices
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
   }
 
   loadRepository(id: number): void {

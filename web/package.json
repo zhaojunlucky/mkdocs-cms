@@ -1,6 +1,6 @@
 {
   "name": "mkdocs-cms-ui",
-  "version": "0.0.0",
+  "version": "1.0.1-dev",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",

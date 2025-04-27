@@ -485,6 +485,14 @@
   :host ::ng-deep .CodeMirror {
     height: 300px !important;
   }
+  
+  .back-to-top-btn {
+    bottom: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    z-index: 1000; /* Ensure higher z-index for mobile */
+  }
 }
 
 /* File browser styles */

@@ -1,6 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {SiteServiceService} from '../../services/site.service.service';
+import packageInfo from '../../../../package.json';
 
 @Component({
   selector: 'app-footer',
@@ -12,6 +13,7 @@ import {SiteServiceService} from '../../services/site.service.service';
 export class FooterComponent implements OnInit {
   currentYear = new Date().getFullYear();
   version = 'Unknown';
+  frontendVersion = packageInfo.version;
 
   constructor(private siteService: SiteServiceService) {
   }
