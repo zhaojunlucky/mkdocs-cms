@@ -342,8 +342,10 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 100;
+  z-index: 9999; /* Increased z-index to ensure visibility */
   transition: background-color 0.3s, transform 0.3s;
+  opacity: 1; /* Ensure full opacity */
+  visibility: visible; /* Explicitly set visibility */
 
   &:hover {
     background-color: #303f9f;
@@ -358,6 +360,8 @@
     font-size: 24px;
     width: 24px;
     height: 24px;
+    line-height: 24px; /* Ensure icon is properly centered */
+    display: block; /* Ensure proper display */
   }
 }
 
