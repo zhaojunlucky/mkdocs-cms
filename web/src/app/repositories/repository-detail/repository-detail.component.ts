@@ -103,12 +103,30 @@ export class RepositoryDetailComponent implements OnInit, AfterViewInit, OnDestr
   handleScroll(event: Event): void {
     const target = event.target as HTMLElement;
     // Show back-to-top button when scrolled down 300px or more
-    this.showBackToTop = target.scrollTop > 300;
+    const scrollPosition = target.scrollTop;
+    const shouldShow = scrollPosition > 300;
+    
+    // Only update if the value changes to avoid unnecessary renders
+    if (this.showBackToTop !== shouldShow) {
+      this.showBackToTop = shouldShow;
+    }
+    
+    // For debugging
+    console.log('Content scroll position:', scrollPosition, 'showBackToTop:', this.showBackToTop);
   }
   
   handleWindowScroll(): void {
     // Show back-to-top button when window is scrolled down 300px or more
-    this.showBackToTop = window.scrollY > 300;
+    const scrollPosition = window.scrollY || window.pageYOffset;
+    const shouldShow = scrollPosition > 300;
+    
+    // Only update if the value changes to avoid unnecessary renders
+    if (this.showBackToTop !== shouldShow) {
+      this.showBackToTop = shouldShow;
+    }
+    
+    // For debugging
+    console.log('Window scroll position:', scrollPosition, 'showBackToTop:', this.showBackToTop);
   }
 
   scrollToTop(): void {
