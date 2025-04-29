@@ -36,7 +36,7 @@
       </div>
 
       <!-- Main content area -->
-      <div class="main-content">
+      <div class="main-content" (scroll)="handleScroll($event)">
         <!-- Show info message if no collection is selected -->
         <div class="info-message-large" *ngIf="!selectedColName">
           <p>Select a collection from the sidebar to browse its files.</p>
