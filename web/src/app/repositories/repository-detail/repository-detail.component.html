@@ -52,6 +52,15 @@
           matTooltip="Back to top">
           <mat-icon>arrow_upward</mat-icon>
         </button>
+
+        <!-- Scroll to bottom button -->
+        <button
+          *ngIf="showScrolltoBottom"
+          class="scroll-to-bottom-btn"
+          (click)="scrollToBottom()"
+          matTooltip="Scroll to bottom">
+          <mat-icon>arrow_downward</mat-icon>
+        </button>
       </div>
     </div>
   </div>
