@@ -37,6 +37,7 @@ export class RepositoryDetailComponent implements OnInit, AfterViewInit, OnDestr
   error = '';
   selectedColName: string | null = '';
   showBackToTop = false;
+  showScrolltoBottom = false;
   private windowScrollListener: any;
 
   constructor(
@@ -88,29 +89,49 @@ export class RepositoryDetailComponent implements OnInit, AfterViewInit, OnDestr
     const target = event.target as HTMLElement;
     // Show back-to-top button when scrolled down 300px or more
     const scrollPosition = target.scrollTop;
-    const shouldShow = scrollPosition > 300;
+    const shouldShowBackToTop = scrollPosition > 300;
 
     // Only update if the value changes to avoid unnecessary renders
-    if (this.showBackToTop !== shouldShow) {
-      this.showBackToTop = shouldShow;
+    if (this.showBackToTop !== shouldShowBackToTop) {
+      this.showBackToTop = shouldShowBackToTop;
+    }
+
+    // Check if content is scrollable enough to show scroll-to-bottom button
+    const scrollHeight = target.scrollHeight;
+    const clientHeight = target.clientHeight;
+    const isAtBottom = scrollPosition + clientHeight >= scrollHeight - 20; // 20px threshold
+    const shouldShowScrollToBottom = scrollHeight > clientHeight + 300 && !isAtBottom;
+
+    if (this.showScrolltoBottom !== shouldShowScrollToBottom) {
+      this.showScrolltoBottom = shouldShowScrollToBottom;
     }
 
     // For debugging
-    console.log('Content scroll position:', scrollPosition, 'showBackToTop:', this.showBackToTop);
+    console.log('Content scroll position:', scrollPosition, 'showBackToTop:', this.showBackToTop, 'showScrollToBottom:', this.showScrolltoBottom);
   }
 
   handleWindowScroll(): void {
     // Show back-to-top button when window is scrolled down 300px or more
     const scrollPosition = window.scrollY || window.pageYOffset;
-    const shouldShow = scrollPosition > 300;
+    const shouldShowBackToTop = scrollPosition > 300;
 
     // Only update if the value changes to avoid unnecessary renders
-    if (this.showBackToTop !== shouldShow) {
-      this.showBackToTop = shouldShow;
+    if (this.showBackToTop !== shouldShowBackToTop) {
+      this.showBackToTop = shouldShowBackToTop;
+    }
+
+    // Check if document is scrollable enough to show scroll-to-bottom button
+    const scrollHeight = document.documentElement.scrollHeight;
+    const clientHeight = document.documentElement.clientHeight;
+    const isAtBottom = scrollPosition + clientHeight >= scrollHeight - 20; // 20px threshold
+    const shouldShowScrollToBottom = scrollHeight > clientHeight + 300 && !isAtBottom;
+
+    if (this.showScrolltoBottom !== shouldShowScrollToBottom) {
+      this.showScrolltoBottom = shouldShowScrollToBottom;
     }
 
     // For debugging
-    console.log('Window scroll position:', scrollPosition, 'showBackToTop:', this.showBackToTop);
+    console.log('Window scroll position:', scrollPosition, 'showBackToTop:', this.showBackToTop, 'showScrollToBottom:', this.showScrolltoBottom);
   }
 
   scrollToTop(): void {
@@ -125,6 +146,22 @@ export class RepositoryDetailComponent implements OnInit, AfterViewInit, OnDestr
     // Also scroll window to top for mobile devices
     window.scrollTo({
       top: 0,
+      behavior: 'smooth'
+    });
+  }
+
+  scrollToBottom() {
+    const mainContentElement = document.querySelector('.main-content');
+    if (mainContentElement) {
+      mainContentElement.scrollTo({
+        top: mainContentElement.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+
+    // Also scroll window to bottom for mobile devices
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
       behavior: 'smooth'
     });
   }
