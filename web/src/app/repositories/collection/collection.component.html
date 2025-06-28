@@ -112,6 +112,7 @@
               <mat-icon *ngIf="file.is_dir" class="folder-icon">folder</mat-icon>
               <mat-icon *ngIf="!file.is_dir" class="file-icon">article</mat-icon>
               <span class="file-name">{{ file.name }}</span>
+              <span *ngIf="!file.is_dir && file.is_draft" class="draft-indicator">DRAFT</span>
               <span class="file-meta">
                 <span class="file-size" *ngIf="!file.is_dir">{{ file.size | fileSize }}</span>
                 <span class="file-date">{{ file.mod_time | date:'short' }}</span>

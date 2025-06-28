@@ -19,6 +19,7 @@ import * as yaml from 'js-yaml';
 import {PageTitleService} from '../../services/page.title.service';
 import {VditorUploadService} from '../../services/vditor.upload.service';
 import {MatSnackBar} from '@angular/material/snack-bar';
+import {HttpHeaders} from '@angular/common/http';
 
 @Component({
   selector: 'app-create-file',
@@ -272,12 +273,18 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
       : finalFileName;
 
     const fileContent = this.generateFileContent()
+    let headers = new HttpHeaders();
+    if (this.frontMatter) {
+      headers = headers.set('X-File-Front-Matter', 'true');
+      headers = headers.set('X-File-Front-Matter-Draft', this.frontMatter['draft'] ? 'true' : 'false');
+    }
 
     this.collectionService.uploadFile(
       this.repositoryId.toString(),
       this.collection.name,
       filePath,
-      fileContent
+      fileContent,
+      headers
     ).subscribe({
       next: () => {
         this.isCreating = false;

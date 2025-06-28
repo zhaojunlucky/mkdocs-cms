@@ -50,7 +50,7 @@ func Initialize(ctx *core.APPContext) {
 
 	// Auto migrate the schema
 	err = DB.AutoMigrate(&models.User{}, &models.UserGitRepo{}, &models.Event{}, &models.AsyncTask{}, &models.SiteSetting{},
-		&models.UserRoleQuota{}, &models.UserStorage{}, &models.UserStorageFile{})
+		&models.UserRoleQuota{}, &models.UserStorage{}, &models.UserStorageFile{}, &models.UserFileDraftStatus{})
 	if err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
