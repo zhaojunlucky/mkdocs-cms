@@ -16,6 +16,7 @@ import {CanComponentDeactivate} from '../../shared/guard/can-deactivate-form.gua
 import {Observable, of} from 'rxjs';
 import {PageTitleService} from '../../services/page.title.service';
 import {VditorUploadService} from '../../services/vditor.upload.service';
+import {HttpHeaders} from '@angular/common/http';
 
 interface PathSegment {
   name: string;
@@ -308,12 +309,18 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
 
     // Combine front matter and markdown content
     const content = this.generateFileContent();
+    let headers = new HttpHeaders();
+    if (this.frontMatter) {
+      headers = headers.set('X-File-Front-Matter', 'true');
+      headers = headers.set('X-File-Front-Matter-Draft', this.frontMatter['draft'] ? 'true' : 'false');
+    }
 
     this.collectionService.updateFileContent(
       this.repositoryId,
       this.collectionName,
       this.filePath,
-      content
+      content,
+      headers
     ).subscribe({
       next: () => {
         this.savingFile = false;

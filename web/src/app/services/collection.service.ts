@@ -9,6 +9,7 @@ export interface FileInfo {
   name: string;
   path: string;
   is_dir: boolean;
+  is_draft: boolean;
   size: number;
   mod_time: string;
   extension?: string;
@@ -64,10 +65,12 @@ export class CollectionService {
   }
 
   // Update file content
-  updateFileContent(repoId: string | number, collectionName: string, path: string, content: string): Observable<any> {
+  updateFileContent(repoId: string | number, collectionName: string, path: string, content: string, headers?: HttpHeaders): Observable<any> {
     return this.http.put<any>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files/content`, {
       path: path,
       content: content
+    }, {
+      headers: headers
     });
   }
 
@@ -85,10 +88,12 @@ export class CollectionService {
   }
 
   // Upload file
-  uploadFile(repoId: string | number, collectionName: string, path: string, content: string): Observable<any> {
+  uploadFile(repoId: string | number, collectionName: string, path: string, content: string, headers?: HttpHeaders): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files/upload`, {
       path: path,
       content: content
+    }, {
+      headers: headers
     });
   }
 

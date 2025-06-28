@@ -219,7 +219,14 @@ func (ctrl *UserGitRepoCollectionController) UpdateFileContent(c *gin.Context) {
 
 	defer lock.Unlock()
 
-	if err := ctrl.service.UpdateFileContent(repo, collectionName.String(), req.Path, []byte(req.Content)); err != nil {
+	hasFrontMatter := strings.EqualFold("true", c.GetHeader("X-File-Front-Matter"))
+	var isDraft *bool = nil
+	if hasFrontMatter {
+		isDraft = new(bool)
+		*isDraft = strings.EqualFold("true", c.GetHeader("X-File-Front-Matter-Draft"))
+	}
+
+	if err := ctrl.service.UpdateFileContent(repo, collectionName.String(), req.Path, []byte(req.Content), isDraft); err != nil {
 		log.Errorf("Failed to update file content: %v", err)
 		core.ResponseErr(c, http.StatusInternalServerError, err)
 		return
@@ -329,8 +336,14 @@ func (ctrl *UserGitRepoCollectionController) UploadFile(c *gin.Context) {
 	lock.Lock()
 
 	defer lock.Unlock()
+	hasFrontMatter := strings.EqualFold("true", c.GetHeader("X-File-Front-Matter"))
+	var isDraft *bool = nil
+	if hasFrontMatter {
+		isDraft = new(bool)
+		*isDraft = strings.EqualFold("true", c.GetHeader("X-File-Front-Matter-Draft"))
+	}
 
-	if err := ctrl.service.UpdateFileContent(repo, collectionName.String(), request.Path, content); err != nil {
+	if err := ctrl.service.UpdateFileContent(repo, collectionName.String(), request.Path, content, isDraft); err != nil {
 		log.Errorf("Failed to update file content: %v", err)
 		core.ResponseErr(c, http.StatusInternalServerError, err)
 		return

@@ -15,6 +15,7 @@ import {MatFormField, MatInput, MatInputModule} from '@angular/material/input';
 import {ArrayResponse} from '../../shared/core/response';
 import {StrUtils} from '../../shared/utils/str.utils';
 import {PageTitleService} from '../../services/page.title.service';
+import {SearchParser} from '../../shared/core/search.parser';
 
 @Pipe({
   name: 'fileSize',
@@ -324,11 +325,24 @@ export class CollectionComponent implements OnInit {
       this.filteredFiles = [...this.files];
       return;
     }
-    
-    const term = this.searchTerm.toLowerCase().trim();
-    this.filteredFiles = this.files.filter(file => 
-      file.name.toLowerCase().includes(term)
-    );
+
+    // Parse search syntax using the SearchParser
+    const parser = new SearchParser(this.searchTerm);
+
+    // Apply filters
+    this.filteredFiles = this.files.filter(file => {
+      // Check if file name matches content search
+      const nameMatches = !parser.content || file.name.toLowerCase().includes(parser.content);
+
+      // Check if file matches draft filter (if present)
+      let draftMatches = true;
+      if (parser.hasFilter('draft')) {
+        const isDraft = parser.getFilter('draft') as boolean;
+        draftMatches = file.is_draft === isDraft;
+      }
+
+      return nameMatches && draftMatches;
+    });
   }
 
   // Clear search field and reset filtered files

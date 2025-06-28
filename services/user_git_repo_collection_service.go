@@ -23,12 +23,14 @@ import (
 // UserGitRepoCollectionService handles business logic for git repository collections
 type UserGitRepoCollectionService struct {
 	BaseService
-	userGitRepoService *UserGitRepoService
+	userGitRepoService         *UserGitRepoService
+	userFileDraftStatusService *UserFileDraftStatusService
 }
 
 func (s *UserGitRepoCollectionService) Init(ctx *core.APPContext) {
 	s.InitService("userGitRepoCollectionService", ctx, s)
 	s.userGitRepoService = ctx.MustGetService("userGitRepoService").(*UserGitRepoService)
+	s.userFileDraftStatusService = ctx.MustGetService("userFileDraftStatusService").(*UserFileDraftStatusService)
 }
 
 // VedaConfig represents the structure of veda/config.yml
@@ -217,6 +219,7 @@ type FileInfo struct {
 	Name      string    `json:"name"`
 	Path      string    `json:"path"`
 	IsDir     bool      `json:"is_dir"`
+	IsDraft   bool      `json:"is_draft"`
 	Size      int64     `json:"size"`
 	ModTime   time.Time `json:"mod_time"`
 	Extension string    `json:"extension,omitempty"`
@@ -241,6 +244,11 @@ func (s *UserGitRepoCollectionService) ListFilesInCollection(repo *models.UserGi
 		return nil, err
 	}
 
+	statusMap, err := s.userFileDraftStatusService.GetDraftStatus(repo.UserID, repo.ID, collectionName)
+	if err != nil {
+		log.Errorf("failed to get draft status: %v", err)
+	}
+
 	// Convert to FileInfo
 	var files []FileInfo
 	for _, entry := range entries {
@@ -260,6 +268,7 @@ func (s *UserGitRepoCollectionService) ListFilesInCollection(repo *models.UserGi
 		fileInfo := FileInfo{
 			Name:    entry.Name(),
 			Path:    entry.Name(),
+			IsDraft: statusMap[entry.Name()],
 			IsDir:   entry.IsDir(),
 			Size:    info.Size(),
 			ModTime: info.ModTime(),
@@ -308,6 +317,11 @@ func (s *UserGitRepoCollectionService) ListFilesInPath(repo *models.UserGitRepo,
 		return nil, err
 	}
 
+	statusMap, err := s.userFileDraftStatusService.GetDraftStatus(repo.UserID, repo.ID, collectionName)
+	if err != nil {
+		log.Errorf("failed to get draft status: %v", err)
+	}
+
 	// Convert to FileInfo
 	var files []FileInfo
 	for _, entry := range entries {
@@ -329,6 +343,7 @@ func (s *UserGitRepoCollectionService) ListFilesInPath(repo *models.UserGitRepo,
 			Name:    entry.Name(),
 			Path:    relativePath,
 			IsDir:   entry.IsDir(),
+			IsDraft: statusMap[relativePath],
 			Size:    info.Size(),
 			ModTime: info.ModTime(),
 		}
@@ -422,7 +437,7 @@ func (s *UserGitRepoCollectionService) GetFileContent(repo *models.UserGitRepo, 
 }
 
 // UpdateFileContent updates the content of a file within a collection
-func (s *UserGitRepoCollectionService) UpdateFileContent(repo *models.UserGitRepo, collectionName string, filePath string, content []byte) error {
+func (s *UserGitRepoCollectionService) UpdateFileContent(repo *models.UserGitRepo, collectionName string, filePath string, content []byte, isDraft *bool) error {
 	// Get the collection
 	collection, err := s.GetCollectionByName(repo, collectionName)
 	if err != nil {
@@ -472,6 +487,10 @@ func (s *UserGitRepoCollectionService) UpdateFileContent(repo *models.UserGitRep
 		return fmt.Errorf("failed to commit changes: %v", err)
 	}
 
+	if isDraft != nil {
+		_ = s.userFileDraftStatusService.SetDraftStatus(repo.UserID, repo.ID, collectionName, cleanFilePath, *isDraft)
+	}
+
 	return nil
 }
 
@@ -510,6 +529,8 @@ func (s *UserGitRepoCollectionService) DeleteFile(repo *models.UserGitRepo, coll
 	if err := s.CommitWithGithubApp(*repo, fmt.Sprintf("Delete %s from collection %s", filePath, collectionName)); err != nil {
 		return fmt.Errorf("failed to commit changes: %v", err)
 	}
+
+	_ = s.userFileDraftStatusService.SetDraftStatus(repo.UserID, repo.ID, collectionName, cleanFilePath, false)
 
 	return nil
 }
@@ -636,6 +657,8 @@ func (s *UserGitRepoCollectionService) RenameFile(repo *models.UserGitRepo, coll
 	if err := s.CommitWithGithubApp(*repo, commitMsg); err != nil {
 		return fmt.Errorf("failed to commit changes: %v", err)
 	}
+
+	_ = s.userFileDraftStatusService.RenameFile(repo.UserID, repo.ID, collectionName, cleanOldPath, cleanNewPath)
 
 	return nil
 }
