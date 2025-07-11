@@ -12,6 +12,7 @@ import * as jsYaml from 'js-yaml';
 import { MatInputModule} from '@angular/material/input';
 import {MatIcon} from '@angular/material/icon';
 import {MatTooltip} from '@angular/material/tooltip';
+import {MatIconButton} from '@angular/material/button';
 import {StrUtils} from '../../shared/utils/str.utils';
 import {CanComponentDeactivate} from '../../shared/guard/can-deactivate-form.guard';
 import {Observable, of} from 'rxjs';
@@ -36,6 +37,7 @@ import {HttpHeaders} from '@angular/common/http';
     NuMarkdownComponent,
     MatInputModule,
     MatIcon,
+    MatIconButton,
     MatTooltip
   ],
   templateUrl: './create-file.component.html',
@@ -147,6 +149,7 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
     private zone: NgZone,
     private pageTitleService: PageTitleService,
     private vditorUploadService: VditorUploadService,
+    private snackBar: MatSnackBar
   ) {
     this.editorOptions = {...this.editorOptions, ...this.vditorUploadService.getVditorOptions()};
   }
@@ -254,6 +257,7 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
     if (!this.repositoryId || !this.collection) return;
     if (!this.fileName.trim()) {
       this.fileError = 'Please enter a file name';
+      this.showErrorMessage('Please enter a file name');
       return;
     }
 
@@ -297,7 +301,9 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
       },
       error: (error: any) => {
         console.error('Error creating file:', error);
-        this.fileError = `Failed to create file. ${StrUtils.stringifyHTTPErr(error)}`;
+        const errorMessage = `Failed to create file. ${StrUtils.stringifyHTTPErr(error)}`;
+        this.fileError = errorMessage;
+        this.showErrorMessage(errorMessage);
         this.isCreating = false;
         this.editor.enable();
       }
@@ -317,5 +323,13 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
     }
     const confirmation = window.confirm('You have unsaved changes. Do you really want to leave?');
     return of(confirmation); // Return Observable<boolean>
+  }
+
+  private showErrorMessage(message: string): void {
+    this.snackBar.open(message, 'Close', {
+      duration: 8000,
+      panelClass: ['error-snackbar'],
+      verticalPosition: 'top'
+    });
   }
 }

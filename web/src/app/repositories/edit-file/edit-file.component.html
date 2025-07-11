@@ -12,6 +12,18 @@
       <p>Loading...</p>
     </div>
   </div>
+
+  <!-- Floating error message that appears when there's a file error -->
+  <div *ngIf="fileError" class="floating-error-container">
+    <div class="floating-error">
+      <mat-icon>error</mat-icon>
+      <span>{{ fileError }}</span>
+      <button mat-icon-button (click)="fileError = ''" class="close-error">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+
   <div *ngIf="error" class="error-message">
     <p>{{ error }}</p>
     <a [routerLink]="['/repositories', repositoryId]" class="back-btn">Back to Repository</a>

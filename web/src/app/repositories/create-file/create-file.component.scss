@@ -151,3 +151,57 @@ button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
+
+// Floating error container that appears when there's a file error
+.floating-error-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  max-width: 80%;
+  
+  .floating-error {
+    display: flex;
+    align-items: center;
+    background-color: #f44336;
+    color: white;
+    padding: 12px 16px;
+    border-radius: 4px;
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+    animation: slideIn 0.3s ease-out;
+    
+    mat-icon {
+      margin-right: 8px;
+    }
+    
+    span {
+      flex: 1;
+      margin-right: 8px;
+    }
+    
+    .close-error {
+      color: white;
+    }
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+::ng-deep .error-snackbar {
+  background-color: #f44336;
+  color: white;
+  font-weight: 500;
+  
+  .mat-simple-snackbar-action {
+    color: white;
+  }
+}

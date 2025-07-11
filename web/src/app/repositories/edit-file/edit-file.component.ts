@@ -10,6 +10,7 @@ import * as yaml from 'js-yaml';
 import {FrontMatterEditorComponent} from '../../markdown/front-matter-editor/front-matter-editor.component';
 import {MatIcon} from '@angular/material/icon';
 import {MatTooltip} from '@angular/material/tooltip';
+import {MatIconButton} from '@angular/material/button';
 import {ArrayResponse} from '../../shared/core/response';
 import {StrUtils} from '../../shared/utils/str.utils';
 import {CanComponentDeactivate} from '../../shared/guard/can-deactivate-form.guard';
@@ -17,6 +18,7 @@ import {Observable, of} from 'rxjs';
 import {PageTitleService} from '../../services/page.title.service';
 import {VditorUploadService} from '../../services/vditor.upload.service';
 import {HttpHeaders} from '@angular/common/http';
+import {MatSnackBar} from '@angular/material/snack-bar';
 
 interface PathSegment {
   name: string;
@@ -36,6 +38,7 @@ interface PathSegment {
     FrontMatterEditorComponent,
     NuMarkdownComponent,
     MatIcon,
+    MatIconButton,
     MatTooltip
   ],
   templateUrl: './edit-file.component.html',
@@ -146,7 +149,8 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
     private repositoryService: RepositoryService,
     private zone: NgZone,
     private pageTitleService: PageTitleService,
-    private vditorUploadService: VditorUploadService
+    private vditorUploadService: VditorUploadService,
+    private snackBar: MatSnackBar
 
   ) {
     this.editorOptions = {...this.editorOptions, ...this.vditorUploadService.getVditorOptions()};
@@ -333,11 +337,21 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
       error: (err: any) => {
         this.savingFile = false;
         this.editor.enable();
-        this.fileError = `Failed to save file: ${StrUtils.stringifyHTTPErr(err)}`;
+        const errorMessage = `Failed to save file: ${StrUtils.stringifyHTTPErr(err)}`;
+        this.fileError = errorMessage;
+        this.showErrorMessage(errorMessage);
       }
     });
   }
 
+  // Helper method to show error messages in a snackbar
+  private showErrorMessage(message: string): void {
+    this.snackBar.open(message, 'Close', {
+      duration: 8000,
+      panelClass: ['error-snackbar'],
+      verticalPosition: 'top'
+    });
+  }
 
   generateFileContent(): string {
     // Only include front matter if it's not empty
