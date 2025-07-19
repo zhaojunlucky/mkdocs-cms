@@ -58,7 +58,7 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
 
   // Front matter and markdown content
   frontMatter: Record<string, any> = {};
-  markdownContent: string = '';
+  _markdownContent: string = '';
 
   // Global loading state for spinner overlay
   isLoading: boolean = true;
@@ -134,12 +134,13 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
         "desktop"
       ]
     },
+    height: this.calculateEditorHeight(),
     after: ()=> this.zone.run(()=> {
       this.editorRendered = true;
       console.log("editor rendered");
     }),
   };
-  changed = true;
+  _changed = true;
 
   constructor(
     private route: ActivatedRoute,
@@ -152,6 +153,12 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
     private snackBar: MatSnackBar
   ) {
     this.editorOptions = {...this.editorOptions, ...this.vditorUploadService.getVditorOptions()};
+  }
+
+  @HostListener('window:resize', ['$event'])
+  onWindowResize() {
+    // console.log("window resized");
+    this.updateEditorHeight();
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -186,6 +193,21 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
       }
     });
   }
+
+  get changed(): boolean {
+    return this._changed;
+  }
+
+  set changed(value: boolean) {
+    this._changed = value;
+    let title = this.pageTitleService.title;
+    if (this._changed && !title.startsWith('*')) {
+      title = '* ' + title;
+    } else if (!this._changed && title.startsWith('*')) {
+      title = title.substring(1).trimStart()
+    }
+    this.pageTitleService.title = title;
+  } 
 
   loadCollection(): void {
     this.repositoryService.getRepositoryCollections(this.repositoryId).subscribe({
@@ -233,6 +255,16 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
 
   onFrontMatterChange(newFrontMatter: Record<string, any>): void {
     this.frontMatter = { ...newFrontMatter };
+    this.changed = true;
+  }
+
+  get markdownContent(): string {
+    return this._markdownContent;
+  }
+
+  set markdownContent(value: string) {
+    this._markdownContent = value;
+    this.changed = true;
   }
 
   onFrontMatterInit(frontMatter: Record<string, any>): void {
@@ -240,7 +272,29 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
   }
 
   onEditorReady(editor: any): void {
-    this.editor = editor
+    this.editor = editor;
+    // Update height after editor is ready
+    this.updateEditorHeight();
+  }
+
+  calculateEditorHeight(): number {
+    // Calculate available height: viewport height minus nav (64px), footer (~53px), and padding/margins (~120px)
+    const navHeight = 64;
+    const footerHeight = 53;
+    const paddingMargins = 100;
+    
+    const availableHeight = window.innerHeight - navHeight - footerHeight - paddingMargins;
+    
+    // Ensure minimum height of 300px
+    return Math.max(300, availableHeight);
+  }
+
+  updateEditorHeight(): void {
+    const newHeight = this.calculateEditorHeight();
+    this.editorOptions = {
+      ...this.editorOptions,
+      height: newHeight
+    };
   }
 
   generateFileContent(): string {
