@@ -106,7 +106,7 @@
       @if (repositories.length === 0 && selectedInstallation && !loading) {
         <div class="no-repositories">
           <p>No repositories found for this installation or all repositories have already been imported.</p>
-          <p>Go to <a href="https://github.com/settings/installations" target="_blank">https://github.com/settings/installations</a> to authorize more repositories for
+          <p>Go to <a href="https://github.com/settings/installations/{{selectedInstallation}}" target="_blank">https://github.com/settings/installations</a> to authorize more repositories for
         Mkdocs CMS App. </p>
       </div>
     }
