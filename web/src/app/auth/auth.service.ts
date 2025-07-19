@@ -99,7 +99,6 @@ export class AuthService {
         this.router.navigate(['/home']);
       }),
       catchError(error => {
-        this.logout();
         throw error;
       })
     );
@@ -148,7 +147,9 @@ export class AuthService {
       next: () => {
         sessionStorage.removeItem('user');
         this.userSubject.next(null);
-        this.router.navigate(['/login']);
+        if (!this.router.url.startsWith('/error')) {
+          this.router.navigate(['/login']);
+        }
       },
       error: (error) => {
         console.error('Error logging out:', error);

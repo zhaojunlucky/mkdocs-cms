@@ -187,6 +187,11 @@ func (c *AuthController) GithubCallback(ctx *gin.Context) {
 		return
 	}
 
+	if !savedUser.IsActive {
+		ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?error=%s&redirect=%s", errUrl, "User is not active, please send an email to admin@gundamz.de!", frontendURL))
+		return
+	}
+
 	// Generate JWT token
 	jwtToken, err := c.generateJWT(savedUser)
 	if err != nil {

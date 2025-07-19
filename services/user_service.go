@@ -39,23 +39,25 @@ func (s *UserService) GetUserByID(id string) (*models.User, error) {
 func (s *UserService) CreateOrUpdateUser(user *models.User) (*models.User, error) {
 	// Check if user exists
 	var existingUser models.User
-	result := database.DB.Where("provider = ? AND provider_id = ?", user.Provider, user.ProviderID).First(&existingUser)
+	result := database.DB.Where("provider = ? AND provider_id = ? AND username = ?", user.Provider, user.ProviderID, user.Username).First(&existingUser)
 
 	if result.RowsAffected > 0 {
-		if existingUser.IsActive == false {
-			return nil, core.NewHTTPErrorStr(http.StatusUnprocessableEntity, "user is banned")
-		}
-		// User exists, update fields
-		existingUser.Username = user.Username
-		existingUser.Name = user.Name
-		existingUser.AvatarURL = user.AvatarURL
-		existingUser.Email = user.Email
+		if existingUser.Username != user.Username ||
+			existingUser.Name != user.Name ||
+			existingUser.AvatarURL != user.AvatarURL ||
+			existingUser.Email != user.Email {
+			// User exists, update fields
+			existingUser.Username = user.Username
+			existingUser.Name = user.Name
+			existingUser.AvatarURL = user.AvatarURL
+			existingUser.Email = user.Email
 
-		// Update user
-		result = database.DB.Save(&existingUser)
-		if result.Error != nil {
-			log.Errorf("Failed to update user: %v", result.Error)
-			return nil, errors.New("failed to update user")
+			// Update user
+			result = database.DB.Save(&existingUser)
+			if result.Error != nil {
+				log.Errorf("Failed to update user: %v", result.Error)
+				return nil, errors.New("failed to update user")
+			}
 		}
 
 		return &existingUser, nil
@@ -66,6 +68,7 @@ func (s *UserService) CreateOrUpdateUser(user *models.User) (*models.User, error
 		}
 	}
 
+	user.IsActive = false
 	// User doesn't exist, create new one
 	// Set a default password for OAuth users (this will be a random string that can't be used to log in)
 	if user.Password == "" {
@@ -86,9 +89,9 @@ func (s *UserService) CreateOrUpdateUser(user *models.User) (*models.User, error
 		}
 	}
 	var role models.Role
-	err := database.DB.First(&role, "name = ?", "user")
-	if err != nil {
-		log.Errorf("Failed to get user role: %v", err)
+	err := database.DB.First(&role, "name = 'user'")
+	if err.Error != nil {
+		log.Errorf("Failed to get user role: %v", err.Error)
 		return nil, errors.New("failed to get user role")
 	}
 	// Assign the user to the "user" role

@@ -275,7 +275,7 @@ func (c *GitHubAppController) ImportRepositories(ctx *gin.Context) {
 		return
 	}
 	var roleQuota models.UserRoleQuota
-	err = database.DB.Preload("Role").First(&roleQuota).Where("role_id = ?", role.ID).Error
+	err = database.DB.Preload("Role").Where("role_id = ?", role.ID).First(&roleQuota).Error
 	if err != nil {
 		log.Errorf("Failed to get user quota role: %v", err)
 		core.ResponseErrStr(ctx, http.StatusForbidden, "user quota role not found")
