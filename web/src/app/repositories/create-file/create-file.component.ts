@@ -1,5 +1,5 @@
 import {Component, HostListener, NgZone, OnInit} from '@angular/core';
-import { CommonModule, NgIf, NgFor } from '@angular/common';
+
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -26,9 +26,6 @@ import {HttpHeaders} from '@angular/common/http';
   selector: 'app-create-file',
   standalone: true,
   imports: [
-    CommonModule,
-    NgIf,
-    NgFor,
     RouterLink,
     FormsModule,
     MatProgressSpinnerModule,
@@ -39,7 +36,7 @@ import {HttpHeaders} from '@angular/common/http';
     MatIcon,
     MatIconButton,
     MatTooltip
-  ],
+],
   templateUrl: './create-file.component.html',
   styleUrls: ['./create-file.component.scss']
 })
@@ -207,7 +204,7 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
       title = title.substring(1).trimStart()
     }
     this.pageTitleService.title = title;
-  } 
+  }
 
   loadCollection(): void {
     this.repositoryService.getRepositoryCollections(this.repositoryId).subscribe({
@@ -282,9 +279,9 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
     const navHeight = 64;
     const footerHeight = 53;
     const paddingMargins = 100;
-    
+
     const availableHeight = window.innerHeight - navHeight - footerHeight - paddingMargins;
-    
+
     // Ensure minimum height of 300px
     return Math.max(300, availableHeight);
   }

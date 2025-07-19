@@ -1,15 +1,14 @@
 import {Component, OnInit} from '@angular/core';
 import {ActivatedRoute, RouterLink} from '@angular/router';
-import {NgIf} from '@angular/common';
+
 import {MatCardModule} from '@angular/material/card';
 import {PageTitleService} from '../services/page.title.service';
 
 @Component({
   selector: 'app-error',
   imports: [
-    NgIf,
-    MatCardModule,
-  ],
+    MatCardModule
+],
   templateUrl: './error.component.html',
   styleUrl: './error.component.scss'
 })

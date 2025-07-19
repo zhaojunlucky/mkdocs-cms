@@ -18,7 +18,7 @@ type User struct {
 	ProviderID string    `json:"provider_id"` // ID from the OAuth provider
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
-	IsActive   bool      `json:"is_active" gorm:"default:true"`
+	IsActive   bool      `json:"is_active"`
 	Roles      []*Role   `gorm:"many2many:user_roles;"` // Use pointer slice []*Role
 }
 

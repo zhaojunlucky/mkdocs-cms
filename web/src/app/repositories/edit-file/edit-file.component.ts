@@ -1,5 +1,5 @@
 import {Component, HostListener, NgZone, OnInit} from '@angular/core';
-import { CommonModule, NgIf, NgForOf } from '@angular/common';
+
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -29,9 +29,6 @@ interface PathSegment {
   selector: 'app-edit-file',
   standalone: true,
   imports: [
-    CommonModule,
-    NgIf,
-    NgForOf,
     FormsModule,
     RouterLink,
     MatProgressSpinnerModule,
@@ -40,7 +37,7 @@ interface PathSegment {
     MatIcon,
     MatIconButton,
     MatTooltip
-  ],
+],
   templateUrl: './edit-file.component.html',
   styleUrls: ['./edit-file.component.scss']
 })
@@ -68,7 +65,7 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
 
   // Editor options
   editorOptions = {
-    theme: 'vs-light',
+    theme: 'classic',
     language: 'markdown',
     lang: 'en_US',
     icon: 'material',
@@ -170,7 +167,7 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
       title = title.substring(1).trimStart()
     }
     this.pageTitleService.title = title;
-  } 
+  }
 
   @HostListener('window:resize', ['$event'])
   onWindowResize() {
@@ -329,14 +326,14 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
   }
 
   calculateEditorHeight(): number {
-    // Calculate available height: viewport height minus nav (64px), footer (~53px), 
+    // Calculate available height: viewport height minus nav (64px), footer (~53px),
     // file editor header (~80px), front matter section (~100px), and padding/margins (~100px)
     const navHeight = 64;
     const footerHeight = 53;
     const paddingMargins = 100;
-    
+
     const availableHeight = window.innerHeight - navHeight - footerHeight - paddingMargins;
-    
+
     // Ensure minimum height of 300px
     return Math.max(300, availableHeight);
   }
@@ -347,7 +344,7 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
       ...this.editorOptions,
       height: newHeight
     };
-    
+
   }
 
   saveFile(): void {

@@ -1,5 +1,5 @@
 import { Component, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -20,7 +20,6 @@ import { MatChipInputEvent } from '@angular/material/chips';
   styleUrls: ['./front-matter-editor.component.scss'],
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatButtonModule,
     MatFormFieldModule,
@@ -35,7 +34,7 @@ import { MatChipInputEvent } from '@angular/material/chips';
     MatCard,
     MatCardHeader,
     MatChipsModule
-  ]
+]
 })
 export class FrontMatterEditorComponent implements OnInit {
   @Input() frontMatter: Record<string, any> = {};

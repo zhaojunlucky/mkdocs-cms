@@ -82,7 +82,7 @@ func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 			return
 		}
 		var user models.User
-		err := database.DB.Preload("Roles").First(&user).Where("id = ?", userId).Error
+		err := database.DB.Preload("Roles").Where("id = ?", userId).First(&user).Error
 		if err != nil {
 			log.Errorf("user not found: %v", err)
 			core.ResponseErrStr(c, http.StatusUnauthorized, "user not found: "+err.Error())

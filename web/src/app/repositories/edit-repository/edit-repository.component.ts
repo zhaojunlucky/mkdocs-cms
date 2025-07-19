@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { CommonModule } from '@angular/common';
+
 import { RepositoryService, Repository } from '../../services/repository.service';
 import { ComponentsModule } from '../../components/components.module';
 import {MatInputModule} from '@angular/material/input';
@@ -11,7 +11,7 @@ import {PageTitleService} from '../../services/page.title.service';
 @Component({
   selector: 'app-edit-repository',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, ComponentsModule, MatInputModule],
+  imports: [ReactiveFormsModule, RouterModule, ComponentsModule, MatInputModule],
   templateUrl: './edit-repository.component.html',
   styleUrls: ['./edit-repository.component.scss']
 })

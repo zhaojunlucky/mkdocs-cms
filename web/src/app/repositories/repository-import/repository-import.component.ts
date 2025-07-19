@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { HttpClient } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../auth/auth.service';
@@ -37,7 +37,7 @@ interface GithubAppInfo {
 @Component({
   selector: 'app-repository-import',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [RouterModule],
   templateUrl: './repository-import.component.html',
   styleUrls: ['./repository-import.component.scss'],
   providers: [AuthService]

@@ -1,5 +1,5 @@
 import { Component, OnInit, Pipe, PipeTransform } from '@angular/core';
-import { CommonModule, NgIf, NgFor, DatePipe } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -38,8 +38,6 @@ export class FileSizePipe implements PipeTransform {
   standalone: true,
   imports: [
     CommonModule,
-    NgIf,
-    NgFor,
     DatePipe,
     RouterLink,
     FormsModule,
@@ -51,8 +49,8 @@ export class FileSizePipe implements PipeTransform {
     MatTooltip,
     MatCardModule,
     MatInputModule,
-    MatFormField,
-  ],
+    MatFormField
+],
   templateUrl: './collection.component.html',
   styleUrls: ['./collection.component.scss']
 })

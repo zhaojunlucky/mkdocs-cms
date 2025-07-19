@@ -1,84 +1,103 @@
 <div class="edit-file-container">
   <!-- Loading overlay that blocks user interaction -->
-  <div *ngIf="isLoading" class="loading-overlay">
-    <div class="spinner-container">
-      <mat-spinner diameter="50"></mat-spinner>
-      <p>Loading...</p>
+  @if (isLoading) {
+    <div class="loading-overlay">
+      <div class="spinner-container">
+        <mat-spinner diameter="50"></mat-spinner>
+        <p>Loading...</p>
+      </div>
     </div>
-  </div>
-  <div *ngIf="!error && !isLoading && (editor == null || !editorRendered)" class="loading-overlay">
-    <div class="spinner-container">
-      <mat-spinner diameter="50"></mat-spinner>
-      <p>Loading...</p>
+  }
+  @if (!error && !isLoading && (editor == null || !editorRendered)) {
+    <div class="loading-overlay">
+      <div class="spinner-container">
+        <mat-spinner diameter="50"></mat-spinner>
+        <p>Loading...</p>
+      </div>
     </div>
-  </div>
+  }
 
   <!-- Floating error message that appears when there's a file error -->
-  <div *ngIf="fileError" class="floating-error-container">
-    <div class="floating-error">
-      <mat-icon>error</mat-icon>
-      <span>{{ fileError }}</span>
-      <button mat-icon-button (click)="fileError = ''" class="close-error">
-        <mat-icon>close</mat-icon>
-      </button>
+  @if (fileError) {
+    <div class="floating-error-container">
+      <div class="floating-error">
+        <mat-icon>error</mat-icon>
+        <span>{{ fileError }}</span>
+        <button mat-icon-button (click)="fileError = ''" class="close-error">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
     </div>
-  </div>
+  }
 
-  <div *ngIf="error" class="error-message">
-    <p>{{ error }}</p>
-    <a [routerLink]="['/repositories', repositoryId]" class="back-btn">Back to Repository</a>
-  </div>
+  @if (error) {
+    <div class="error-message">
+      <p>{{ error }}</p>
+      <a [routerLink]="['/repositories', repositoryId]" class="back-btn">Back to Repository</a>
+    </div>
+  }
 
-  <div *ngIf="!isLoading && !error">
-    <!-- File Editor -->
-    <div class="file-editor">
-      <div class="file-editor-header">
-        <div class="file-editor-title">
-          <h2>{{ 'Editing: ' + fileName }}</h2>
-          <div class="breadcrumbs-container" style="display: flex; justify-content: space-between; align-items: center;">
-            <div class="breadcrumbs">
-              <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" matTooltip="Home"><mat-icon>home</mat-icon></a>
-              <span *ngFor="let segment of pathSegments">
-                <span class="breadcrumb-separator">/</span>
-                <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" [queryParams]="{path: segment.path}">{{ segment.name }}</a>
-              </span>
-              <span *ngIf="filePath">
-                <span class="breadcrumb-separator">/</span>
-                <span class="active">{{ fileName }}</span>
-              </span>
-            </div>
-            <div style="display: flex; justify-content: flex-end; gap: 8px;">
-              <button (click)="saveFile()" [disabled]="savingFile || !changed" class="save-btn">
-                <span *ngIf="!savingFile">Save</span>
-                <span *ngIf="savingFile">Saving...</span>
-              </button>
-              <button (click)="cancelEditing()" [disabled]="savingFile" class="cancel-btn">Cancel</button>
+  @if (!isLoading && !error) {
+    <div>
+      <!-- File Editor -->
+      <div class="file-editor">
+        <div class="file-editor-header">
+          <div class="file-editor-title">
+            <h2>{{ 'Editing: ' + fileName }}</h2>
+            <div class="breadcrumbs-container" style="display: flex; justify-content: space-between; align-items: center;">
+              <div class="breadcrumbs">
+                <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" matTooltip="Home"><mat-icon>home</mat-icon></a>
+                @for (segment of pathSegments; track segment) {
+                  <span>
+                    <span class="breadcrumb-separator">/</span>
+                    <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" [queryParams]="{path: segment.path}">{{ segment.name }}</a>
+                  </span>
+                }
+                @if (filePath) {
+                  <span>
+                    <span class="breadcrumb-separator">/</span>
+                    <span class="active">{{ fileName }}</span>
+                  </span>
+                }
+              </div>
+              <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                <button (click)="saveFile()" [disabled]="savingFile || !changed" class="save-btn">
+                  @if (!savingFile) {
+                    <span>Save</span>
+                  }
+                  @if (savingFile) {
+                    <span>Saving...</span>
+                  }
+                </button>
+                <button (click)="cancelEditing()" [disabled]="savingFile" class="cancel-btn">Cancel</button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- File Error Message -->
-      <div *ngIf="fileError" class="file-error-message">
-        <p>{{ fileError }}</p>
-      </div>
-
-      <div class="file-editor-content">
-        <!-- Front Matter Editor -->
-        <app-front-matter-editor *ngIf="collection && collection.fields"
-          [frontMatter]="frontMatter"
-          [fields]="collection.fields"
-          (frontMatterChange)="onFrontMatterChange($event)"
-          (frontMatterInit)="onFrontMatterInit($event)"
-          [disabled]="savingFile">
-        </app-front-matter-editor>
-
-        <!-- Markdown Editor -->
-        <div class="markdown-editor-wrapper">
-          <h3>Content</h3>
-          <nu-markdown [(ngModel)]="markdownContent" [options]="editorOptions" (ready)="onEditorReady($event)"/>
+        <!-- File Error Message -->
+        @if (fileError) {
+          <div class="file-error-message">
+            <p>{{ fileError }}</p>
+          </div>
+        }
+        <div class="file-editor-content">
+          <!-- Front Matter Editor -->
+          @if (collection && collection.fields) {
+            <app-front-matter-editor
+              [frontMatter]="frontMatter"
+              [fields]="collection.fields"
+              (frontMatterChange)="onFrontMatterChange($event)"
+              (frontMatterInit)="onFrontMatterInit($event)"
+              [disabled]="savingFile">
+            </app-front-matter-editor>
+          }
+          <!-- Markdown Editor -->
+          <div class="markdown-editor-wrapper">
+            <h3>Content</h3>
+            <nu-markdown [(ngModel)]="markdownContent" [options]="editorOptions" (ready)="onEditorReady($event)"/>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  }
 </div>

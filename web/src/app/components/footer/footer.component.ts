@@ -1,12 +1,12 @@
 import {Component, OnInit} from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import {SiteServiceService} from '../../services/site.service.service';
 import packageInfo from '../../../../package.json';
 
 @Component({
   selector: 'app-footer',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './footer.component.html',
   styleUrls: ['./footer.component.scss']
 })
