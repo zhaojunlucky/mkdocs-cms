@@ -1,59 +1,76 @@
 <!-- Create File Component -->
 <div class="create-file-container">
   <!-- Loading overlay that blocks user interaction -->
-  <div *ngIf="isLoading" class="loading-overlay">
-    <div class="spinner-container">
-      <mat-spinner diameter="50"></mat-spinner>
-      <p>Loading...</p>
+  @if (isLoading) {
+    <div class="loading-overlay">
+      <div class="spinner-container">
+        <mat-spinner diameter="50"></mat-spinner>
+        <p>Loading...</p>
+      </div>
     </div>
-  </div>
-  <div *ngIf="!error && !isLoading && (editor == null || !editorRendered)" class="loading-overlay">
-    <div class="spinner-container">
-      <mat-spinner diameter="50"></mat-spinner>
-      <p>Loading...</p>
+  }
+  @if (!error && !isLoading && (editor == null || !editorRendered)) {
+    <div class="loading-overlay">
+      <div class="spinner-container">
+        <mat-spinner diameter="50"></mat-spinner>
+        <p>Loading...</p>
+      </div>
     </div>
-  </div>
+  }
 
   <!-- Floating error message that appears when there's a file error -->
-  <div *ngIf="fileError" class="floating-error-container">
-    <div class="floating-error">
-      <mat-icon>error</mat-icon>
-      <span>{{ fileError }}</span>
-      <button mat-icon-button (click)="fileError = ''" class="close-error">
-        <mat-icon>close</mat-icon>
-      </button>
+  @if (fileError) {
+    <div class="floating-error-container">
+      <div class="floating-error">
+        <mat-icon>error</mat-icon>
+        <span>{{ fileError }}</span>
+        <button mat-icon-button (click)="fileError = ''" class="close-error">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
     </div>
-  </div>
+  }
 
-  <div *ngIf="error" class="error-message">
-    <p>{{ error }}</p>
-    <a [routerLink]="['/repositories', repositoryId]" class="back-btn">Back to Repository</a>
-  </div>
+  @if (error) {
+    <div class="error-message">
+      <p>{{ error }}</p>
+      <a [routerLink]="['/repositories', repositoryId]" class="back-btn">Back to Repository</a>
+    </div>
+  }
 
-    <!-- Create File Header -->
-    <div class="create-file-header" *ngIf="!isLoading && !error && repositoryId && collection">
+  <!-- Create File Header -->
+  @if (!isLoading && !error && repositoryId && collection) {
+    <div class="create-file-header">
       <h1>Create New File</h1>
       <div class="breadcrumbs-container" style="display: flex; justify-content: space-between; align-items: center;">
         <div class="breadcrumbs">
           <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" matTooltip="Home"><mat-icon>home</mat-icon></a>
-          <span *ngFor="let segment of pathSegments">
-            <span class="breadcrumb-separator">/</span>
-            <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" [queryParams]="{path: segment.path}">{{ segment.name }}</a>
-          </span>
+          @for (segment of pathSegments; track segment) {
+            <span>
+              <span class="breadcrumb-separator">/</span>
+              <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" [queryParams]="{path: segment.path}">{{ segment.name }}</a>
+            </span>
+          }
         </div>
         <!-- Action Buttons -->
         <div class="action-buttons">
           <button (click)="createFile()" [disabled]="isCreating || !fileName.trim()" class="create-btn">
-            <span *ngIf="!isCreating">Create File</span>
-            <span *ngIf="isCreating">Creating...</span>
+            @if (!isCreating) {
+              <span>Create File</span>
+            }
+            @if (isCreating) {
+              <span>Creating...</span>
+            }
           </button>
           <button (click)="cancel()" [disabled]="isCreating" class="cancel-btn">Cancel</button>
         </div>
       </div>
     </div>
+  }
 
-    <!-- File Creation Form -->
-    <div class="create-file-form" *ngIf="!isLoading && !error && repositoryId && collection">
+  <!-- File Creation Form -->
+  @if (!isLoading && !error && repositoryId && collection) {
+    <div class="create-file-form">
       <div class="file-name-input">
         <label for="fileName">File Name</label>
         <mat-form-field>
@@ -61,21 +78,21 @@
           <input matInput id="fileName" [(ngModel)]="fileName" placeholder="Enter file name (e.g. my-document.md)" class="form-input" [disabled]="isCreating">
         </mat-form-field>
       </div>
-
       <!-- Front Matter Editor -->
-      <app-front-matter-editor *ngIf="collection && collection.fields"
-        [frontMatter]="frontMatter"
-        [fields]="collection.fields"
-        (frontMatterChange)="onFrontMatterChange($event)"
-        (frontMatterInit)="onFrontMatterInit($event)"
-        [disabled]="isCreating">
-      </app-front-matter-editor>
-
+      @if (collection && collection.fields) {
+        <app-front-matter-editor
+          [frontMatter]="frontMatter"
+          [fields]="collection.fields"
+          (frontMatterChange)="onFrontMatterChange($event)"
+          (frontMatterInit)="onFrontMatterInit($event)"
+          [disabled]="isCreating">
+        </app-front-matter-editor>
+      }
       <!-- Markdown Editor -->
       <div class="markdown-editor-wrapper">
         <h3>Content</h3>
         <nu-markdown [(ngModel)]="markdownContent" [options]="editorOptions" (ready)="onEditorReady($event)"></nu-markdown>
       </div>
-
-  </div>
+    </div>
+  }
 </div>

@@ -2,16 +2,15 @@ import { Component, Input, OnInit, OnDestroy } from '@angular/core';
 import { AsyncTask, RepositoryService, Task } from '../../services/repository.service';
 import { interval, Subscription } from 'rxjs';
 import { switchMap, takeWhile } from 'rxjs/operators';
-import {NgClass, NgIf, TitleCasePipe} from '@angular/common';
+import { NgClass, TitleCasePipe } from '@angular/common';
 
 @Component({
   selector: 'app-task-status',
   templateUrl: './task-status.component.html',
   imports: [
     NgClass,
-    TitleCasePipe,
-    NgIf
-  ],
+    TitleCasePipe
+],
   styleUrls: ['./task-status.component.scss']
 })
 export class TaskStatusComponent implements OnInit, OnDestroy {

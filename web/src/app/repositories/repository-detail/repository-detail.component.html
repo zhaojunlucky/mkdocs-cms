@@ -1,67 +1,76 @@
 
 <div class="repository-detail-container">
   <!-- Loading overlay that blocks user interaction -->
-  <div *ngIf="isLoading" class="loading-overlay">
-    <div class="spinner-container">
-      <mat-spinner diameter="50"></mat-spinner>
-      <p>Loading...</p>
+  @if (isLoading) {
+    <div class="loading-overlay">
+      <div class="spinner-container">
+        <mat-spinner diameter="50"></mat-spinner>
+        <p>Loading...</p>
+      </div>
     </div>
-  </div>
+  }
 
-  <div *ngIf="error" class="error-message">
-    <p>{{ error }}</p>
-    <a routerLink="/home" class="back-btn">Back to Home</a>
-  </div>
+  @if (error) {
+    <div class="error-message">
+      <p>{{ error }}</p>
+      <a routerLink="/home" class="back-btn">Back to Home</a>
+    </div>
+  }
 
-  <div *ngIf="!isLoading && !error && repository">
-
-    <div class="content-layout">
-      <!-- Sidenav for collections -->
-      <div class="sidenav">
-        <div class="sidenav-header">
-          <h3>Collections</h3>
-        </div>
-        <div class="sidenav-content">
-          <div *ngIf="collections.length === 0" class="empty-state-sidenav">
-            <p>No collections found</p>
+  @if (!isLoading && !error && repository) {
+    <div>
+      <div class="content-layout">
+        <!-- Sidenav for collections -->
+        <div class="sidenav">
+          <div class="sidenav-header">
+            <h3>Collections</h3>
           </div>
-          <ul class="collection-list">
-            <li *ngFor="let collection of collections"
-                [class.selected]="collection.name === selectedColName"
-                (click)="selectCollection(collection)">
-              <span class="collection-name">{{ collection.label }}</span>
-            </li>
-          </ul>
+          <div class="sidenav-content">
+            @if (collections.length === 0) {
+              <div class="empty-state-sidenav">
+                <p>No collections found</p>
+              </div>
+            }
+            <ul class="collection-list">
+              @for (collection of collections; track collection) {
+                <li
+                  [class.selected]="collection.name === selectedColName"
+                  (click)="selectCollection(collection)">
+                  <span class="collection-name">{{ collection.label }}</span>
+                </li>
+              }
+            </ul>
+          </div>
         </div>
-      </div>
-
-      <!-- Main content area -->
-      <div class="main-content" (scroll)="handleScroll($event)">
-        <!-- Show info message if no collection is selected -->
-        <div class="info-message-large" *ngIf="!selectedColName">
-          <p>Select a collection from the sidebar to browse its files.</p>
+        <!-- Main content area -->
+        <div class="main-content" (scroll)="handleScroll($event)">
+          <!-- Show info message if no collection is selected -->
+          @if (!selectedColName) {
+            <div class="info-message-large">
+              <p>Select a collection from the sidebar to browse its files.</p>
+            </div>
+          }
+          <router-outlet></router-outlet>
+          <!-- Back to top button -->
+          @if (showBackToTop) {
+            <button
+              class="back-to-top-btn"
+              (click)="scrollToTop()"
+              matTooltip="Back to top">
+              <mat-icon>arrow_upward</mat-icon>
+            </button>
+          }
+          <!-- Scroll to bottom button -->
+          @if (showScrolltoBottom) {
+            <button
+              class="scroll-to-bottom-btn"
+              (click)="scrollToBottom()"
+              matTooltip="Scroll to bottom">
+              <mat-icon>arrow_downward</mat-icon>
+            </button>
+          }
         </div>
-
-        <router-outlet></router-outlet>
-
-        <!-- Back to top button -->
-        <button
-          *ngIf="showBackToTop"
-          class="back-to-top-btn"
-          (click)="scrollToTop()"
-          matTooltip="Back to top">
-          <mat-icon>arrow_upward</mat-icon>
-        </button>
-
-        <!-- Scroll to bottom button -->
-        <button
-          *ngIf="showScrolltoBottom"
-          class="scroll-to-bottom-btn"
-          (click)="scrollToBottom()"
-          matTooltip="Scroll to bottom">
-          <mat-icon>arrow_downward</mat-icon>
-        </button>
       </div>
     </div>
-  </div>
+  }
 </div>

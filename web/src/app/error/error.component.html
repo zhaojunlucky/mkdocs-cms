@@ -1,11 +1,17 @@
 
 <div style="margin: 64px 5px 5px 5px">
   <h1>Something went wrong</h1>
-  <mat-card *ngIf="error" appearance="outlined" style="margin: 10px">
-    <mat-card-content>{{error}}</mat-card-content>
-  </mat-card>
+  @if (error) {
+    <mat-card appearance="outlined" style="margin: 10px">
+      <mat-card-content>{{error}}</mat-card-content>
+    </mat-card>
+  }
   <p>Could not load the requested page.</p>
-  <p *ngIf="!redirect">Please try again later.</p>
-  <a *ngIf="redirect" [href]="redirect">Try again?</a>
+  @if (!redirect) {
+    <p>Please try again later.</p>
+  }
+  @if (redirect) {
+    <a [href]="redirect">Try again?</a>
+  }
   <p>Or contact support if the problem persists.</p>
 </div>

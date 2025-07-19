@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import {ActivatedRoute, Router, RouterLink, RouterOutlet} from '@angular/router';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatButtonModule } from '@angular/material/button';
@@ -17,7 +17,6 @@ import {PageTitleService} from '../../services/page.title.service';
   selector: 'app-repository-detail',
   standalone: true,
   imports: [
-    CommonModule,
     MatTabsModule,
     MatButtonModule,
     MatProgressSpinnerModule,
@@ -26,7 +25,7 @@ import {PageTitleService} from '../../services/page.title.service';
     MatChipsModule,
     MatIconModule,
     MatTooltipModule
-  ],
+],
   templateUrl: './repository-detail.component.html',
   styleUrls: ['./repository-detail.component.scss']
 })
