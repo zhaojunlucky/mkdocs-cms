@@ -321,7 +321,7 @@
 
 .main-content {
   flex: 1;
-  padding: 20px;
+  padding: 20px, 20px, 0, 20px;
   background-color: white;
   overflow-y: auto;
   position: relative; /* Added for positioning the back-to-top button */

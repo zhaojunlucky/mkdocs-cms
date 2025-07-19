@@ -64,7 +64,7 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
   // Path navigation
   pathSegments: PathSegment[] = [];
   editorRendered = false;
-  changed = false;
+  _changed = false;
 
   // Editor options
   editorOptions = {
@@ -135,6 +135,7 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
         "desktop"
       ]
     },
+    height: this.calculateEditorHeight(),
     after: ()=> this.zone.run(()=> {
       this.editorRendered = true;
     }),
@@ -154,6 +155,27 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
 
   ) {
     this.editorOptions = {...this.editorOptions, ...this.vditorUploadService.getVditorOptions()};
+  }
+
+  get changed(): boolean {
+    return this._changed;
+  }
+
+  set changed(value: boolean) {
+    this._changed = value;
+    let title = this.pageTitleService.title;
+    if (this._changed && !title.startsWith('*')) {
+      title = '* ' + title;
+    } else if (!this._changed && title.startsWith('*')) {
+      title = title.substring(1).trimStart()
+    }
+    this.pageTitleService.title = title;
+  } 
+
+  @HostListener('window:resize', ['$event'])
+  onWindowResize() {
+    // console.log("window resized");
+    this.updateEditorHeight();
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -302,6 +324,30 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
 
   onEditorReady(editor: any): void {
     this.editor = editor;
+    // Update height after editor is ready
+    this.updateEditorHeight();
+  }
+
+  calculateEditorHeight(): number {
+    // Calculate available height: viewport height minus nav (64px), footer (~53px), 
+    // file editor header (~80px), front matter section (~100px), and padding/margins (~100px)
+    const navHeight = 64;
+    const footerHeight = 53;
+    const paddingMargins = 100;
+    
+    const availableHeight = window.innerHeight - navHeight - footerHeight - paddingMargins;
+    
+    // Ensure minimum height of 300px
+    return Math.max(300, availableHeight);
+  }
+
+  updateEditorHeight(): void {
+    const newHeight = this.calculateEditorHeight();
+    this.editorOptions = {
+      ...this.editorOptions,
+      height: newHeight
+    };
+    
   }
 
   saveFile(): void {

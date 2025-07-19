@@ -107,7 +107,7 @@ export class RepositoryDetailComponent implements OnInit, AfterViewInit, OnDestr
     }
 
     // For debugging
-    console.log('Content scroll position:', scrollPosition, 'showBackToTop:', this.showBackToTop, 'showScrollToBottom:', this.showScrolltoBottom);
+    // console.log('Content scroll position:', scrollPosition, 'showBackToTop:', this.showBackToTop, 'showScrollToBottom:', this.showScrolltoBottom);
   }
 
   handleWindowScroll(): void {

@@ -1,7 +1,9 @@
 .edit-file-container {
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100vh;
+  padding: 20px 20px 0 20px;
   position: relative;
 }
 
@@ -69,13 +71,6 @@
 .active {
   font-weight: 500;
   color: #424242;
-}
-
-.file-editor {
-  background-color: #fff;
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-  padding: 20px;
 }
 
 .file-editor-header {
