@@ -5,10 +5,9 @@ import { FormsModule } from '@angular/forms';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
 import { RepositoryService, Collection } from '../../services/repository.service';
-import { CollectionService } from '../../services/collection.service';
+import {CollectionService, FileInfo} from '../../services/collection.service';
 import { FrontMatterEditorComponent } from '../../markdown/front-matter-editor/front-matter-editor.component';
 import { NuMarkdownComponent } from '@ng-util/markdown';
-import * as jsYaml from 'js-yaml';
 import { MatInputModule} from '@angular/material/input';
 import {MatIcon} from '@angular/material/icon';
 import {MatTooltip} from '@angular/material/tooltip';
@@ -21,6 +20,7 @@ import {PageTitleService} from '../../services/page.title.service';
 import {VditorUploadService} from '../../services/vditor.upload.service';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {HttpHeaders} from '@angular/common/http';
+import {ArrayResponse} from '../../shared/core/response';
 
 @Component({
   selector: 'app-create-file',
@@ -138,6 +138,7 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
     }),
   };
   _changed = true;
+  private files: FileInfo[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -181,7 +182,6 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
         this.route.queryParams.subscribe(params => {
           this.currentPath = params['path'] || '';
           this.pageTitleService.title = `Create File - ${this.collectionName} - ${this.currentPath}`
-          this.fileName = new Date().toISOString().slice(0, 10) + '-';
           this.loadCollection();
         });
       } else {
@@ -216,6 +216,12 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
           this.markdownContent = bodyField?.default || '';
           this.updatePathSegments();
           this.isLoading = false;
+          if (foundCollection?.file_name_generator?.type === 'sequence') {
+            // load files
+            this.loadFiles();
+          } else {
+            this.fileName = this.generateFileName();
+          }
         } else {
           this.error = 'Collection not found';
           this.isLoading = false;
@@ -381,6 +387,54 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
       duration: 8000,
       panelClass: ['error-snackbar'],
       verticalPosition: 'top'
+    });
+  }
+
+  private generateFileName() {
+    if (this.collection?.file_name_generator) {
+      switch (this.collection?.file_name_generator.type) {
+        case 'date':
+          return new Date().toISOString().slice(0, 10) + '-';
+        case 'sequence': {
+          if (this.files.length <= 0 && this.collection?.file_name_generator.first) {
+            return this.collection.file_name_generator.first;
+          }
+          const pattern = /^(\d+)(\D+)?\.md$/;
+          let maxNumber = 1;
+          for (let i = 0; i < this.files.length; i++) {
+            const match = this.files[i].name.match(pattern);
+            if (match) {
+              maxNumber = Math.max(maxNumber, parseInt(match[1]) + 1);
+            }
+          }
+          return `${maxNumber}-`;
+        }
+        default:
+          break;
+      }
+    }
+    return '';
+  }
+
+  private loadFiles() {
+    this.isLoading = true;
+    let fileInfoObservable: Observable<ArrayResponse<FileInfo>>;
+    if (this.currentPath === '') {
+      fileInfoObservable = this.collectionService.getCollectionFiles(this.repositoryId.toString(), this.collectionName);
+    } else {
+      fileInfoObservable = this.collectionService.getCollectionFilesInPath(this.repositoryId.toString(), this.collectionName, this.currentPath)
+    }
+    fileInfoObservable.subscribe({
+      next: (files) => {
+        this.files = files.entries;
+        this.isLoading = false;
+        this.fileName = this.generateFileName();
+      },
+      error: (error) => {
+        console.error('Error loading files:', error);
+        this.error = `Failed to load files. ${StrUtils.stringifyHTTPErr(error)}`;
+        this.isLoading = false;
+      }
     });
   }
 }
