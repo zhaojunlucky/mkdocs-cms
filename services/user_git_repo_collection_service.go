@@ -40,11 +40,17 @@ type VedaConfig struct {
 
 // Collection represents a collection in veda/config.yml
 type Collection struct {
-	Name   string  `yaml:"name"`
-	Label  string  `yaml:"label"`
-	Path   string  `yaml:"path"`
-	Format string  `yaml:"format"`
-	Fields []Field `yaml:"fields,omitempty"`
+	Name              string             `yaml:"name"`
+	Label             string             `yaml:"label"`
+	Path              string             `yaml:"path"`
+	Format            string             `yaml:"format"`
+	FileNameGenerator *FileNameGenerator `yaml:"file_name_generator"`
+	Fields            []Field            `yaml:"fields,omitempty"`
+}
+
+type FileNameGenerator struct {
+	Type  string `yaml:"type" json:"type"`
+	First string `yaml:"first" json:"first"`
 }
 
 // Field represents a field in a collection
@@ -147,6 +153,13 @@ func (s *UserGitRepoCollectionService) readCollectionsFromConfig(repo models.Use
 			Description: "", // No description in veda/config.yml
 			RepoID:      repo.ID,
 			Fields:      modelFields,
+		}
+
+		if col.FileNameGenerator != nil {
+			collection.FileNameGenerator = &models.FileNameGenerator{
+				Type:  col.FileNameGenerator.Type,
+				First: col.FileNameGenerator.First,
+			}
 		}
 		collections = append(collections, collection)
 	}

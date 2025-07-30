@@ -32,6 +32,11 @@ export interface CollectionFieldDefinition {
   default?: any;
 }
 
+export interface FileNameGenerator {
+  type?: string;
+  first?: string
+}
+
 export interface Collection {
   id: number;
   name: string;
@@ -42,6 +47,7 @@ export interface Collection {
   created_at: string;
   updated_at: string;
   fields?: CollectionFieldDefinition[];
+  file_name_generator?: FileNameGenerator
 }
 
 export interface AsyncTask {
