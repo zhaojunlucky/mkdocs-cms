@@ -130,7 +130,7 @@ export class CollectionComponent implements OnInit {
     fileInfoObservable.subscribe({
       next: (files) => {
         this.files = files.entries;
-        this.filteredFiles = [...this.files];
+        this.filterFiles();
         this.updatePathSegments();
         this.isLoading = false;
       },
