@@ -1,15 +1,16 @@
 package services
 
 import (
+	"time"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
-	"time"
 )
 
 type MetricsService struct {
 	BaseService
-	
+
 	// Counter metrics
 	HTTPRequestsTotal    *prometheus.CounterVec
 	DatabaseQueriesTotal *prometheus.CounterVec
@@ -25,8 +26,8 @@ type MetricsService struct {
 	DatabaseQueryTime   *prometheus.HistogramVec
 
 	// Summary metrics
-	ResponseSize    *prometheus.SummaryVec
-	ProcessingTime  *prometheus.SummaryVec
+	ResponseSize   *prometheus.SummaryVec
+	ProcessingTime *prometheus.SummaryVec
 }
 
 func (m *MetricsService) Init(ctx *core.APPContext) {
@@ -38,24 +39,27 @@ func (m *MetricsService) initializeMetrics() {
 	// Initialize Counter metrics
 	m.HTTPRequestsTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "mkdocs_cms_http_requests_total",
-			Help: "The total number of HTTP requests",
+			Namespace: "mkdocs_cms",
+			Name:      "mkdocs_cms_http_requests_total",
+			Help:      "The total number of HTTP requests",
 		},
 		[]string{"method", "endpoint", "status_code"},
 	)
 
 	m.DatabaseQueriesTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "mkdocs_cms_database_queries_total",
-			Help: "The total number of database queries",
+			Namespace: "mkdocs_cms",
+			Name:      "mkdocs_cms_database_queries_total",
+			Help:      "The total number of database queries",
 		},
 		[]string{"operation", "table"},
 	)
 
 	m.ErrorsTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "mkdocs_cms_errors_total",
-			Help: "The total number of errors",
+			Namespace: "mkdocs_cms",
+			Name:      "mkdocs_cms_errors_total",
+			Help:      "The total number of errors",
 		},
 		[]string{"type", "component"},
 	)
@@ -63,40 +67,45 @@ func (m *MetricsService) initializeMetrics() {
 	// Initialize Gauge metrics
 	m.ActiveConnections = promauto.NewGauge(
 		prometheus.GaugeOpts{
-			Name: "mkdocs_cms_active_connections",
-			Help: "The number of active connections",
+			Namespace: "mkdocs_cms",
+			Name:      "mkdocs_cms_active_connections",
+			Help:      "The number of active connections",
 		},
 	)
 
 	m.MemoryUsage = promauto.NewGauge(
 		prometheus.GaugeOpts{
-			Name: "mkdocs_cms_memory_usage_bytes",
-			Help: "Current memory usage in bytes",
+			Namespace: "mkdocs_cms",
+			Name:      "mkdocs_cms_memory_usage_bytes",
+			Help:      "Current memory usage in bytes",
 		},
 	)
 
 	m.ActiveUsers = promauto.NewGauge(
 		prometheus.GaugeOpts{
-			Name: "mkdocs_cms_active_users",
-			Help: "The number of active users",
+			Namespace: "mkdocs_cms",
+			Name:      "mkdocs_cms_active_users",
+			Help:      "The number of active users",
 		},
 	)
 
 	// Initialize Histogram metrics
 	m.HTTPRequestDuration = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "mkdocs_cms_http_request_duration_seconds",
-			Help:    "HTTP request duration in seconds",
-			Buckets: prometheus.DefBuckets,
+			Namespace: "mkdocs_cms",
+			Name:      "mkdocs_cms_http_request_duration_seconds",
+			Help:      "HTTP request duration in seconds",
+			Buckets:   prometheus.DefBuckets,
 		},
 		[]string{"method", "endpoint"},
 	)
 
 	m.DatabaseQueryTime = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "mkdocs_cms_database_query_duration_seconds",
-			Help:    "Database query duration in seconds",
-			Buckets: []float64{0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10},
+			Namespace: "mkdocs_cms",
+			Name:      "mkdocs_cms_database_query_duration_seconds",
+			Help:      "Database query duration in seconds",
+			Buckets:   []float64{0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10},
 		},
 		[]string{"operation", "table"},
 	)
@@ -104,6 +113,7 @@ func (m *MetricsService) initializeMetrics() {
 	// Initialize Summary metrics
 	m.ResponseSize = promauto.NewSummaryVec(
 		prometheus.SummaryOpts{
+			Namespace:  "mkdocs_cms",
 			Name:       "mkdocs_cms_response_size_bytes",
 			Help:       "HTTP response size in bytes",
 			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
@@ -113,6 +123,7 @@ func (m *MetricsService) initializeMetrics() {
 
 	m.ProcessingTime = promauto.NewSummaryVec(
 		prometheus.SummaryOpts{
+			Namespace:  "mkdocs_cms",
 			Name:       "mkdocs_cms_processing_time_seconds",
 			Help:       "Request processing time in seconds",
 			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
