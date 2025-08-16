@@ -2,13 +2,14 @@ package middleware
 
 import (
 	"fmt"
+	"net/http"
+	"regexp"
+	"strings"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"github.com/zhaojunlucky/mkdocs-cms/database"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
-	"net/http"
-	"regexp"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
@@ -115,6 +116,7 @@ func shouldSkipAuth(path string) bool {
 		regexp.MustCompile("^/api/github/webhook"),
 		regexp.MustCompile("^/api/site/version"),
 		regexp.MustCompile("^/api/v1/storage/.+"),
+		regexp.MustCompile("^/metrics"),
 	}
 
 	for _, skipPath := range skipPaths {

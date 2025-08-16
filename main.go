@@ -2,6 +2,15 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"os"
+	"path"
+	"path/filepath"
+	"regexp"
+	"runtime"
+	"strconv"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/config"
@@ -14,14 +23,6 @@ import (
 	"github.com/zhaojunlucky/mkdocs-cms/services"
 	"github.com/zhaojunlucky/mkdocs-cms/utils"
 	"gopkg.in/natefinch/lumberjack.v2"
-	"io"
-	"os"
-	"path"
-	"path/filepath"
-	"regexp"
-	"runtime"
-	"strconv"
-	"strings"
 )
 
 var Version string = "1.0.1-dev"
@@ -81,9 +82,12 @@ func main() {
 	router.Use(middleware.CORSWithConfig(appConfig))
 	router.Use(middleware.NewAuthMiddleware(ctx)) // Update to use new auth middleware
 	router.Use(middleware.NewRateLimit(ctx))
+	router.Use(middleware.MetricsMiddleware(ctx)) // Add metrics middleware
 	router.Use(gin.Recovery())
 
 	services.InitServices(ctx)
+
+	controllers.InitRootController(ctx, &router.RouterGroup)
 
 	api := router.Group("/api")
 	controllers.InitAPIControllers(ctx, api)
