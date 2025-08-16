@@ -13,6 +13,10 @@ type BaseController struct {
 	ctx *core.APPContext
 }
 
+var rootControllers = []Controller{
+	&MetricsController{},
+}
+
 var v1Controllers = []Controller{
 	&AsyncTaskController{},
 	&UserGitRepoCollectionController{},
@@ -38,5 +42,11 @@ func InitAPIControllers(ctx *core.APPContext, api *gin.RouterGroup) {
 func InitV1Controllers(ctx *core.APPContext, v1 *gin.RouterGroup) {
 	for _, c := range v1Controllers {
 		c.Init(ctx, v1)
+	}
+}
+
+func InitRootController(ctx *core.APPContext, root *gin.RouterGroup) {
+	for _, c := range rootControllers {
+		c.Init(ctx, root)
 	}
 }
