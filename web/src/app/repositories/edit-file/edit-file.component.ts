@@ -70,7 +70,7 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
     lang: 'en_US',
     icon: 'material',
     mode: 'wysiwyg',
-    tab: '  ',
+    tab: '    ',
     counter: {
       enable: true,
     },

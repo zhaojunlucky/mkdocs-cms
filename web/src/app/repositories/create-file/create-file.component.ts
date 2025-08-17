@@ -69,7 +69,7 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
     lang: 'en_US',
     mode: 'wysiwyg',
     icon: 'material',
-    tab: '  ',
+    tab: '    ',
     counter: {
       enable: true,
     },
