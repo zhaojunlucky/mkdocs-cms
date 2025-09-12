@@ -91,7 +91,7 @@
       <!-- Markdown Editor -->
       <div class="markdown-editor-wrapper">
         <h3>Content</h3>
-        <nu-markdown [(ngModel)]="markdownContent" [options]="editorOptions" (ready)="onEditorReady($event)"></nu-markdown>
+        <app-vditor-editor [(ngModel)]="markdownContent" [options]="editorOptions" (ready)="onEditorReady($event)"></app-vditor-editor>
       </div>
     </div>
   }

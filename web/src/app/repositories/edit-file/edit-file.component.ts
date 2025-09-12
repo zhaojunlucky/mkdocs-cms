@@ -3,7 +3,7 @@ import {Component, HostListener, NgZone, OnInit} from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { NuMarkdownComponent } from '@ng-util/markdown';
+import { VditorEditorComponent } from '../../components/vditor-editor/vditor-editor.component';
 import {Collection, RepositoryService} from '../../services/repository.service';
 import {CollectionService} from '../../services/collection.service';
 import * as yaml from 'js-yaml';
@@ -33,7 +33,7 @@ interface PathSegment {
     RouterLink,
     MatProgressSpinnerModule,
     FrontMatterEditorComponent,
-    NuMarkdownComponent,
+    VditorEditorComponent,
     MatIcon,
     MatIconButton,
     MatTooltip
@@ -133,9 +133,6 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
       ]
     },
     height: this.calculateEditorHeight(),
-    after: ()=> this.zone.run(()=> {
-      this.editorRendered = true;
-    }),
   };
 
   editor: any = null;
@@ -319,8 +316,9 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
     this.frontMatter = frontMatter;
   }
 
-  onEditorReady(editor: any): void {
-    this.editor = editor;
+  onEditorReady(vditorComponent: any): void {
+    this.editor = vditorComponent;
+    this.editorRendered = true;
     // Update height after editor is ready
     this.updateEditorHeight();
   }
@@ -352,7 +350,9 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
 
     this.fileError = '';
     this.savingFile = true;
-    this.editor.disabled();
+    if (this.editor) {
+      this.editor.disabled();
+    }
 
     // Combine front matter and markdown content
     const content = this.generateFileContent();
@@ -371,7 +371,9 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
     ).subscribe({
       next: () => {
         this.savingFile = false;
-        this.editor.enable();
+        if (this.editor) {
+          this.editor.enable();
+        }
         this.changed = false;
         // Navigate back to the collection view
         //this.navigateToCollection();
@@ -379,7 +381,9 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
       },
       error: (err: any) => {
         this.savingFile = false;
-        this.editor.enable();
+        if (this.editor) {
+          this.editor.enable();
+        }
         const errorMessage = `Failed to save file: ${StrUtils.stringifyHTTPErr(err)}`;
         this.fileError = errorMessage;
         this.showErrorMessage(errorMessage);
