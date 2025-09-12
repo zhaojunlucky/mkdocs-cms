@@ -1267,29 +1267,6 @@
     "@napi-rs/nice-win32-ia32-msvc" "1.0.1"
     "@napi-rs/nice-win32-x64-msvc" "1.0.1"
 
-"@ng-util/lazy@^14.0.0":
-  version "14.0.1"
-  resolved "https://registry.yarnpkg.com/@ng-util/lazy/-/lazy-14.0.1.tgz#27d2cd31bf49ad557e63476b3505bdce2cea3dbe"
-  integrity sha512-ey2xwKJG+x8zx5FYhQexSI2Hj091QcH7l9NP68pAwLZicmM/M+VGvcCWwyNh4tyfB+LD3GpKvzK2IP8VynLPLQ==
-  dependencies:
-    tslib "^2.3.0"
-
-"@ng-util/markdown@^19.0.1":
-  version "19.0.1"
-  resolved "https://registry.yarnpkg.com/@ng-util/markdown/-/markdown-19.0.1.tgz#9fa1d46e60923d5d92527715ec818822e94f1a09"
-  integrity sha512-kNXUReLbX0I/XwaomWzl3gNbkrUmX9sgP6bwlnNNlJ/2wcvJevKyCoJbUP0pPZ2+s+vtf6+jM1CcExyvXmckcg==
-  dependencies:
-    "@ng-util/lazy" "^14.0.0"
-    "@ng-util/util" "^14.0.0"
-    tslib "^2.3.0"
-
-"@ng-util/util@^14.0.0":
-  version "14.0.1"
-  resolved "https://registry.yarnpkg.com/@ng-util/util/-/util-14.0.1.tgz#5ea93468efd73c7ef493af8ded5f5ba2ea934567"
-  integrity sha512-yJa36/q+Ffydd9NE83b9vfGCJSuTwoV/+WYYFjr0bodcNe36+nShuOfnEucxTbBolygxZdFyd09DeBsdyq2DCg==
-  dependencies:
-    tslib "^2.3.0"
-
 "@npmcli/agent@^3.0.0":
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/@npmcli/agent/-/agent-3.0.0.tgz#1685b1fbd4a1b7bb4f930cbb68ce801edfe7aa44"
@@ -4709,10 +4686,10 @@ vary@^1, vary@^1.1.2:
   resolved "https://registry.yarnpkg.com/vary/-/vary-1.1.2.tgz#2299f02c6ded30d4a5961b0b9f74524a18f634fc"
   integrity sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==
 
-vditor@^3.11.1:
-  version "3.11.1"
-  resolved "https://registry.yarnpkg.com/vditor/-/vditor-3.11.1.tgz#dca4f7b2798cf9333161c2a915be057dbb1d4699"
-  integrity sha512-7rjNSXYVyZG0mVZpUG2tfxwnoNtkcRCnwdSju+Zvpjf/r72iQa6kLpeThFMIKPuQ5CRnQQv6gnR3eNU6UGbC2Q==
+vditor@^3.11.2:
+  version "3.11.2"
+  resolved "https://registry.yarnpkg.com/vditor/-/vditor-3.11.2.tgz#612a405c74b71278a4eea188db3c7d93c0884c11"
+  integrity sha512-8QguQQUPWbBFocnfQmWjz4jiykQnvsmCuhOomGIVVK7vc+dQq2h8w9qQQuEjUTZpnZT5fEdYbj4aLr1NGdAZaA==
   dependencies:
     diff-match-patch "^1.0.5"
 

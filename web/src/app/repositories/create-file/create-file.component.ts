@@ -7,7 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { RepositoryService, Collection } from '../../services/repository.service';
 import {CollectionService, FileInfo} from '../../services/collection.service';
 import { FrontMatterEditorComponent } from '../../markdown/front-matter-editor/front-matter-editor.component';
-import { NuMarkdownComponent } from '@ng-util/markdown';
+import { VditorEditorComponent } from '../../components/vditor-editor/vditor-editor.component';
 import { MatInputModule} from '@angular/material/input';
 import {MatIcon} from '@angular/material/icon';
 import {MatTooltip} from '@angular/material/tooltip';
@@ -31,7 +31,7 @@ import {ArrayResponse} from '../../shared/core/response';
     MatProgressSpinnerModule,
     MatButtonModule,
     FrontMatterEditorComponent,
-    NuMarkdownComponent,
+    VditorEditorComponent,
     MatInputModule,
     MatIcon,
     MatIconButton,
@@ -132,10 +132,6 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
       ]
     },
     height: this.calculateEditorHeight(),
-    after: ()=> this.zone.run(()=> {
-      this.editorRendered = true;
-      console.log("editor rendered");
-    }),
   };
   _changed = true;
   private files: FileInfo[] = [];
@@ -274,8 +270,10 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
     this.frontMatter = frontMatter;
   }
 
-  onEditorReady(editor: any): void {
-    this.editor = editor;
+  onEditorReady(vditorComponent: any): void {
+    this.editor = vditorComponent;
+    this.editorRendered = true;
+    console.log("editor rendered");
     // Update height after editor is ready
     this.updateEditorHeight();
   }
@@ -325,7 +323,9 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
     }
 
     this.isCreating = true;
-    this.editor.disabled();
+    if (this.editor) {
+      this.editor.disabled();
+    }
     this.fileError = '';
 
     // Build file path
@@ -349,7 +349,9 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
     ).subscribe({
       next: () => {
         this.isCreating = false;
-        this.editor.enable();
+        if (this.editor) {
+          this.editor.enable();
+        }
         this.changed = false; // Reset changed
         // Navigate back to collection view
         this.router.navigate(['/repositories', this.repositoryId, 'collection', this.collectionName, 'edit'], {
@@ -362,7 +364,9 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
         this.fileError = errorMessage;
         this.showErrorMessage(errorMessage);
         this.isCreating = false;
-        this.editor.enable();
+        if (this.editor) {
+          this.editor.enable();
+        }
       }
     });
   }

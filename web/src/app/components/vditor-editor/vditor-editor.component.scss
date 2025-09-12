@@ -1,0 +1,30 @@
+.vditor-container {
+  width: 100%;
+  
+  :host {
+    display: block;
+    width: 100%;
+  }
+  
+  // Ensure vditor styles are properly applied
+  ::ng-deep .vditor {
+    width: 100%;
+    
+    .vditor-toolbar {
+      border-top: 1px solid #e5e5e5;
+      border-left: 1px solid #e5e5e5;
+      border-right: 1px solid #e5e5e5;
+    }
+    
+    .vditor-content {
+      border: 1px solid #e5e5e5;
+      border-top: none;
+    }
+    
+    .vditor-preview {
+      border: 1px solid #e5e5e5;
+      border-top: none;
+      border-left: none;
+    }
+  }
+}
