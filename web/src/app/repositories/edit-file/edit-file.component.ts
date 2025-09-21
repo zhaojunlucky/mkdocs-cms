@@ -3,6 +3,8 @@ import {Component, HostListener, NgZone, OnInit} from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
 import { VditorEditorComponent } from '../../components/vditor-editor/vditor-editor.component';
 import {Collection, RepositoryService} from '../../services/repository.service';
 import {CollectionService} from '../../services/collection.service';
@@ -32,12 +34,14 @@ interface PathSegment {
     FormsModule,
     RouterLink,
     MatProgressSpinnerModule,
+    MatCardModule,
+    MatButtonModule,
     FrontMatterEditorComponent,
     VditorEditorComponent,
     MatIcon,
     MatIconButton,
     MatTooltip
-],
+  ],
   templateUrl: './edit-file.component.html',
   styleUrls: ['./edit-file.component.scss']
 })

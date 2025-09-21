@@ -6,73 +6,79 @@
 
   @if (loading) {
     <div class="loading-indicator">
+      <mat-spinner diameter="40"></mat-spinner>
       <p>Loading repository details...</p>
     </div>
   }
 
   @if (error) {
-    <div class="error-message">
-      <p>{{ error }}</p>
-    </div>
+    <mat-card class="error-message">
+      <mat-card-content>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <mat-icon color="warn">error</mat-icon>
+          <p>{{ error }}</p>
+        </div>
+      </mat-card-content>
+    </mat-card>
   }
 
   @if (!loading && !error) {
-    <form [formGroup]="repoForm" (ngSubmit)="onSubmit()" class="repository-form">
-      <div class="form-group">
-        <label for="name">Repository Name</label>
-        <input type="text" id="name" formControlName="name" class="form-control" readonly>
-        @if (repoForm.get('name')?.invalid && repoForm.get('name')?.touched) {
-          <div class="error-text">
-            Repository name is required
-          </div>
-        }
-      </div>
-      <div class="form-group">
-        <label for="description">Description</label>
-        <textarea id="description" formControlName="description" class="form-control" rows="3"></textarea>
-      </div>
-      <div class="form-group">
-        <label for="branch">Branch</label>
-        <div class="branch-input-container">
-          <input type="text" id="branch" formControlName="branch" class="form-control"
-            [class.error-input]="branchError" readonly>
-          @if (branchesLoading) {
-            <div class="branch-loading">
-              <i class="fas fa-spinner fa-spin"></i>
+    <mat-card class="repository-form">
+      <mat-card-content>
+        <form [formGroup]="repoForm" (ngSubmit)="onSubmit()">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Repository Name</mat-label>
+            <input matInput formControlName="name" readonly>
+            @if (repoForm.get('name')?.invalid && repoForm.get('name')?.touched) {
+              <mat-error>
+                Repository name is required
+              </mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Description</mat-label>
+            <textarea matInput formControlName="description" rows="3"></textarea>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Branch</mat-label>
+            <input matInput formControlName="branch" readonly>
+            @if (branchesLoading) {
+              <mat-spinner matSuffix diameter="20"></mat-spinner>
+            }
+            @if (branchError) {
+              <mat-error>
+                {{ branchError }}
+              </mat-error>
+            }
+          </mat-form-field>
+
+          @if (branches.length > 0) {
+            <div class="branch-suggestions">
+              <h4>Available branches:</h4>
+              <mat-chip-set class="branch-list">
+                @for (branch of branches; track branch) {
+                  <mat-chip-option
+                    [selected]="repoForm.get('branch')?.value === branch"
+                    (click)="repoForm.get('branch')?.setValue(branch)"
+                    class="branch-chip">
+                    {{ branch }}
+                  </mat-chip-option>
+                }
+              </mat-chip-set>
             </div>
           }
-        </div>
-        @if (branchError) {
-          <div class="error-text">
-            {{ branchError }}
-          </div>
-        }
-        @if (branches.length > 0) {
-          <div class="branch-suggestions">
-            <p>Available branches:</p>
-            <div class="branch-list">
-              @for (branch of branches; track branch) {
-                <button
-                  type="button"
-                  class="branch-item"
-                  [class.active]="repoForm.get('branch')?.value === branch"
-                  (click)="repoForm.get('branch')?.setValue(branch)">
-                  {{ branch }}
-                </button>
+          <div class="form-actions">
+            <button mat-button type="button" (click)="cancel()" [disabled]="saving">Cancel</button>
+            <button mat-raised-button color="primary" type="submit" [disabled]="repoForm.invalid || saving || !hasChanges">
+              @if (saving) {
+                <mat-spinner diameter="16" style="margin-right: 8px;"></mat-spinner>
               }
-            </div>
+              {{ saving ? 'Saving...' : 'Save Changes' }}
+            </button>
           </div>
-        }
-      </div>
-      <div class="form-actions">
-        <button type="button" class="cancel-btn" (click)="cancel()">Cancel</button>
-        <button type="submit" class="save-btn" [disabled]="repoForm.invalid || saving">
-          @if (saving) {
-            <i class="fas fa-spinner fa-spin"></i>
-          }
-          {{ saving ? 'Saving...' : 'Save Changes' }}
-        </button>
-      </div>
-    </form>
+        </form>
+      </mat-card-content>
+    </mat-card>
   }
 </div>

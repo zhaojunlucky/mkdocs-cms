@@ -11,18 +11,18 @@
     width: 100%;
     
     .vditor-toolbar {
-      border-top: 1px solid #e5e5e5;
-      border-left: 1px solid #e5e5e5;
-      border-right: 1px solid #e5e5e5;
+      border-top: 1px solid var(--mat-surface-200);
+      border-left: 1px solid var(--mat-surface-200);
+      border-right: 1px solid var(--mat-surface-200);
     }
     
     .vditor-content {
-      border: 1px solid #e5e5e5;
+      border: 1px solid var(--mat-surface-200);
       border-top: none;
     }
     
     .vditor-preview {
-      border: 1px solid #e5e5e5;
+      border: 1px solid var(--mat-surface-200);
       border-top: none;
       border-left: none;
     }

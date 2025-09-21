@@ -11,10 +11,18 @@
   }
 
   @if (error) {
-    <div class="error-message">
-      <p>{{ error }}</p>
-      <a [routerLink]="['/repositories', repositoryId]" class="back-btn">Back to Repository</a>
-    </div>
+    <mat-card class="error-message">
+      <mat-card-content>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+          <mat-icon color="warn">error</mat-icon>
+          <p>{{ error }}</p>
+        </div>
+        <button mat-button color="primary" [routerLink]="['/repositories', repositoryId]">
+          <mat-icon>arrow_back</mat-icon>
+          Back to Repository
+        </button>
+      </mat-card-content>
+    </mat-card>
   }
 
   @if (!isLoading && !error && collectionName) {
@@ -127,7 +135,11 @@
           @if (filteredFiles.length > 0) {
             <div class="file-items" [class.overlay-active]="isRenaming || isCreatingFolder">
               @for (file of filteredFiles; track file) {
-                <div class="file-item" [class.is-directory]="file.is_dir">
+                <div class="file-item"
+                     [class.is-directory]="file.is_dir"
+                     [style.background-color]="hoveredFile === file ? 'rgba(63, 81, 181, 0.05)' : ''"
+                     (mouseenter)="onFileHover(file)"
+                     (mouseleave)="onFileLeave()">
                   <div class="file-item-content" (click)="file.is_dir ? navigateToFolder(file) : selectFile(file)">
                     @if (file.is_dir) {
                       <mat-icon class="folder-icon">folder</mat-icon>
@@ -137,7 +149,9 @@
                     }
                     <span class="file-name">{{ file.name }}</span>
                     @if (!file.is_dir && file.is_draft) {
-                      <span class="draft-indicator">DRAFT</span>
+                      <mat-chip-set>
+                        <mat-chip class="draft-indicator">DRAFT</mat-chip>
+                      </mat-chip-set>
                     }
                     <span class="file-meta">
                       @if (!file.is_dir) {

@@ -5,13 +5,28 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { RepositoryService, Repository } from '../../services/repository.service';
 import { ComponentsModule } from '../../components/components.module';
 import {MatInputModule} from '@angular/material/input';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import {StrUtils} from '../../shared/utils/str.utils';
 import {PageTitleService} from '../../services/page.title.service';
 
 @Component({
   selector: 'app-edit-repository',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterModule, ComponentsModule, MatInputModule],
+  imports: [
+    ReactiveFormsModule, 
+    RouterModule, 
+    ComponentsModule, 
+    MatInputModule,
+    MatCardModule,
+    MatButtonModule,
+    MatIconModule,
+    MatChipsModule,
+    MatProgressSpinnerModule
+  ],
   templateUrl: './edit-repository.component.html',
   styleUrls: ['./edit-repository.component.scss']
 })
@@ -103,6 +118,20 @@ export class EditRepositoryComponent implements OnInit {
       this.branchError = 'Branch does not exist in the repository';
       return;
     }
+  }
+
+  get hasChanges(): boolean {
+    if (!this.repository) return false;
+
+    const currentName = this.repoForm.get('name')?.value;
+    const currentDescription = this.repoForm.get('description')?.value;
+    const currentBranch = this.repoForm.get('branch')?.value;
+
+    const nameChanged = currentName !== this.repository.name;
+    const descriptionChanged = currentDescription !== (this.repository.description || '');
+    const branchChanged = currentBranch !== (this.repository.branch || '');
+
+    return nameChanged || descriptionChanged || branchChanged;
   }
 
   onSubmit(): void {

@@ -1,71 +1,86 @@
 <div class="task-status-container">
   @if (loading) {
     <div class="loading">
-      <i class="fas fa-spinner fa-spin"></i> Loading task...
+      <mat-spinner diameter="30"></mat-spinner>
+      <p>Loading task...</p>
     </div>
   }
 
   @if (error) {
-    <div class="error">
-      <i class="fas fa-exclamation-triangle"></i> {{ error }}
-    </div>
+    <mat-card class="error">
+      <mat-card-content>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <mat-icon color="warn">error</mat-icon>
+          <span>{{ error }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
   }
 
   @if (!loading && !error && asyncTask) {
-    <div class="task-details" [ngClass]="getStatusClass()">
-      <div class="task-header">
-        <h3>
-          <i class="fas" [ngClass]="getStatusIcon()"></i>
-          Task: {{ asyncTask.type | titlecase }}
-        </h3>
-        <span class="task-id">ID: {{ asyncTask.id }}</span>
-      </div>
-      <div class="task-info">
-        <div class="info-row">
-          <span class="label">Status:</span>
-          <span class="value status">{{ asyncTask.status | titlecase }}</span>
-        </div>
-        <div class="info-row">
-          <span class="label">Message:</span>
-          <span class="value">{{ asyncTask.message || 'No message' }}</span>
-        </div>
-        @if (asyncTask.progress && asyncTask.progress > 0) {
-          <div class="progress-container">
-            <div class="progress-bar" [style.width.%]="asyncTask.progress">
-              <span>{{ asyncTask.progress }}%</span>
-            </div>
+    <mat-card class="task-details" [ngClass]="getStatusClass()">
+      <mat-card-header class="task-header">
+        <mat-card-title>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <mat-icon [ngClass]="getStatusIcon()">{{ getStatusIconName() }}</mat-icon>
+            Task: {{ asyncTask.type | titlecase }}
           </div>
-        }
-        <div class="info-row">
-          <span class="label">Created:</span>
-          <span class="value">{{ formatDate(asyncTask.created_at) }}</span>
-        </div>
-        @if (asyncTask.started_at) {
-          <div class="info-row">
-            <span class="label">Started:</span>
-            <span class="value">{{ formatDate(asyncTask.started_at) }}</span>
-          </div>
-        }
-        @if (asyncTask.completed_at) {
-          <div class="info-row">
-            <span class="label">Completed:</span>
-            <span class="value">{{ formatDate(asyncTask.completed_at) }}</span>
-          </div>
-        }
-        @if (asyncTask.started_at) {
-          <div class="info-row">
-            <span class="label">Duration:</span>
-            <span class="value">{{ getElapsedTime() }}</span>
-          </div>
-        }
-      </div>
-      <div class="task-actions">
+        </mat-card-title>
+        <mat-card-subtitle>ID: {{ asyncTask.id }}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content class="task-info">
+        <mat-list>
+          <mat-list-item>
+            <span matListItemTitle>Status</span>
+            <span matListItemLine>
+              <mat-chip class="status-chip" [ngClass]="getStatusClass()">{{ asyncTask.status | titlecase }}</mat-chip>
+            </span>
+          </mat-list-item>
+          <mat-list-item>
+            <span matListItemTitle>Message</span>
+            <span matListItemLine>{{ asyncTask.message || 'No message' }}</span>
+          </mat-list-item>
+          @if (asyncTask.progress && asyncTask.progress > 0) {
+            <mat-list-item>
+              <span matListItemTitle>Progress</span>
+              <div matListItemLine class="progress-container">
+                <mat-progress-bar mode="determinate" [value]="asyncTask.progress"></mat-progress-bar>
+                <span class="progress-text">{{ asyncTask.progress }}%</span>
+              </div>
+            </mat-list-item>
+          }
+          <mat-list-item>
+            <span matListItemTitle>Created</span>
+            <span matListItemLine>{{ formatDate(asyncTask.created_at) }}</span>
+          </mat-list-item>
+          @if (asyncTask.started_at) {
+            <mat-list-item>
+              <span matListItemTitle>Started</span>
+              <span matListItemLine>{{ formatDate(asyncTask.started_at) }}</span>
+            </mat-list-item>
+          }
+          @if (asyncTask.completed_at) {
+            <mat-list-item>
+              <span matListItemTitle>Completed</span>
+              <span matListItemLine>{{ formatDate(asyncTask.completed_at) }}</span>
+            </mat-list-item>
+          }
+          @if (asyncTask.started_at) {
+            <mat-list-item>
+              <span matListItemTitle>Duration</span>
+              <span matListItemLine>{{ getElapsedTime() }}</span>
+            </mat-list-item>
+          }
+        </mat-list>
+      </mat-card-content>
+      <mat-card-actions class="task-actions">
         @if (!autoRefresh) {
-          <button (click)="loadTask()" class="refresh-btn">
-            <i class="fas fa-sync-alt"></i> Refresh
+          <button mat-button color="primary" (click)="loadTask()">
+            <mat-icon>refresh</mat-icon>
+            Refresh
           </button>
         }
-      </div>
-    </div>
+      </mat-card-actions>
+    </mat-card>
   }
 </div>

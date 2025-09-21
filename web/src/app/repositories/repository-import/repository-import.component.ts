@@ -9,6 +9,12 @@ import {environment} from '../../../environments/environment';
 import {ArrayResponse} from '../../shared/core/response';
 import {StrUtils} from '../../shared/utils/str.utils';
 import {PageTitleService} from '../../services/page.title.service';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatListModule } from '@angular/material/list';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 interface GithubAccount {
   login: string;
@@ -37,7 +43,15 @@ interface GithubAppInfo {
 @Component({
   selector: 'app-repository-import',
   standalone: true,
-  imports: [RouterModule],
+  imports: [
+    RouterModule,
+    MatCardModule,
+    MatButtonModule,
+    MatIconModule,
+    MatListModule,
+    MatChipsModule,
+    MatProgressSpinnerModule
+  ],
   templateUrl: './repository-import.component.html',
   styleUrls: ['./repository-import.component.scss'],
   providers: [AuthService]

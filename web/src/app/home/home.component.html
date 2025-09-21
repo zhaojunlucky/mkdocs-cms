@@ -5,26 +5,43 @@
   <div class="repositories-section">
     <div class="section-header">
       <h2>Your Repositories</h2>
-      <button class="add-repo-btn" routerLink="/repositories/import">Add Repository</button>
+      <button mat-raised-button color="accent" routerLink="/repositories/import">
+        <mat-icon>add</mat-icon>
+        Add Repository
+      </button>
     </div>
 
     @if (loading) {
       <div class="loading-indicator">
+        <mat-spinner diameter="40"></mat-spinner>
         <p>Loading repositories...</p>
       </div>
     }
 
     @if (error) {
-      <div class="error-message">
-        <p>{{ error }}</p>
-      </div>
+      <mat-card class="error-message">
+        <mat-card-content>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <mat-icon color="warn">error</mat-icon>
+            <p>{{ error }}</p>
+          </div>
+        </mat-card-content>
+      </mat-card>
     }
 
     @if (!loading && !error && repositories.length === 0) {
-      <div class="empty-state">
-        <p>You don't have any repositories yet.</p>
-        <button class="add-repo-btn" routerLink="/repositories/import">Add Your First Repository</button>
-      </div>
+      <mat-card class="empty-state">
+        <mat-card-content>
+          <div style="text-align: center; padding: 40px;">
+            <mat-icon style="font-size: 48px; height: 48px; width: 48px; color: #ccc;">folder_open</mat-icon>
+            <p>You don't have any repositories yet.</p>
+            <button mat-raised-button color="primary" routerLink="/repositories/import">
+              <mat-icon>add</mat-icon>
+              Add Your First Repository
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
     }
 
     @if (!loading && repositories.length > 0) {

@@ -3,7 +3,6 @@
   justify-content: center;
   align-items: center;
   height: calc(100vh - 64px);
-  background-color: #f5f5f5;
 }
 
 .login-card {
@@ -24,12 +23,10 @@ mat-card-header {
 mat-card-title {
   font-size: 24px;
   margin-bottom: 10px;
-  color: #3f51b5;
 }
 
 mat-card-subtitle {
   font-size: 16px;
-  color: #666;
 }
 
 .login-message {
@@ -37,7 +34,6 @@ mat-card-subtitle {
   margin-bottom: 20px;
 
   p {
-    color: #666;
     font-size: 16px;
   }
 }
@@ -64,22 +60,12 @@ mat-card-subtitle {
 }
 
 .github-button {
-  background-color: #24292e;
-  color: white;
+  /* Angular Material will handle button styling */
 }
 
-.google-button {
-  background-color: #4285f4;
-  color: white;
-}
-
-mat-divider {
-  margin: 20px 0;
-}
 
 .footer-text {
   text-align: center;
-  color: #999;
   font-size: 12px;
   padding: 10px;
 }
@@ -93,13 +79,11 @@ mat-divider {
 
   p {
     margin-top: 20px;
-    color: #666;
     font-size: 16px;
   }
 }
 
 /* Error snackbar styling */
 ::ng-deep .error-snackbar {
-  background-color: #f44336;
-  color: white;
+  /* Angular Material will handle error snackbar styling */
 }

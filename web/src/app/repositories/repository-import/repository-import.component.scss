@@ -4,7 +4,7 @@
   margin: 64px 0 0 0;
   padding: 1rem;
   box-sizing: border-box;
-  background-color: white;
+  background-color: var(--mat-surface);
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
@@ -12,24 +12,14 @@
 .import-header {
   margin-bottom: 30px;
 
-  .back-link {
-    display: inline-block;
-    margin-bottom: 15px;
-    color: #3f51b5;
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
 
   h1 {
     margin: 0 0 10px 0;
-    color: #333;
+    color: var(--mat-text-primary);
   }
 
   .description {
-    color: #666;
+    color: var(--mat-text-secondary);
     margin: 0;
   }
 }
@@ -42,36 +32,21 @@
 }
 
 .loading-indicator {
-  color: #666;
+  color: var(--mat-text-secondary);
 }
 
 .error-message {
-  background-color: #ffebee;
-  color: #f44336;
-  border: 1px solid #ffcdd2;
+  background-color: var(--mat-warn-50);
+  color: var(--mat-warn);
+  border: 1px solid var(--mat-warn-200);
 }
 
 .success-message {
-  background-color: #e8f5e9;
-  color: #4caf50;
-  border: 1px solid #c8e6c9;
+  background-color: var(--mat-success-50);
+  color: var(--mat-success);
+  border: 1px solid var(--mat-success-200);
 }
 
-.github-app-install-btn {
-  display: inline-block;
-  margin-top: 15px;
-  padding: 10px 20px;
-  background-color: #2cbe4e;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-weight: 500;
-  cursor: pointer;
-
-  &:hover {
-    background-color: #269f42;
-  }
-}
 
 .installation-section, .repository-section {
   margin-bottom: 30px;
@@ -79,7 +54,7 @@
   h2 {
     margin-top: 0;
     margin-bottom: 15px;
-    color: #333;
+    color: var(--mat-text-primary);
   }
 }
 
@@ -90,38 +65,6 @@
   margin-bottom: 30px;
 }
 
-.installation-item {
-  display: flex;
-  align-items: center;
-  padding: 15px;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    border-color: #3f51b5;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-
-  &.selected {
-    border-color: #3f51b5;
-    background-color: rgba(63, 81, 181, 0.05);
-    box-shadow: 0 2px 8px rgba(63, 81, 181, 0.2);
-  }
-
-  .github-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    margin-right: 15px;
-  }
-
-  .installation-name {
-    font-weight: 500;
-    color: #333;
-  }
-}
 
 .repository-header {
   display: flex;
@@ -134,31 +77,6 @@
     gap: 10px;
   }
 
-  button {
-    padding: 6px 12px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-
-    &.select-all-btn {
-      background-color: #e3f2fd;
-      color: #1976d2;
-
-      &:hover {
-        background-color: #bbdefb;
-      }
-    }
-
-    &.deselect-all-btn {
-      background-color: #f5f5f5;
-      color: #616161;
-
-      &:hover {
-        background-color: #e0e0e0;
-      }
-    }
-  }
 }
 
 .repository-list {
@@ -168,93 +86,10 @@
   margin-bottom: 30px;
 }
 
-.repository-item {
-  display: flex;
-  padding: 15px;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    border-color: #3f51b5;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-
-  &.selected {
-    border-color: #3f51b5;
-    background-color: rgba(63, 81, 181, 0.05);
-    box-shadow: 0 2px 8px rgba(63, 81, 181, 0.2);
-  }
-
-  .repo-checkbox {
-    margin-right: 15px;
-    display: flex;
-    align-items: center;
-
-    input[type="checkbox"] {
-      width: 20px;
-      height: 20px;
-      cursor: pointer;
-    }
-  }
-
-  .repo-info {
-    flex: 1;
-
-    .repo-name {
-      margin: 0 0 5px 0;
-      font-size: 16px;
-      color: #333;
-    }
-
-    .repo-description {
-      margin: 0 0 10px 0;
-      color: #666;
-      font-size: 14px;
-    }
-
-    .repo-visibility {
-      display: inline-block;
-      padding: 4px 8px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 500;
-      background-color: #e8f5e9;
-      color: #4caf50;
-
-      &.private {
-        background-color: #fff8e1;
-        color: #ffa000;
-      }
-    }
-  }
-}
 
 .import-actions {
   display: flex;
   justify-content: center;
   margin-top: 20px;
 
-  .import-btn {
-    padding: 10px 20px;
-    background-color: #4caf50;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.3s;
-
-    &:hover:not(:disabled) {
-      background-color: #45a049;
-    }
-
-    &:disabled {
-      background-color: #cccccc;
-      cursor: not-allowed;
-      opacity: 0.7;
-    }
-  }
 }

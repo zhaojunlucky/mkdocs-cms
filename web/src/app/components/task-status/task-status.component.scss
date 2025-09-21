@@ -3,7 +3,6 @@
   border-radius: 6px;
   overflow: hidden;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  background-color: #fff;
 }
 
 .loading, .error {
@@ -12,121 +11,46 @@
 }
 
 .error {
-  color: #e74c3c;
-  background-color: #fdf3f2;
+  /* Angular Material will handle error styling */
 }
 
 .task-details {
-  border-left: 4px solid #95a5a6;
-  
+  border-left: 4px solid var(--mat-surface-300);
+
   &.status-completed {
-    border-left-color: #27ae60;
+    border-left-color: var(--mat-success);
   }
-  
+
   &.status-failed {
-    border-left-color: #e74c3c;
+    border-left-color: var(--mat-warn);
   }
-  
+
   &.status-running {
-    border-left-color: #3498db;
+    border-left-color: var(--mat-primary);
   }
-  
+
   &.status-pending {
-    border-left-color: #f39c12;
+    border-left-color: var(--mat-warning);
   }
 }
 
-.task-header {
-  padding: 15px;
-  background-color: #f9f9f9;
-  border-bottom: 1px solid #eee;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  
-  h3 {
-    margin: 0;
-    font-size: 16px;
-    
-    i {
-      margin-right: 8px;
-    }
-  }
-  
-  .task-id {
-    font-size: 12px;
-    color: #7f8c8d;
-  }
-}
 
-.task-info {
-  padding: 15px;
-  
-  .info-row {
-    display: flex;
-    margin-bottom: 10px;
-    
-    &:last-child {
-      margin-bottom: 0;
-    }
-    
-    .label {
-      width: 100px;
-      font-weight: bold;
-      color: #7f8c8d;
-    }
-    
-    .value {
-      flex: 1;
-      
-      &.status {
-        font-weight: bold;
-      }
-    }
-  }
-}
 
 .progress-container {
-  height: 20px;
-  background-color: #ecf0f1;
-  border-radius: 10px;
-  margin: 10px 0 15px;
-  overflow: hidden;
-  
-  .progress-bar {
-    height: 100%;
-    background-color: #3498db;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 12px;
-    transition: width 0.3s ease;
-    min-width: 30px;
-  }
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.progress-text {
+  font-size: 12px;
+  min-width: 30px;
 }
 
 .task-actions {
   padding: 10px 15px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--mat-surface-200);
   text-align: right;
-  
-  .refresh-btn {
-    background-color: #3498db;
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    
-    &:hover {
-      background-color: #2980b9;
-    }
-    
-    i {
-      margin-right: 5px;
-    }
-  }
+
 }
