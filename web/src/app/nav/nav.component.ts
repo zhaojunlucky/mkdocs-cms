@@ -28,4 +28,21 @@ export class NavComponent {
   logout(): void {
     this.authService.logout();
   }
+
+  showReqNotifyBtn(): boolean {
+    return Notification.permission !== 'granted';
+  }
+
+  requestNotificationPermission(): void {
+    if ('Notification' in window) {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          new Notification('Notifications Enabled!', {
+            body: 'You will now receive notifications for unsaved changes.',
+            icon: '/favicon.ico'
+          });
+        }
+      });
+    }
+  }
 }
