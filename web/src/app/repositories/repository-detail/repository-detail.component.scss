@@ -254,33 +254,17 @@
   margin: 0;
 }
 
-/* Global styles to override Angular Material */
-::ng-deep mat-nav-list.collection-list mat-list-item {
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border-left: 4px solid transparent;
-}
-
-::ng-deep mat-nav-list.collection-list mat-list-item:hover {
-  background-color: var(--mat-primary-50) !important;
-}
-
-::ng-deep mat-nav-list.collection-list mat-list-item.selected {
-  background-color: var(--mat-primary-100) !important;
-  border-left: 4px solid var(--mat-primary) !important;
-}
-
-::ng-deep mat-nav-list.collection-list mat-list-item.selected .mat-mdc-list-item-content {
-  font-weight: 600 !important;
-}
-
-::ng-deep mat-nav-list.collection-list mat-list-item.selected span {
-  font-weight: 600 !important;
+/* Collection list item styling - using Angular Material's activated state */
+.collection-list {
+  ::ng-deep mat-list-item {
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
 }
 
 .main-content {
   flex: 1;
-  padding: 20px, 20px, 0, 20px;
+  padding: 20px 20px 0 20px;
   overflow-y: auto;
   position: relative; /* Added for positioning the back-to-top button */
 }
