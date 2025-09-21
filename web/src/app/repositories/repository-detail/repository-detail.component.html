@@ -43,15 +43,13 @@
             <mat-nav-list class="collection-list">
               @for (collection of collections; track collection) {
                 <mat-list-item
-                  [class.selected]="collection.name === selectedColName"
-                  [style.background-color]="collection.name === selectedColName ? 'rgba(63, 81, 181, 0.15)' : (hoveredCollection === collection.name ? 'rgba(63, 81, 181, 0.05)' : '')"
-                  [style.border-left]="collection.name === selectedColName ? '4px solid #3f51b5' : '4px solid transparent'"
+                  [activated]="collection.name === selectedColName"
                   (click)="selectCollection(collection)"
                   (mouseenter)="onCollectionHover(collection.name)"
                   (mouseleave)="onCollectionLeave()"
                   class="collection-item">
                   <mat-icon matListItemIcon>folder</mat-icon>
-                  <span matListItemTitle [style.font-weight]="collection.name === selectedColName ? '600' : '400'">{{ collection.label }}</span>
+                  <span matListItemTitle>{{ collection.label }}</span>
                 </mat-list-item>
               }
             </mat-nav-list>
