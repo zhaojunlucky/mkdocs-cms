@@ -23,6 +23,13 @@
           </div>
         </div>
       }
+      @if (showReqNotifyBtn()) {
+        <mat-divider></mat-divider>
+        <button mat-menu-item (click)="requestNotificationPermission()">
+          <mat-icon>notifications</mat-icon>
+          <span>Enable Notifications</span>
+        </button>
+      }
       <mat-divider></mat-divider>
       <button mat-menu-item (click)="logout()">
         <mat-icon>logout</mat-icon>

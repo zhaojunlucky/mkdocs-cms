@@ -170,6 +170,42 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
     this.pageTitleService.title = title;
   }
 
+  @HostListener('window:beforeunload', ['$event'])
+  unloadNotification($event: any): void {
+    if (this.changed) {
+      $event.returnValue = true;
+    }
+  }
+
+  @HostListener('document:visibilitychange', ['$event'])
+  onVisibilityChange(event: Event): void {
+    console.log('Visibility changed. Document hidden:', document.hidden, 'Has changes:', this.changed);
+    
+    if (document.hidden && this.changed) {
+      console.log('Attempting to show notification. Permission:', Notification.permission);
+      
+      if (Notification.permission === 'granted') {
+        const notification = new Notification('Unsaved Changes!', {
+          body: "You have unsaved changes in your file. Please save to avoid losing your work!",
+          icon: '/favicon.ico',
+          requireInteraction: true, // Keep notification visible until user interacts
+          tag: 'unsaved-changes' // Prevent duplicate notifications
+        });
+        
+        notification.onclick = () => {
+          window.focus(); // Bring the tab back to focus
+          notification.close();
+        };
+        
+        console.log('Notification created successfully');
+      } else {
+        console.log('Notification permission not granted, showing alert');
+        alert("Please enable notification permission!!! You have unsaved changes, please save to avoid losing your work!!!");
+      }
+    }
+  }
+
+
   @HostListener('window:resize', ['$event'])
   onWindowResize() {
     // console.log("window resized");
