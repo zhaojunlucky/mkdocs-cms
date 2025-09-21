@@ -11,49 +11,71 @@
   }
 
   @if (error) {
-    <div class="error-message">
-      <p>{{ error }}</p>
-      <a routerLink="/home" class="back-btn">Back to Home</a>
-    </div>
+    <mat-card class="error-message">
+      <mat-card-content>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+          <mat-icon color="warn">error</mat-icon>
+          <p>{{ error }}</p>
+        </div>
+        <button mat-button color="primary" routerLink="/home">
+          <mat-icon>home</mat-icon>
+          Back to Home
+        </button>
+      </mat-card-content>
+    </mat-card>
   }
 
   @if (!isLoading && !error && repository) {
     <div>
       <div class="content-layout">
         <!-- Sidenav for collections -->
-        <div class="sidenav">
-          <div class="sidenav-header">
-            <h3>Collections</h3>
-          </div>
-          <div class="sidenav-content">
+        <mat-card class="sidenav">
+          <mat-card-header>
+            <mat-card-title>Collections</mat-card-title>
+          </mat-card-header>
+          <mat-card-content class="sidenav-content">
             @if (collections.length === 0) {
               <div class="empty-state-sidenav">
+                <mat-icon style="color: #ccc; font-size: 24px;">folder_open</mat-icon>
                 <p>No collections found</p>
               </div>
             }
-            <ul class="collection-list">
+            <mat-nav-list class="collection-list">
               @for (collection of collections; track collection) {
-                <li
+                <mat-list-item
                   [class.selected]="collection.name === selectedColName"
-                  (click)="selectCollection(collection)">
-                  <span class="collection-name">{{ collection.label }}</span>
-                </li>
+                  [style.background-color]="collection.name === selectedColName ? 'rgba(63, 81, 181, 0.15)' : (hoveredCollection === collection.name ? 'rgba(63, 81, 181, 0.05)' : '')"
+                  [style.border-left]="collection.name === selectedColName ? '4px solid #3f51b5' : '4px solid transparent'"
+                  (click)="selectCollection(collection)"
+                  (mouseenter)="onCollectionHover(collection.name)"
+                  (mouseleave)="onCollectionLeave()"
+                  class="collection-item">
+                  <mat-icon matListItemIcon>folder</mat-icon>
+                  <span matListItemTitle [style.font-weight]="collection.name === selectedColName ? '600' : '400'">{{ collection.label }}</span>
+                </mat-list-item>
               }
-            </ul>
-          </div>
-        </div>
+            </mat-nav-list>
+          </mat-card-content>
+        </mat-card>
         <!-- Main content area -->
         <div class="main-content" (scroll)="handleScroll($event)">
           <!-- Show info message if no collection is selected -->
           @if (!selectedColName) {
-            <div class="info-message-large">
-              <p>Select a collection from the sidebar to browse its files.</p>
-            </div>
+            <mat-card class="info-message-large">
+              <mat-card-content>
+                <div style="text-align: center; padding: 40px;">
+                  <mat-icon style="font-size: 48px; height: 48px; width: 48px; color: #ccc;">info</mat-icon>
+                  <p>Select a collection from the sidebar to browse its files.</p>
+                </div>
+              </mat-card-content>
+            </mat-card>
           }
           <router-outlet></router-outlet>
           <!-- Back to top button -->
           @if (showBackToTop) {
             <button
+              mat-fab
+              color="primary"
               class="back-to-top-btn"
               (click)="scrollToTop()"
               matTooltip="Back to top">
@@ -63,6 +85,8 @@
           <!-- Scroll to bottom button -->
           @if (showScrolltoBottom) {
             <button
+              mat-fab
+              color="accent"
               class="scroll-to-bottom-btn"
               (click)="scrollToBottom()"
               matTooltip="Scroll to bottom">

@@ -6,6 +6,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatCardModule } from '@angular/material/card';
+import { MatListModule } from '@angular/material/list';
 import { RepositoryService } from '../../services/repository.service';
 import { Repository, Collection } from '../../services/repository.service';
 import {RouteParameterService} from '../../services/routeparameter.service';
@@ -24,8 +26,10 @@ import {PageTitleService} from '../../services/page.title.service';
     RouterOutlet,
     MatChipsModule,
     MatIconModule,
-    MatTooltipModule
-],
+    MatTooltipModule,
+    MatCardModule,
+    MatListModule
+  ],
   templateUrl: './repository-detail.component.html',
   styleUrls: ['./repository-detail.component.scss']
 })
@@ -37,6 +41,7 @@ export class RepositoryDetailComponent implements OnInit, AfterViewInit, OnDestr
   selectedColName: string | null = '';
   showBackToTop = false;
   showScrolltoBottom = false;
+  hoveredCollection: string | null = null;
   private windowScrollListener: any;
 
   constructor(
@@ -199,5 +204,13 @@ export class RepositoryDetailComponent implements OnInit, AfterViewInit, OnDestr
 
   selectCollection(collection: Collection) {
     this.router.navigate(['/repositories', this.repository?.id, 'collection', collection.name]);
+  }
+
+  onCollectionHover(collectionName: string) {
+    this.hoveredCollection = collectionName;
+  }
+
+  onCollectionLeave() {
+    this.hoveredCollection = null;
   }
 }

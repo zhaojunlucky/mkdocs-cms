@@ -3,14 +3,28 @@ import { AsyncTask, RepositoryService, Task } from '../../services/repository.se
 import { interval, Subscription } from 'rxjs';
 import { switchMap, takeWhile } from 'rxjs/operators';
 import { NgClass, TitleCasePipe } from '@angular/common';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatListModule } from '@angular/material/list';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 @Component({
   selector: 'app-task-status',
   templateUrl: './task-status.component.html',
   imports: [
     NgClass,
-    TitleCasePipe
-],
+    TitleCasePipe,
+    MatCardModule,
+    MatButtonModule,
+    MatIconModule,
+    MatListModule,
+    MatChipsModule,
+    MatProgressSpinnerModule,
+    MatProgressBarModule
+  ],
   styleUrls: ['./task-status.component.scss']
 })
 export class TaskStatusComponent implements OnInit, OnDestroy {
@@ -140,6 +154,18 @@ export class TaskStatusComponent implements OnInit, OnDestroy {
       case 'running': return 'fa-spinner fa-spin';
       case 'pending': return 'fa-clock';
       default: return 'fa-question-circle';
+    }
+  }
+
+  getStatusIconName(): string {
+    if (!this.asyncTask) return 'help';
+
+    switch (this.asyncTask.status) {
+      case 'completed': return 'check_circle';
+      case 'failed': return 'error';
+      case 'running': return 'refresh';
+      case 'pending': return 'schedule';
+      default: return 'help';
     }
   }
 

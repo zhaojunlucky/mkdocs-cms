@@ -4,13 +4,11 @@
   margin: 64px 0 0 0;
   padding: 1rem;
   box-sizing: border-box;
-  background-color: white;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
-  color: #3f51b5;
   margin-bottom: 30px;
   text-align: center;
 }
@@ -25,32 +23,16 @@ h1 {
   align-items: center;
   margin-bottom: 20px;
   padding-bottom: 10px;
-  border-bottom: 1px solid #eee;
-}
-
-.add-repo-btn {
-  background-color: #4caf50;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.3s;
-
-  &:hover {
-    background-color: #45a049;
-  }
+  border-bottom: 1px solid var(--mat-surface-200);
 }
 
 .loading-indicator, .error-message, .empty-state {
   text-align: center;
   padding: 30px;
-  color: #666;
 }
 
 .error-message {
-  color: #f44336;
+  color: var(--mat-warn);
 }
 
 .empty-state {
@@ -98,19 +80,9 @@ h1 {
   .repo-details {
     padding: 0 16px 16px 16px;
 
-    .repo-path {
-      font-family: monospace;
-      background-color: #f9f9f9;
-      padding: 8px;
-      border-radius: 4px;
-      margin-bottom: 10px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
 
     .repo-date {
-      color: #777;
+      color: var(--mat-text-secondary);
       font-size: 14px;
     }
 
@@ -120,31 +92,30 @@ h1 {
       position: relative;
 
       &.status-synced {
-        color: #4CAF50;
+        color: var(--mat-success);
       }
 
       &.status-syncing {
-        color: #3498db;
+        color: var(--mat-primary);
         font-weight: bold;
         animation: pulse 1.5s infinite ease-in-out;
       }
 
       &.status-failed {
-        color: #F44336;
+        color: var(--mat-warn);
       }
 
       &.status-pending {
-        color: #FF9800;
+        color: var(--mat-warning);
       }
 
       &.status-warning {
-        color: #FFC107;
+        color: var(--mat-warning);
       }
 
       .error-tooltip {
         visibility: hidden;
-        background-color: #333;
-        color: white;
+        color: red;
         text-align: center;
         border-radius: 4px;
         padding: 5px 10px;
@@ -169,12 +140,11 @@ h1 {
     .warning-message {
       margin-top: 15px;
       padding: 10px;
-      background-color: #FFF8E1;
-      border: 1px solid #FFECB3;
+      border: 1px solid var(--mat-warning-200);
       border-radius: 4px;
 
       p {
-        color: #FF8F00;
+        color: var(--mat-warning-800);
         margin-bottom: 10px;
         font-size: 14px;
 
@@ -183,28 +153,14 @@ h1 {
         }
       }
 
-      .fix-config-btn {
-        background-color: #FFC107;
-        color: #212121;
-        border: none;
-        padding: 6px 12px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 13px;
-        transition: background-color 0.3s;
-
-        &:hover {
-          background-color: #FFB300;
-        }
-      }
     }
   }
 
   .repo-actions {
     display: flex;
     padding: 10px 15px;
-    background-color: #fafafa;
-    border-top: 1px solid #e0e0e0;
+    background-color: var(--mat-surface-50);
+    border-top: 1px solid var(--mat-surface-200);
 
     a, button {
       flex: 1;
@@ -218,60 +174,14 @@ h1 {
       border: none;
       transition: background-color 0.2s;
     }
-
-    .view-btn {
-      background-color: #3f51b5;
-      color: white;
-
-      &:hover {
-        background-color: #303f9f;
-      }
-    }
-
-    .edit-btn {
-      background-color: #ff9800;
-      color: white;
-
-      &:hover {
-        background-color: #f57c00;
-      }
-    }
-
-    .delete-btn {
-      background-color: #f44336;
-      color: white;
-
-      &:hover {
-        background-color: #d32f2f;
-      }
-    }
   }
 
-  .repo-menu {
-    position: relative;
-
-    .menu-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 5px;
-      color: #666;
-
-      &:hover {
-        color: #333;
-      }
-
-      i {
-        font-size: 16px;
-      }
-    }
-  }
 }
 
 p {
   font-size: 18px;
   line-height: 1.6;
-  color: #555;
+  color: var(--mat-text-secondary);
 }
 
 @keyframes pulse {

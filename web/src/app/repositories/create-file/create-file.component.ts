@@ -4,6 +4,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { RepositoryService, Collection } from '../../services/repository.service';
 import {CollectionService, FileInfo} from '../../services/collection.service';
 import { FrontMatterEditorComponent } from '../../markdown/front-matter-editor/front-matter-editor.component';
@@ -30,13 +32,15 @@ import {ArrayResponse} from '../../shared/core/response';
     FormsModule,
     MatProgressSpinnerModule,
     MatButtonModule,
+    MatCardModule,
+    MatFormFieldModule,
     FrontMatterEditorComponent,
     VditorEditorComponent,
     MatInputModule,
     MatIcon,
     MatIconButton,
     MatTooltip
-],
+  ],
   templateUrl: './create-file.component.html',
   styleUrls: ['./create-file.component.scss']
 })

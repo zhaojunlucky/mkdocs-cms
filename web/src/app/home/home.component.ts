@@ -10,6 +10,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatCardModule } from '@angular/material/card';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Router } from '@angular/router';
 import {MatChipsModule} from '@angular/material/chips';
 import {StrUtils} from '../shared/utils/str.utils';
@@ -18,7 +19,7 @@ import {PageTitleService} from '../services/page.title.service';
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule, ComponentsModule, MatButtonModule, MatIconModule, MatMenuModule, MatCardModule, MatChipsModule],
+  imports: [CommonModule, RouterModule, ComponentsModule, MatButtonModule, MatIconModule, MatMenuModule, MatCardModule, MatChipsModule, MatProgressSpinnerModule],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })

@@ -31,10 +31,18 @@
   }
 
   @if (error) {
-    <div class="error-message">
-      <p>{{ error }}</p>
-      <a [routerLink]="['/repositories', repositoryId]" class="back-btn">Back to Repository</a>
-    </div>
+    <mat-card class="error-message">
+      <mat-card-content>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+          <mat-icon color="warn">error</mat-icon>
+          <p>{{ error }}</p>
+        </div>
+        <button mat-button color="primary" [routerLink]="['/repositories', repositoryId]">
+          <mat-icon>arrow_back</mat-icon>
+          Back to Repository
+        </button>
+      </mat-card-content>
+    </mat-card>
   }
 
   @if (!isLoading && !error) {
@@ -61,24 +69,30 @@
                 }
               </div>
               <div style="display: flex; justify-content: flex-end; gap: 8px;">
-                <button (click)="saveFile()" [disabled]="savingFile || !changed" class="save-btn">
-                  @if (!savingFile) {
-                    <span>Save</span>
-                  }
+                <button mat-raised-button color="primary" (click)="saveFile()" [disabled]="savingFile || !changed">
                   @if (savingFile) {
-                    <span>Saving...</span>
+                    <mat-spinner diameter="16" style="margin-right: 8px;"></mat-spinner>
                   }
+                  @if (!savingFile) {
+                    <mat-icon>save</mat-icon>
+                  }
+                  {{ savingFile ? 'Saving...' : 'Save' }}
                 </button>
-                <button (click)="cancelEditing()" [disabled]="savingFile" class="cancel-btn">Cancel</button>
+                <button mat-button (click)="cancelEditing()" [disabled]="savingFile">Cancel</button>
               </div>
             </div>
           </div>
         </div>
         <!-- File Error Message -->
         @if (fileError) {
-          <div class="file-error-message">
-            <p>{{ fileError }}</p>
-          </div>
+          <mat-card class="file-error-message">
+            <mat-card-content>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <mat-icon color="warn">error</mat-icon>
+                <p>{{ fileError }}</p>
+              </div>
+            </mat-card-content>
+          </mat-card>
         }
         <div class="file-editor-content">
           <!-- Front Matter Editor -->
@@ -92,10 +106,14 @@
             </app-front-matter-editor>
           }
           <!-- Markdown Editor -->
-          <div class="markdown-editor-wrapper">
-            <h3>Content</h3>
-            <app-vditor-editor [(ngModel)]="markdownContent" [options]="editorOptions" (ready)="onEditorReady($event)"></app-vditor-editor>
-          </div>
+          <mat-card class="markdown-editor-wrapper">
+            <mat-card-header>
+              <mat-card-title>Content</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <app-vditor-editor [(ngModel)]="markdownContent" [options]="editorOptions" (ready)="onEditorReady($event)"></app-vditor-editor>
+            </mat-card-content>
+          </mat-card>
         </div>
       </div>
     </div>

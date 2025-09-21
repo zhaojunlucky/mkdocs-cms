@@ -1,10 +1,19 @@
-<footer class="app-footer">
+<mat-toolbar class="app-footer" color="primary">
   <div class="footer-content">
     <div class="copyright">&copy; 2025-{{ currentYear }} MkDocs CMS. Frontend: {{frontendVersion}} | Backend: {{version}}</div>
     <div class="links">
-      <a href="https://github.com/zhaojunlucky/mkdocs-cms" target="_blank" rel="noopener">GitHub</a>
-      <a href="https://gundamz.net/mkdocs-cms" target="_blank" rel="noopener">Documentation</a>
-      <a href="https://exia.dev" target="_blank" rel="noopener">About</a>
+      <a mat-button href="https://github.com/zhaojunlucky/mkdocs-cms" target="_blank" rel="noopener">
+        <mat-icon>code</mat-icon>
+        GitHub
+      </a>
+      <a mat-button href="https://gundamz.net/mkdocs-cms" target="_blank" rel="noopener">
+        <mat-icon>description</mat-icon>
+        Documentation
+      </a>
+      <a mat-button href="https://exia.dev" target="_blank" rel="noopener">
+        <mat-icon>info</mat-icon>
+        About
+      </a>
     </div>
   </div>
-</footer>
+</mat-toolbar>

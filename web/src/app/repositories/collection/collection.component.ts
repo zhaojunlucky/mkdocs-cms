@@ -12,6 +12,7 @@ import {MatIconModule} from '@angular/material/icon';
 import {MatTooltip} from '@angular/material/tooltip';
 import {MatCardModule} from '@angular/material/card';
 import {MatFormField, MatInput, MatInputModule} from '@angular/material/input';
+import {MatChipsModule} from '@angular/material/chips';
 import {ArrayResponse} from '../../shared/core/response';
 import {StrUtils} from '../../shared/utils/str.utils';
 import {PageTitleService} from '../../services/page.title.service';
@@ -49,8 +50,9 @@ export class FileSizePipe implements PipeTransform {
     MatTooltip,
     MatCardModule,
     MatInputModule,
-    MatFormField
-],
+    MatFormField,
+    MatChipsModule
+  ],
   templateUrl: './collection.component.html',
   styleUrls: ['./collection.component.scss']
 })
@@ -65,7 +67,7 @@ export class CollectionComponent implements OnInit {
   pathSegments: { name: string; path: string }[] = [];
 
   selectedFile: FileInfo | null = null;
-
+  hoveredFile: FileInfo | null = null;
 
   // Front matter and markdown content
   frontMatter: Record<string, any> = {};
@@ -347,5 +349,13 @@ export class CollectionComponent implements OnInit {
   clearSearch(): void {
     this.searchTerm = '';
     this.filteredFiles = [...this.files];
+  }
+
+  onFileHover(file: FileInfo) {
+    this.hoveredFile = file;
+  }
+
+  onFileLeave() {
+    this.hoveredFile = null;
   }
 }
