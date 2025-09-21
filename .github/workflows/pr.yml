@@ -24,7 +24,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-go@v5
         with:
-          go-version: '^1.25.0' # The Go version to download (if necessary) and use.
+          go-version: '^1.25.1' # The Go version to download (if necessary) and use.
       - run: |
           go version
           go build -tags=prod -ldflags "-X main.Version=1.0.${{ github.run_number }}" -o mkdocs-cms main.go
@@ -39,7 +39,7 @@ jobs:
       - run: |
           cd web
           ls -al
-          yarn global add @angular/cli@19.x
+          yarn global add @angular/cli@20.x
           yarn install
           yarn version --no-git-tag-version --new-version 1.0.${{ github.run_number }}
           ng build --configuration production --aot
