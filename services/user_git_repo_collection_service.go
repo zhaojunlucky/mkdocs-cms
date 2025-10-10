@@ -75,7 +75,7 @@ func (s *UserGitRepoCollectionService) GetCollectionsByRepoID(repoID uint) ([]mo
 	// Get the repository to find its local path
 	var repo models.UserGitRepo
 	if err := database.DB.First(&repo, repoID).Error; err != nil {
-		return nil, errors.New(fmt.Sprintf("repository %d not found", repoID))
+		return nil, fmt.Errorf("repository %d not found", repoID)
 	}
 
 	// Read collections from veda/config.yml
@@ -175,7 +175,7 @@ func (s *UserGitRepoCollectionService) GetCollectionByID(id uint) (models.UserGi
 		// If we can't find it in the database, try to find it by name in the repository
 		var repo models.UserGitRepo
 		if err := database.DB.First(&repo, "id = ?", id).Error; err != nil {
-			return models.UserGitRepoCollection{}, errors.New(fmt.Sprintf("repository %d not found", id))
+			return models.UserGitRepoCollection{}, fmt.Errorf("repository %d not found", id)
 		}
 
 		// Read collections from veda/config.yml

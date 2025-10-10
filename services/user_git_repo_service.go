@@ -5,6 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"time"
+
 	"github.com/google/go-github/v45/github"
 	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
@@ -12,11 +18,6 @@ import (
 	"github.com/zhaojunlucky/mkdocs-cms/models"
 	"golang.org/x/oauth2"
 	"gopkg.in/yaml.v3"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
-	"time"
 )
 
 // UserGitRepoService handles business logic for git repositories
@@ -486,20 +487,6 @@ func (s *UserGitRepoService) checkVedaConfig(repo *models.UserGitRepo) error {
 	}
 
 	return nil
-}
-
-// ensureVedaConfig checks if veda/config.yml exists and creates it if it doesn't
-func (s *UserGitRepoService) ensureVedaConfig(repo *models.UserGitRepo) error {
-	configPath := filepath.Join(repo.LocalPath, "veda", "config.yml")
-
-	// Check if the config file already exists
-	if _, err := os.Stat(configPath); err == nil {
-		// File exists, validate its format
-		return s.checkVedaConfig(repo)
-	}
-
-	// If file doesn't exist, return an error
-	return fmt.Errorf("veda/config.yml not found. Please create this file with proper configuration")
 }
 
 // GetInstallationToken gets a GitHub app token for the repository

@@ -57,7 +57,7 @@ func main() {
 	// Debug: Print loaded configuration
 	log.Infof("Loaded configuration:")
 	log.Infof("Production: %v", env.IsProduction)
-	log.Info("Version: %s", Version)
+	log.Infof("Version: %s", Version)
 	log.Infof("Frontend URL: %s", appConfig.FrontendURL)
 	log.Infof("OAuth Redirect URL: %s", appConfig.OAuth.RedirectURL)
 	log.Infof("GitHub OAuth Client ID: %s", appConfig.GitHub.OAuth.ClientID)
@@ -111,7 +111,7 @@ func createContext(appConfig *config.Config) *core.APPContext {
 		WebhookSecret:  appConfig.GitHub.App.WebhookSecret,
 		PrivateKeyPath: appConfig.GitHub.App.PrivateKeyPath,
 	}
-	cookieDomainRegex := regexp.MustCompile("^https?://([^/:]+)(:\\d+)?")
+	cookieDomainRegex := regexp.MustCompile(`^https?://([^/:]+)(:\d+)?`)
 	matches := cookieDomainRegex.FindStringSubmatch(appConfig.FrontendURL)
 	if len(matches) < 2 {
 		log.Fatalf("Invalid frontend URL: %s", appConfig.FrontendURL)
