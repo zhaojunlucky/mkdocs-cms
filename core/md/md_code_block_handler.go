@@ -8,15 +8,10 @@ import (
 )
 
 type MDCodeBlockHandler struct {
-	mdConfig *MDConfig
 }
 
-func NewMDCodeBlockHandler(mdConfig *MDConfig) *MDCodeBlockHandler {
-	return &MDCodeBlockHandler{mdConfig: mdConfig}
-}
-
-func (m *MDCodeBlockHandler) Handle(mdBytes []byte, direction string) []byte {
-	if len(m.mdConfig.CodeBlockTransforms) == 0 {
+func (m *MDCodeBlockHandler) Handle(mdConfig *MDConfig, mdBytes []byte, direction string) []byte {
+	if len(mdConfig.CodeBlockTransforms) == 0 || direction == DirectionBoth {
 		return mdBytes
 	}
 
@@ -25,8 +20,8 @@ func (m *MDCodeBlockHandler) Handle(mdBytes []byte, direction string) []byte {
 
 	// We'll collect replacements as (start,end) byte ranges for the "info" segment.
 	type span struct {
-		start, end int
-		cfg        CodeBlockTransform
+		start, end  int
+		replacement string
 	} // inclusive start, exclusive end
 	var toReplace []span
 
@@ -36,12 +31,13 @@ func (m *MDCodeBlockHandler) Handle(mdBytes []byte, direction string) []byte {
 		}
 		if fcb, ok := n.(*ast.FencedCodeBlock); ok {
 			lang := string(fcb.Language(mdBytes)) // content of the "info" token
-			for _, cb := range m.mdConfig.CodeBlockTransforms {
+			for _, cb := range mdConfig.CodeBlockTransforms {
 				if !cb.CheckDirection(direction) {
 					continue
 				}
-				if lang == cb.FromLang {
-					toReplace = append(toReplace, span{start: fcb.Info.Segment.Start, end: fcb.Info.Segment.Stop, cfg: cb})
+				fromLang, toLang := cb.GetLang(direction)
+				if lang == fromLang {
+					toReplace = append(toReplace, span{start: fcb.Info.Segment.Start, end: fcb.Info.Segment.Stop, replacement: toLang})
 				}
 			}
 		}
@@ -62,7 +58,7 @@ func (m *MDCodeBlockHandler) Handle(mdBytes []byte, direction string) []byte {
 		// Copy everything before the info token
 		out = append(out, mdBytes[cursor:sp.start]...)
 		// Insert the new token
-		out = append(out, []byte("kroki-mermaid")...)
+		out = append(out, []byte(sp.replacement)...)
 		// Skip the old token
 		cursor = sp.end
 	}

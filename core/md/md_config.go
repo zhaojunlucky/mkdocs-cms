@@ -3,6 +3,7 @@ package md
 var (
 	DirectionRead  = "read"
 	DirectionWrite = "write"
+	DirectionBoth  = "both"
 )
 
 type MDConfig struct {
@@ -17,10 +18,18 @@ type CodeBlockTransform struct {
 }
 
 func (c *CodeBlockTransform) CheckDirection(direction string) bool {
-	if c.Direction == "" {
+	if c.Direction == "" || c.Direction == DirectionBoth {
 		return true
 	}
 	return c.Direction == direction
+}
+
+func (c *CodeBlockTransform) GetLang(direction string) (string, string) {
+	if direction == DirectionRead {
+		return c.ToLang, c.FromLang
+	} else {
+		return c.FromLang, c.ToLang
+	}
 }
 
 // IsEnabled returns true if the transform is enabled, false otherwise, defaulting to true if nil

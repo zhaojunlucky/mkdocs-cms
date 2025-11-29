@@ -27,12 +27,14 @@ type UserGitRepoCollectionService struct {
 	BaseService
 	userGitRepoService         *UserGitRepoService
 	userFileDraftStatusService *UserFileDraftStatusService
+	mdHandler                  *md.MDHandler
 }
 
 func (s *UserGitRepoCollectionService) Init(ctx *core.APPContext) {
 	s.InitService("userGitRepoCollectionService", ctx, s)
 	s.userGitRepoService = ctx.MustGetService("userGitRepoService").(*UserGitRepoService)
 	s.userFileDraftStatusService = ctx.MustGetService("userFileDraftStatusService").(*UserFileDraftStatusService)
+	s.mdHandler = md.NewMDHandler()
 }
 
 // VedaConfig represents the structure of veda/config.yml
@@ -469,8 +471,7 @@ func (s *UserGitRepoCollectionService) handleMarkdown(repo *models.UserGitRepo, 
 		log.Errorf("unable to read repo config, skip md handler: %v", err)
 		return content
 	}
-	mdHandler := md.NewMDHandler(config.MDConfig)
-	return mdHandler.Handle(content, direction)
+	return s.mdHandler.Handle(config.MDConfig, content, direction)
 }
 
 // UpdateFileContent updates the content of a file within a collection
@@ -485,6 +486,11 @@ func (s *UserGitRepoCollectionService) UpdateFileContent(repo *models.UserGitRep
 	cleanFilePath := filepath.Clean(filePath)
 	if cleanFilePath == ".." || filepath.IsAbs(cleanFilePath) || strings.HasPrefix(cleanFilePath, "../") {
 		return errors.New("invalid path")
+	}
+
+	ext := filepath.Ext(filePath)
+	if ext == ".md" {
+		content = s.handleMarkdown(repo, content, md.DirectionWrite)
 	}
 
 	// Construct the full path

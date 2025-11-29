@@ -1,5 +1,5 @@
 package md
 
 type MDSourceHandler interface {
-	Handle(mdBytes []byte, direction string) []byte
+	Handle(mdCondif *MDConfig, mdBytes []byte, direction string) []byte
 }
