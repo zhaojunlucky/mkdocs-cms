@@ -4,9 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/google/go-github/v45/github"
-	log "github.com/sirupsen/logrus"
-	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"net/http"
 	"os"
 	"os/exec"
@@ -14,6 +11,11 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/google/go-github/v45/github"
+	log "github.com/sirupsen/logrus"
+	"github.com/zhaojunlucky/mkdocs-cms/core"
+	"github.com/zhaojunlucky/mkdocs-cms/core/md"
 
 	"github.com/zhaojunlucky/mkdocs-cms/database"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
@@ -36,6 +38,7 @@ func (s *UserGitRepoCollectionService) Init(ctx *core.APPContext) {
 // VedaConfig represents the structure of veda/config.yml
 type VedaConfig struct {
 	Collections []Collection `yaml:"collections"`
+	MDConfig    *md.MDConfig `yaml:"md_config"`
 }
 
 // Collection represents a collection in veda/config.yml
@@ -102,8 +105,7 @@ func (s *UserGitRepoCollectionService) GetCollectionsByRepo(repo *models.UserGit
 	return collections, nil
 }
 
-// readCollectionsFromConfig reads collections from veda/config.yml
-func (s *UserGitRepoCollectionService) readCollectionsFromConfig(repo models.UserGitRepo) ([]models.UserGitRepoCollection, error) {
+func (s *UserGitRepoCollectionService) readRepoConfig(repo models.UserGitRepo) (*VedaConfig, error) {
 	configPath := filepath.Join(repo.LocalPath, "veda", "config.yml")
 
 	// Check if the config file exists
@@ -120,14 +122,23 @@ func (s *UserGitRepoCollectionService) readCollectionsFromConfig(repo models.Use
 	}
 
 	// Parse the YAML
-	var config VedaConfig
-	if err := yaml.Unmarshal(configData, &config); err != nil {
+	var config *VedaConfig = &VedaConfig{}
+	if err := yaml.Unmarshal(configData, config); err != nil {
 		log.Errorf("Invalid YAML format in veda/config.yml: %v", err)
 		return nil, fmt.Errorf("invalid YAML format in veda/config.yml: %v", err)
 	}
+	return config, nil
+}
 
-	// Convert to UserGitRepoCollection models
+// readCollectionsFromConfig reads collections from veda/config.yml
+func (s *UserGitRepoCollectionService) readCollectionsFromConfig(repo models.UserGitRepo) ([]models.UserGitRepoCollection, error) {
 	var collections []models.UserGitRepoCollection
+
+	config, err := s.readRepoConfig(repo)
+	if err != nil {
+		return collections, nil
+	}
+	// Convert to UserGitRepoCollection models
 	for _, col := range config.Collections {
 		// Resolve the path relative to the repository
 		fullPath := filepath.Join(repo.LocalPath, col.Path)
@@ -434,6 +445,8 @@ func (s *UserGitRepoCollectionService) GetFileContent(repo *models.UserGitRepo, 
 		contentType = "application/xml"
 	case ".md":
 		contentType = "text/markdown"
+		content = s.handleMarkdown(repo, content, md.DirectionRead)
+
 	case ".png":
 		contentType = "image/png"
 	case ".jpg", ".jpeg":
@@ -447,6 +460,17 @@ func (s *UserGitRepoCollectionService) GetFileContent(repo *models.UserGitRepo, 
 	}
 
 	return content, contentType, nil
+}
+
+func (s *UserGitRepoCollectionService) handleMarkdown(repo *models.UserGitRepo, content []byte, direction string) []byte {
+
+	config, err := s.readRepoConfig(*repo)
+	if err != nil {
+		log.Errorf("unable to read repo config, skip md handler: %v", err)
+		return content
+	}
+	mdHandler := md.NewMDHandler(config.MDConfig)
+	return mdHandler.Handle(content, direction)
 }
 
 // UpdateFileContent updates the content of a file within a collection
