@@ -58,12 +58,6 @@ jobs:
             -Dsonar.exclusions=web
             -Dsonar.sourceEncoding=UTF-8
 
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-          #cache-dependency-path: '**/yarn.lock'
       - name: SonarQube Scan
         uses: Sonarsource/sonarqube-scan-action@v6
         env:
@@ -81,6 +75,13 @@ jobs:
           repository: zhaojunlucky/gh-action-script
           path: gh-action-script
           fetch-depth: 0
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: 'gh-action-script/yarn.lock'
 
       - name: release
         env:
