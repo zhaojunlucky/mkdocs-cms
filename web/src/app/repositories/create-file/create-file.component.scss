@@ -96,16 +96,23 @@
     align-items: center;
     padding: 12px 16px;
     border-radius: 4px;
+    background-color: #f44336;
+    color: white;
     box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
     animation: slideIn 0.3s ease-out;
 
     mat-icon {
       margin-right: 8px;
+      color: white;
     }
 
     span {
       flex: 1;
       margin-right: 8px;
+    }
+    
+    .close-error {
+      color: white;
     }
   }
 }

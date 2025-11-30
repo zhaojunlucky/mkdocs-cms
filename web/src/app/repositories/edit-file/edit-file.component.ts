@@ -4,15 +4,14 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { VditorEditorComponent } from '../../components/vditor-editor/vditor-editor.component';
+import { MatButtonModule, MatIconButton} from '@angular/material/button';
+import {VditorEditorComponent} from '../../components/vditor-editor/vditor-editor.component';
 import {Collection, RepositoryService} from '../../services/repository.service';
 import {CollectionService} from '../../services/collection.service';
 import * as yaml from 'js-yaml';
 import {FrontMatterEditorComponent} from '../../markdown/front-matter-editor/front-matter-editor.component';
 import {MatIcon} from '@angular/material/icon';
 import {MatTooltip} from '@angular/material/tooltip';
-import {MatIconButton} from '@angular/material/button';
 import {ArrayResponse} from '../../shared/core/response';
 import {StrUtils} from '../../shared/utils/str.utils';
 import {CanComponentDeactivate} from '../../shared/guard/can-deactivate-form.guard';
@@ -180,10 +179,10 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
   @HostListener('document:visibilitychange', ['$event'])
   onVisibilityChange(event: Event): void {
     console.log('Visibility changed. Document hidden:', document.hidden, 'Has changes:', this.changed);
-    
+
     if (document.hidden && this.changed) {
       console.log('Attempting to show notification. Permission:', Notification.permission);
-      
+
       if (Notification.permission === 'granted') {
         const notification = new Notification('Unsaved Changes!', {
           body: "You have unsaved changes in your file. Please save to avoid losing your work!",
@@ -191,12 +190,12 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
           requireInteraction: true, // Keep notification visible until user interacts
           tag: 'unsaved-changes' // Prevent duplicate notifications
         });
-        
+
         notification.onclick = () => {
           window.focus(); // Bring the tab back to focus
           notification.close();
         };
-        
+
         console.log('Notification created successfully');
       } else {
         console.log('Notification permission not granted, showing alert');

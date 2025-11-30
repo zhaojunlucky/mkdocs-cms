@@ -1,8 +1,9 @@
 .app-footer {
-  padding: 16px 0 16px 0;
+  padding: 16px 20px;
   border-top: 1px solid var(--mat-surface-200);
   margin-top: auto; /* Push to the bottom when there's not enough content */
   width: 100%;
+  min-height: 64px;
 }
 
 .footer-content {
@@ -11,16 +12,30 @@
   align-items: center;
   max-width: 1200px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .copyright {
   color: var(--mat-text-secondary);
   font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.copyright-text {
+  font-weight: 500;
+}
+
+.version-info {
+  font-size: 12px;
+  opacity: 0.8;
 }
 
 .links {
   display: flex;
-  gap: 20px;
+  gap: 8px;
+  align-items: center;
 }
 
 .links a {
@@ -28,16 +43,76 @@
   text-decoration: none;
   font-size: 14px;
   transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .links a:hover {
   color: var(--mat-text-primary);
-  text-decoration: underline;
 }
 
-@media (max-width: 600px) {
+// Tablet and below
+@media (max-width: 768px) {
+  .app-footer {
+    padding: 12px 16px;
+  }
+
   .footer-content {
     flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+
+  .copyright {
+    align-items: center;
+    font-size: 13px;
+  }
+
+  .version-info {
+    font-size: 11px;
+  }
+
+  .links {
     gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
+// Mobile devices
+@media (max-width: 480px) {
+  .app-footer {
+    padding: 12px 12px;
+  }
+
+  .copyright {
+    font-size: 12px;
+  }
+
+  .copyright-text {
+    font-weight: 500;
+  }
+
+  .version-info {
+    font-size: 10px;
+  }
+
+  .links {
+    gap: 4px;
+  }
+
+  .links a {
+    min-width: 48px;
+    padding: 8px;
+  }
+
+  // Hide link text on very small screens, show only icons
+  .link-text {
+    display: none;
+  }
+
+  .links a mat-icon {
+    margin: 0;
   }
 }
