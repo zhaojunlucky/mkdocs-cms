@@ -21,11 +21,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: zhaojunlucky/gh-action-script
           fetch-depth: 0
       - uses: actions/setup-go@v5
         with:
-          go-version: '^1.25.2' # The Go version to download (if necessary) and use.
+          go-version: '^1.25.4' # The Go version to download (if necessary) and use.
       - name: Download dependencies
         run: go mod download
 
@@ -76,6 +75,13 @@ jobs:
             -Dsonar.sources=web
             -Dsonar.sourceEncoding=UTF-8
 
+      - name: Checkout gh-action-script
+        uses: actions/checkout@v4
+        with:
+          repository: zhaojunlucky/gh-action-script
+          path: gh-action-script
+          fetch-depth: 0
+
       - name: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -85,6 +91,7 @@ jobs:
           WORKFLOW_ID: "pr.yml"
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+        working-directory: gh-action-script
         run: |
           yarn install
           node src/release/release.mjs
