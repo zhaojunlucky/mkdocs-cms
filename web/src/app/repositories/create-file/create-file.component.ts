@@ -188,7 +188,7 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
     }
   }
 
-  @HostListener('window:resize', ['$event'])
+  @HostListener('window:resize')
   onWindowResize() {
     // console.log("window resized");
     this.updateEditorHeight();

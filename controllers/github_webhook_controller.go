@@ -6,11 +6,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"io"
 	"net/http"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/zhaojunlucky/mkdocs-cms/core"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/go-github/v45/github"
@@ -168,66 +169,6 @@ func (c *GitHubWebhookController) syncRepo(repo models.UserGitRepo, body []byte,
 		Details:      string(body),
 	})
 
-}
-
-// handlePullRequestEvent processes GitHub pull request events
-func (c *GitHubWebhookController) handlePullRequestEvent(ctx *gin.Context, body []byte) {
-	var event github.PullRequestEvent
-	if err := json.Unmarshal(body, &event); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid pull request event payload"})
-		return
-	}
-
-	// Only process closed pull requests that were merged
-	if event.GetAction() != "closed" || !event.GetPullRequest().GetMerged() {
-		ctx.JSON(http.StatusOK, gin.H{"message": "Pull request not merged, no action needed"})
-		return
-	}
-
-	// Extract repository information
-	repoName := event.GetRepo().GetName()
-	repoOwner := event.GetRepo().GetOwner().GetLogin()
-	repoFullName := repoOwner + "/" + repoName
-	targetBranch := event.GetPullRequest().GetBase().GetRef()
-
-	// Find repositories that match the remote URL
-	remoteURL := "https://github.com/" + repoFullName + ".git"
-	repos, err := c.gitRepoService.GetReposByURL(remoteURL)
-	if err != nil {
-		log.Errorf("Failed to find repositories for URL %s: %v", remoteURL, err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to find repositories"})
-		return
-	}
-
-	if len(repos) == 0 {
-		log.Errorf("No repositories found for URL %s", remoteURL)
-		ctx.JSON(http.StatusOK, gin.H{"message": "No matching repositories found"})
-		return
-	}
-
-	// Sync each matching repository
-	for _, repo := range repos {
-		if repo.Branch == targetBranch {
-			if err := c.gitRepoService.SyncRepo(&repo, ""); err != nil {
-				log.Errorf("Failed to sync repository %d: %v", repo.ID, err)
-				continue
-			}
-
-			// Log the event
-			repoID := repo.ID
-			c.eventService.CreateEvent(models.CreateEventRequest{
-				Level:        models.EventLevelInfo,
-				Source:       models.EventSourceGitRepo,
-				Message:      "Repository synced due to GitHub pull request merge",
-				ResourceID:   &repoID,
-				ResourceType: "repository",
-				Details:      string(body),
-			})
-		}
-
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"message": "Pull request event processed"})
 }
 
 // handleInstallationEvent processes GitHub App installation events

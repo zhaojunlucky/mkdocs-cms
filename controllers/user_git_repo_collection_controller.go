@@ -44,7 +44,7 @@ func (ctrl *UserGitRepoCollectionController) GetCollectionsByRepo(c *gin.Context
 	reqParam := core.NewRequestParam()
 	userId := reqParam.AddContextParam("userId", false, nil).
 		SetError(http.StatusUnauthorized, "Unauthorized")
-	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile("\\d+"))
+	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile(`\d+`))
 
 	if err := reqParam.Handle(c); err != nil {
 		core.HandleError(c, err)
@@ -86,7 +86,7 @@ func (ctrl *UserGitRepoCollectionController) GetCollectionFilesInPath(c *gin.Con
 	reqParam := core.NewRequestParam()
 	userId := reqParam.AddContextParam("userId", false, nil).
 		SetError(http.StatusUnauthorized, "Unauthorized")
-	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile("\\d+"))
+	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile(`\d+`))
 	collectionName := reqParam.AddUrlParam("collectionName", true, nil)
 	pathParam := reqParam.AddQueryParam("path", true, nil)
 
@@ -140,7 +140,7 @@ func (ctrl *UserGitRepoCollectionController) GetFileContent(c *gin.Context) {
 	reqParam := core.NewRequestParam()
 	userId := reqParam.AddContextParam("userId", false, nil).
 		SetError(http.StatusUnauthorized, "Unauthorized")
-	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile("\\d+"))
+	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile(`\d+`))
 	collectionName := reqParam.AddUrlParam("collectionName", false, nil)
 	pathParam := reqParam.AddQueryParam("path", false, nil)
 
@@ -192,7 +192,7 @@ func (ctrl *UserGitRepoCollectionController) UpdateFileContent(c *gin.Context) {
 	reqParam := core.NewRequestParam()
 	userId := reqParam.AddContextParam("userId", false, nil).
 		SetError(http.StatusUnauthorized, "Unauthorized")
-	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile("\\d+"))
+	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile(`\d+`))
 	collectionName := reqParam.AddUrlParam("collectionName", false, nil)
 	var req UpdateFileRequest
 	if err := reqParam.HandleWithBody(c, &req); err != nil {
@@ -241,7 +241,7 @@ func (ctrl *UserGitRepoCollectionController) DeleteFile(c *gin.Context) {
 	reqParam := core.NewRequestParam()
 	userId := reqParam.AddContextParam("userId", false, nil).
 		SetError(http.StatusUnauthorized, "Unauthorized")
-	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile("\\d+"))
+	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile(`\d+`))
 	collectionName := reqParam.AddUrlParam("collectionName", true, nil)
 	pathParam := reqParam.AddQueryParam("path", false, nil)
 
@@ -284,7 +284,7 @@ func (ctrl *UserGitRepoCollectionController) UploadFile(c *gin.Context) {
 	reqParam := core.NewRequestParam()
 	userId := reqParam.AddContextParam("userId", false, nil).
 		SetError(http.StatusUnauthorized, "Unauthorized")
-	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile("\\d+"))
+	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile(`\d+`))
 	collectionName := reqParam.AddUrlParam("collectionName", false, nil)
 	var request models.FileUploadRequest
 
@@ -369,7 +369,7 @@ func (ctrl *UserGitRepoCollectionController) RenameFile(c *gin.Context) {
 	reqParam := core.NewRequestParam()
 	userId := reqParam.AddContextParam("userId", false, nil).
 		SetError(http.StatusUnauthorized, "Unauthorized")
-	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile("\\d+"))
+	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile(`\d+`))
 	collectionName := reqParam.AddUrlParam("collectionName", false, nil)
 	// Parse request body
 	var req RenameFileRequest
@@ -414,7 +414,7 @@ func (ctrl *UserGitRepoCollectionController) CreateFolder(c *gin.Context) {
 	reqParam := core.NewRequestParam()
 	userId := reqParam.AddContextParam("userId", false, nil).
 		SetError(http.StatusUnauthorized, "Unauthorized")
-	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile("\\d+"))
+	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile(`\d+`))
 	collectionName := reqParam.AddUrlParam("collectionName", false, nil)
 	// Parse request body
 	var req CreateFolderRequest

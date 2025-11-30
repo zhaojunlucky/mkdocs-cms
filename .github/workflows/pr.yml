@@ -24,7 +24,45 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-go@v5
         with:
-          go-version: '^1.25.1' # The Go version to download (if necessary) and use.
+          go-version: '^1.25.2' # The Go version to download (if necessary) and use.
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Verify dependencies
+        run: go mod verify
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Run tests with coverage
+        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Install staticcheck
+        run: go install honnef.co/go/tools/cmd/staticcheck@latest
+
+      - name: Run staticcheck
+        run: staticcheck ./...
+
+      - name: SonarQube Scan
+        uses: Sonarsource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.pullrequest.github.repository=${{ github.repository }}
+            -Dsonar.pullrequest.branch=${{github.event.pull_request.head.ref}}
+            -Dsonar.pullrequest.base=main
+            -Dsonar.pullrequest.key=${{github.event.number}}
+            -Dsonar.projectKey=mkdocs-cms
+            -Dsonar.sources=.
+            -Dsonar.exclusions=web/**
+            -Dsonar.sourceEncoding=UTF-8
+            -Dsonar.go.coverage.reportPaths=coverage.out
+            -Dsonar.language=go
       - run: |
           go version
           go build -tags=prod -ldflags "-X main.Version=1.0.${{ github.run_number }}" -o mkdocs-cms main.go
@@ -36,6 +74,20 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
           cache-dependency-path: '**/yarn.lock'
+      - name: SonarQube Scan
+        uses: Sonarsource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.pullrequest.github.repository=${{ github.repository }}
+            -Dsonar.pullrequest.branch=${{github.event.pull_request.head.ref}}
+            -Dsonar.pullrequest.base=main
+            -Dsonar.pullrequest.key=${{github.event.number}}
+            -Dsonar.projectKey=mkdocs-cms-ui
+            -Dsonar.sources=./web/src
+            -Dsonar.sourceEncoding=UTF-8
       - run: |
           cd web
           ls -al

@@ -29,3 +29,4 @@ config/*.yml
 .DS_Store
 config/config*.yaml
 mkdocs-cms
+coverage.out

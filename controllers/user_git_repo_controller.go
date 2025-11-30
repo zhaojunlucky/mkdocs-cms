@@ -75,7 +75,7 @@ func (c *UserGitRepoController) GetRepo(ctx *gin.Context) {
 	reqParam := core.NewRequestParam()
 	userId := reqParam.AddContextParam("userId", true, nil).
 		SetError(http.StatusUnauthorized, "Unauthorized")
-	repoIDParam := reqParam.AddUrlParam("id", true, regexp.MustCompile("\\d+"))
+	repoIDParam := reqParam.AddUrlParam("id", true, regexp.MustCompile(`\d+`))
 
 	if err := reqParam.Handle(ctx); err != nil {
 		core.HandleError(ctx, err)
@@ -106,7 +106,7 @@ func (c *UserGitRepoController) UpdateRepo(ctx *gin.Context) {
 	reqParam := core.NewRequestParam()
 	userId := reqParam.AddContextParam("userId", true, nil).
 		SetError(http.StatusUnauthorized, "Unauthorized")
-	repoIDParam := reqParam.AddUrlParam("id", true, regexp.MustCompile("\\d+"))
+	repoIDParam := reqParam.AddUrlParam("id", true, regexp.MustCompile(`\d+`))
 	var request models.UpdateUserGitRepoRequest
 
 	if err := reqParam.HandleWithBody(ctx, &request); err != nil {
@@ -146,7 +146,7 @@ func (c *UserGitRepoController) DeleteRepo(ctx *gin.Context) {
 	reqParam := core.NewRequestParam()
 	userId := reqParam.AddContextParam("userId", true, nil).
 		SetError(http.StatusUnauthorized, "Unauthorized")
-	repoIDParam := reqParam.AddUrlParam("id", true, regexp.MustCompile("\\d+"))
+	repoIDParam := reqParam.AddUrlParam("id", true, regexp.MustCompile(`\d+`))
 
 	if err := reqParam.Handle(ctx); err != nil {
 		core.HandleError(ctx, err)
@@ -183,7 +183,7 @@ func (c *UserGitRepoController) SyncRepo(ctx *gin.Context) {
 	reqParam := core.NewRequestParam()
 	userId := reqParam.AddContextParam("userId", true, nil).
 		SetError(http.StatusUnauthorized, "Unauthorized")
-	repoIDParam := reqParam.AddUrlParam("id", true, regexp.MustCompile("\\d+"))
+	repoIDParam := reqParam.AddUrlParam("id", true, regexp.MustCompile(`\d+`))
 	var request models.UpdateUserGitRepoRequest
 
 	if err := reqParam.HandleWithBody(ctx, &request); err != nil {
@@ -272,7 +272,7 @@ func (c *UserGitRepoController) GetRepoBranches(ctx *gin.Context) {
 	reqParam := core.NewRequestParam()
 	userId := reqParam.AddContextParam("userId", true, nil).
 		SetError(http.StatusUnauthorized, "Unauthorized")
-	repoIDParam := reqParam.AddUrlParam("id", true, regexp.MustCompile("\\d+"))
+	repoIDParam := reqParam.AddUrlParam("id", true, regexp.MustCompile(`\d+`))
 
 	if err := reqParam.Handle(ctx); err != nil {
 		core.HandleError(ctx, err)
