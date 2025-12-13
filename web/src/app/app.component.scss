@@ -2,16 +2,22 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: -webkit-fill-available;
+  width: 100%;
+  height: 100%;
 }
 
 .app-container {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  flex: 1;
+  min-height: 100%;
+  background-color: var(--mat-surface-50, #fafafa);
 }
 
 .content-wrapper {
-  flex: 1;
+  flex: 1 0 auto;
+  background-color: var(--mat-surface-50, #fafafa);
 }
 
 router-outlet {
