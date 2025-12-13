@@ -22,7 +22,7 @@ import (
 	"github.com/zhaojunlucky/mkdocs-cms/models"
 	"github.com/zhaojunlucky/mkdocs-cms/services"
 	"github.com/zhaojunlucky/mkdocs-cms/utils"
-	"gopkg.in/natefinch/lumberjack.v2"
+	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
 
 var Version string = "1.0.1-dev"

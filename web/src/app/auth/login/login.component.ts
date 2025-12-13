@@ -29,11 +29,11 @@ export class LoginComponent implements OnInit {
   loading = false;
 
   constructor(
-    private authService: AuthService,
-    private route: ActivatedRoute,
-    private router: Router,
-    private snackBar: MatSnackBar,
-    private pageTitleService: PageTitleService
+    private readonly authService: AuthService,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
+    private readonly snackBar: MatSnackBar,
+    private readonly pageTitleService: PageTitleService
   ) {}
 
   ngOnInit(): void {
