@@ -18,7 +18,6 @@ import packageInfo from '../../../../package.json';
   styleUrls: ['./footer.component.scss']
 })
 export class FooterComponent implements OnInit {
-  currentYear = new Date().getFullYear();
   version = 'Unknown';
   frontendVersion = packageInfo.version;
 

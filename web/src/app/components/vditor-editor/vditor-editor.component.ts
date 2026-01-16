@@ -145,6 +145,7 @@ export class VditorEditorComponent implements OnInit, OnDestroy, ControlValueAcc
           mathBlockPreview: false,
           paragraphBeginningSpace: false,
           autoSpace: true,
+          listStyle: true,
         },
         actions: []  // Remove all preview actions
       },
