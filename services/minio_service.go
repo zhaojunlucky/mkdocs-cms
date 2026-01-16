@@ -2,11 +2,13 @@ package services
 
 import (
 	"context"
+	"mime/multipart"
+	"strings"
+
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
-	"mime/multipart"
 )
 
 type MinIOService struct {
@@ -19,7 +21,7 @@ func (s *MinIOService) Init(ctx *core.APPContext) {
 	var err error
 	s.MinIO, err = minio.New(ctx.Config.MinIOConfig.APIURL, &minio.Options{
 		Creds:      credentials.NewStaticV4(ctx.Config.MinIOConfig.AccessKey, ctx.Config.MinIOConfig.SecretKey, ""),
-		Secure:     true,
+		Secure:     strings.HasPrefix(ctx.Config.FrontendURL, "https"),
 		MaxRetries: 3,
 	})
 	if err != nil {
