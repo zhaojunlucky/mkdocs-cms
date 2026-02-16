@@ -159,12 +159,11 @@ func (c *GitHubWebhookController) syncRepo(repo models.UserGitRepo, body []byte,
 	}
 
 	// Log the event
-	repoID := repo.ID
 	c.eventService.CreateEvent(models.CreateEventRequest{
 		Level:        models.EventLevelInfo,
 		Source:       models.EventSourceGitRepo,
 		Message:      "Repository synced due to GitHub push event",
-		ResourceID:   &repoID,
+		ResourceID:   new(repo.ID),
 		ResourceType: "repository",
 		Details:      string(body),
 	})

@@ -98,8 +98,7 @@ func (e *Event) ToResponse(includeDetails bool, includeUser bool) EventResponse 
 	}
 
 	if includeUser && e.User != nil {
-		userResponse := e.User.ToResponse()
-		response.User = &userResponse
+		response.User = new(e.User.ToResponse())
 	}
 
 	return response
