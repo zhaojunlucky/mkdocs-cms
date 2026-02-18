@@ -1,0 +1,63 @@
+---
+date: 2026-02-18T01:35:12.645Z
+tags: []
+draft: false
+---
+
+# QuickLauncher
+
+## What is QuickLauncher
+
+QuickLauncher is a windows developer tool launch portal, it supports,
+
+<!-- more -->
+
+1. Configure the commands as launch item
+2. Add existing application
+3. Auto detect Microsoft Office App
+4. Auto detect Jetbrains App
+5. Set auto start for any command or App
+6. Make emphasis for the developer health
+   1. Allow to set a break reminder to notify developer to break for health for a period of time
+   2. Allow to pause the reminder for meeting activity
+
+## How to Download and Install
+
+1. go to [https://github.com/zhaojunlucky/QuickLauncher/releases](https://github.com/zhaojunlucky/QuickLauncher/releases) to download the latest version
+2. unzip it and launch quicklauncher installer.
+3. run it after the install
+
+## How to use it
+
+1. Home
+
+   ![1home.png](https://writer.exia.app/api/v1/storage/b9a26b3989cd716a5758af8d164caab5/2025-07-1home-c1c1d588-83b9-4132-aeb5-4501862e24a1.png)
+2. Right click to open context Menu
+
+   ![2contextmenu.png](https://writer.exia.app/api/v1/storage/b9a26b3989cd716a5758af8d164caab5/2025-07-2contextmenu-d24b75c6-99f0-4d0c-9262-c38715ff628e.png)
+3. Click the "New Quick Command" menu to add a command
+
+   ![3newcommand.png](https://writer.exia.app/api/v1/storage/b9a26b3989cd716a5758af8d164caab5/2025-08-3newcommand-8a6f7670-aeff-4dfc-bcce-7c993aa17540.png)
+4. Create a new command from template
+
+   ![3newcommandfromtemplate.png](https://writer.exia.app/api/v1/storage/b9a26b3989cd716a5758af8d164caab5/2025-08-3newcommandfromtemplate-d65b39d9-246f-4718-8f36-14412a706f79.png)
+5. Create a command by selecting an app
+
+   ![3newcommandselectapp.png](https://writer.exia.app/api/v1/storage/b9a26b3989cd716a5758af8d164caab5/2025-07-3newcommandselectapp-daa2aee4-3895-455a-8361-035b7248add2.png)
+6. Settings
+
+   ![4setting.png](https://writer.exia.app/api/v1/storage/b9a26b3989cd716a5758af8d164caab5/2025-07-4setting-7be8c4ea-0528-4649-9154-f99608748a53.png)
+7. Enable Auto start quicklauncher allow the app to start afte the windows login on
+
+   After enabled this, you can enable auto start for each app per your
+8. Set a global Hot Key
+9. Enable Detect Known Software will detect Office and Jetbrains
+10. Enable Standup Reminder will notify by interval
+
+    1. Break reminder
+
+       ![5breakreminder.png](https://writer.exia.app/api/v1/storage/b9a26b3989cd716a5758af8d164caab5/2025-07-5breakreminder-53bdbd4c-64d8-44b8-97e7-ed3c6843889c.png)
+    2. Pause reminder if you are in the focus work
+
+       ![5pausereminder.png](https://writer.exia.app/api/v1/storage/b9a26b3989cd716a5758af8d164caab5/2025-07-5pausereminder-839c6766-29fe-4aa0-830d-65d7a6e5f2cd.png)
+

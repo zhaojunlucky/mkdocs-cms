@@ -18,6 +18,13 @@ type mdListEditSpan struct {
 	replacement []byte
 }
 
+type mdListStackEntry struct {
+	rawIndent       int
+	indent          int
+	hadContinuation bool
+	sawMarkerLine   bool
+}
+
 func (m *MDNormalizeHandler) Handle(mdConfig *MDConfig, mdBytes []byte, direction string) []byte {
 	if len(mdBytes) == 0 {
 		return mdBytes
@@ -89,13 +96,7 @@ func normalizeListSpan(src []byte, spanStart, spanEnd int, edits *[]mdListEditSp
 	chunk := src[spanStart:spanEnd]
 	lineAbsStart := spanStart
 
-	type stackEntry struct {
-		rawIndent       int
-		indent          int
-		hadContinuation bool
-		sawMarkerLine   bool
-	}
-	var stack []stackEntry
+	var stack []mdListStackEntry
 
 	prevLineWasBlank := true
 	inFenced := false
@@ -122,60 +123,20 @@ func normalizeListSpan(src []byte, spanStart, spanEnd int, edits *[]mdListEditSp
 		trimSpace := bytes.TrimSpace(lineNoCR)
 		isBlank := len(trimSpace) == 0
 
-		// If we were inside a list but this line is dedented back out (and it's not a new list item),
-		// it should not be treated as list continuation.
-		if len(stack) > 0 && !isBlank {
-			leading := 0
-			for leading < len(lineNoCR) && lineNoCR[leading] == ' ' {
-				leading++
-			}
-			if leading <= stack[0].rawIndent {
-				if _, isItemStart := parseListItemIndentBytes(lineNoCR); !isItemStart && !isATXHeadingLine(lineNoCR) {
-					stack = nil
-				}
-			}
-		}
-
-		parseFence := func(b []byte) (byte, int, bool) {
-			j := 0
-			for j < len(b) && b[j] == ' ' {
-				j++
-			}
-			if j >= len(b) {
-				return 0, 0, false
-			}
-			ch := b[j]
-			if ch != '`' && ch != '~' {
-				return 0, 0, false
-			}
-			k := j
-			for k < len(b) && b[k] == ch {
-				k++
-			}
-			if k-j < 3 {
-				return 0, 0, false
-			}
-			return ch, k - j, true
+		if shouldClearListStack(stack, lineNoCR, isBlank) {
+			stack = nil
 		}
 
 		isFenceLine := false
 		isClosingFenceLine := false
-		fch, fln, fok := parseFence(lineNoCR)
+		fch, fln, _, fok := parseFenceLine(lineNoCR)
 		if fok {
 			isFenceLine = true
 			if !inFenced {
 				inFenced = true
 				fenceChar = fch
 				fenceLen = fln
-				fenceDelta = 0
-				if len(stack) > 0 {
-					desiredIndent := stack[len(stack)-1].indent + 4
-					existingIndent := 0
-					for existingIndent < len(lineNoCR) && lineNoCR[existingIndent] == ' ' {
-						existingIndent++
-					}
-					fenceDelta = desiredIndent - existingIndent
-				}
+				fenceDelta = fenceDeltaForLine(stack, lineNoCR)
 			} else if fch == fenceChar && fln >= fenceLen {
 				isClosingFenceLine = true
 			}
@@ -195,32 +156,9 @@ func normalizeListSpan(src []byte, spanStart, spanEnd int, edits *[]mdListEditSp
 			indent, isItemStart := parseListItemIndentBytes(lineNoCR)
 			if isItemStart {
 				rawIndent := indent
+				var desiredIndent int
 				needBlankBefore := false
-				desiredIndent := normalizeIndentTo4(rawIndent)
-
-				// Determine nesting relative to current stack top.
-				if len(stack) > 0 {
-					top := &stack[len(stack)-1]
-					if rawIndent > top.rawIndent {
-						// Nested list item: treat as continuation of parent.
-						// We don't force a blank line before nested list markers; this keeps lists compact.
-						top.hadContinuation = true
-						desiredIndent = top.indent + 4
-					} else {
-						// Sibling or ancestor: pop until we find the parent level.
-						prevHadCont := false
-						for len(stack) > 0 && rawIndent <= stack[len(stack)-1].rawIndent {
-							prevHadCont = stack[len(stack)-1].hadContinuation
-							stack = stack[:len(stack)-1]
-						}
-						if prevHadCont {
-							needBlankBefore = !prevLineWasBlank
-						}
-						if len(stack) > 0 && desiredIndent < stack[len(stack)-1].indent+4 {
-							desiredIndent = stack[len(stack)-1].indent + 4
-						}
-					}
-				}
+				stack, desiredIndent, needBlankBefore = handleListItemStart(stack, rawIndent, prevLineWasBlank)
 
 				// Rewrite marker indentation if needed, folding blank line insertion into replacement.
 				if desiredIndent != rawIndent || needBlankBefore {
@@ -235,7 +173,7 @@ func normalizeListSpan(src []byte, spanStart, spanEnd int, edits *[]mdListEditSp
 					prevLineWasBlank = false
 				}
 
-				stack = append(stack, stackEntry{rawIndent: rawIndent, indent: desiredIndent, hadContinuation: false, sawMarkerLine: true})
+				stack = append(stack, mdListStackEntry{rawIndent: rawIndent, indent: desiredIndent, hadContinuation: false, sawMarkerLine: true})
 				prevLineWasBlank = isBlank
 				handled = true
 			}
@@ -251,10 +189,7 @@ func normalizeListSpan(src []byte, spanStart, spanEnd int, edits *[]mdListEditSp
 					var replPrefix []byte
 					var payload []byte
 					if inFenced {
-						leading := 0
-						for leading < len(lineNoCR) && lineNoCR[leading] == ' ' {
-							leading++
-						}
+						leading := countLeadingSpaces(lineNoCR)
 						newLeading := leading + fenceDelta
 						if newLeading < 0 {
 							newLeading = 0
@@ -295,6 +230,86 @@ func normalizeListSpan(src []byte, spanStart, spanEnd int, edits *[]mdListEditSp
 		lineAbsStart = lineAbsStart + lineLen + 1
 		chunk = rest
 	}
+}
+
+func countLeadingSpaces(b []byte) int {
+	i := 0
+	for i < len(b) && b[i] == ' ' {
+		i++
+	}
+	return i
+}
+
+func parseFenceLine(b []byte) (fenceChar byte, fenceLen int, indent int, ok bool) {
+	indent = countLeadingSpaces(b)
+	if indent >= len(b) {
+		return 0, 0, 0, false
+	}
+	ch := b[indent]
+	if ch != '`' && ch != '~' {
+		return 0, 0, 0, false
+	}
+	k := indent
+	for k < len(b) && b[k] == ch {
+		k++
+	}
+	if k-indent < 3 {
+		return 0, 0, 0, false
+	}
+	return ch, k - indent, indent, true
+}
+
+func fenceDeltaForLine(stack []mdListStackEntry, lineNoCR []byte) int {
+	if len(stack) == 0 {
+		return 0
+	}
+	desiredIndent := stack[len(stack)-1].indent + 4
+	existingIndent := countLeadingSpaces(lineNoCR)
+	return desiredIndent - existingIndent
+}
+
+func shouldClearListStack(stack []mdListStackEntry, lineNoCR []byte, isBlank bool) bool {
+	if len(stack) == 0 || isBlank {
+		return false
+	}
+	leading := countLeadingSpaces(lineNoCR)
+	if leading > stack[0].rawIndent {
+		return false
+	}
+	if _, isItemStart := parseListItemIndentBytes(lineNoCR); isItemStart {
+		return false
+	}
+	if isATXHeadingLine(lineNoCR) {
+		return false
+	}
+	return true
+}
+
+func handleListItemStart(stack []mdListStackEntry, rawIndent int, prevLineWasBlank bool) (newStack []mdListStackEntry, desiredIndent int, needBlankBefore bool) {
+	needBlankBefore = false
+	desiredIndent = normalizeIndentTo4(rawIndent)
+
+	if len(stack) > 0 {
+		top := &stack[len(stack)-1]
+		if rawIndent > top.rawIndent {
+			top.hadContinuation = true
+			desiredIndent = top.indent + 4
+		} else {
+			prevHadCont := false
+			for len(stack) > 0 && rawIndent <= stack[len(stack)-1].rawIndent {
+				prevHadCont = stack[len(stack)-1].hadContinuation
+				stack = stack[:len(stack)-1]
+			}
+			if prevHadCont {
+				needBlankBefore = !prevLineWasBlank
+			}
+			if len(stack) > 0 && desiredIndent < stack[len(stack)-1].indent+4 {
+				desiredIndent = stack[len(stack)-1].indent + 4
+			}
+		}
+	}
+
+	return stack, desiredIndent, needBlankBefore
 }
 
 func parseListItemIndentBytes(line []byte) (int, bool) {

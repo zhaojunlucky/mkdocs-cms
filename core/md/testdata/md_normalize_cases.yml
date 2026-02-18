@@ -139,6 +139,38 @@ cases:
 
       2. p2
 
+  - name: test1_quicklauncher
+    direction: write
+    md_config:
+      code_block_transforms: []
+    input_file: test1/input.txt
+    expected_file: test1/expect.txt
+
+  - name: test2_list_nested_images
+    direction: write
+    md_config:
+      code_block_transforms: []
+    input_file: test2/input.txt
+    expected_file: test2/expect.txt
+
+  - name: test3_fence_transform_mermaid
+    direction: write
+    md_config:
+      code_block_transforms:
+        - from_lang: mermaid
+          to_lang: kroki-mermaid
+          direction: write
+          enabled: true
+    input_file: test3/input.txt
+    expected_file: test3/expect.txt
+
+  - name: test4_large_java_features
+    direction: write
+    md_config:
+      code_block_transforms: []
+    input_file: test4/input.txt
+    expected_file: test4/expect.txt
+
   - name: jep_512_513_sample
     direction: write
     md_config:
