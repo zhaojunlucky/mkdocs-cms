@@ -3,18 +3,19 @@ package services
 import (
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/minio/minio-go/v7"
-	log "github.com/sirupsen/logrus"
-	"github.com/zhaojunlucky/mkdocs-cms/core"
-	"github.com/zhaojunlucky/mkdocs-cms/env"
-	"github.com/zhaojunlucky/mkdocs-cms/models"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/minio/minio-go/v7"
+	log "github.com/sirupsen/logrus"
+	"github.com/zhaojunlucky/mkdocs-cms/core"
+	"github.com/zhaojunlucky/mkdocs-cms/env"
+	"github.com/zhaojunlucky/mkdocs-cms/models"
 )
 
 type StorageService struct {
@@ -34,8 +35,7 @@ func (s *StorageService) Init(ctx *core.APPContext) {
 func (s *StorageService) AttachFile(userId string, files []*multipart.FileHeader) (map[string]interface{}, error) {
 	userStorge, err := s.userService.GetUserStorage(userId)
 	if err != nil {
-		var httpErr *core.HTTPError
-		if errors.As(err, &httpErr) && httpErr.StatusCode == http.StatusNotFound {
+		if httpErr, ok := errors.AsType[*core.HTTPError](err); ok && httpErr.StatusCode == http.StatusNotFound {
 			// create user storage
 		} else {
 			return nil, err

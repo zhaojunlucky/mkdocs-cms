@@ -1,0 +1,20 @@
+---
+date: 2025-11-30T01:02:00.858Z
+tags:
+  - fence block
+draft: false
+---
+
+# Fence blocks
+
+<!-- more -->
+
+```kroki-mermaid
+flowchart TD
+    A[Christmas] -->|Get money| B(Go shopping)
+    B --> C{Let me think}
+    C -->|One| D[Laptop]
+    C -->|Two| E[iPhone]
+    C -->|Three| F[fa:fa-car Car]
+    C -->|Four| G
+```

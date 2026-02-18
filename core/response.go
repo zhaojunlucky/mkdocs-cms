@@ -2,8 +2,9 @@ package core
 
 import (
 	"errors"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type ArrayResponse[T any] struct {
@@ -22,8 +23,7 @@ func HandleError(c *gin.Context, err error) {
 	if err == nil {
 		panic("unreachable")
 	}
-	var httpErr *HTTPError
-	if errors.As(err, &httpErr) {
+	if httpErr, ok := errors.AsType[*HTTPError](err); ok {
 		c.JSON(httpErr.StatusCode, NewErrorMessageDTO(httpErr.StatusCode, err))
 	} else {
 		c.JSON(http.StatusInternalServerError, NewErrorMessageDTO(http.StatusInternalServerError, err))

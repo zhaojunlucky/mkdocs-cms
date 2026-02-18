@@ -1,6 +1,6 @@
 module github.com/zhaojunlucky/mkdocs-cms
 
-go 1.25.6
+go 1.26.0
 
 require (
 	github.com/gin-gonic/gin v1.11.0
@@ -10,7 +10,7 @@ require (
 	github.com/minio/minio-go/v7 v7.0.97
 	github.com/prometheus/client_golang v1.23.2
 	github.com/sirupsen/logrus v1.9.4
-	github.com/yuin/goldmark v1.7.13
+	github.com/yuin/goldmark v1.7.16
 	golang.org/x/crypto v0.47.0
 	golang.org/x/oauth2 v0.34.0
 	golang.org/x/time v0.14.0

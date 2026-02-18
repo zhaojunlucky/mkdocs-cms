@@ -1,0 +1,3743 @@
+---
+date: 2025-09-21T08:06:00.854Z
+tags:
+  - java
+  - jdk
+draft: false
+---
+
+# Java New Features: Complete Guide from JDK 8 to JDK 25
+
+A comprehensive summary of Java's evolution and new features introduced in each JDK release, from Java 8 to Java 25. This guide covers major language enhancements, API improvements, and performance optimizations.
+
+<!-- more -->
+
+## JDK25
+
+### Primitive Types in Patterns, instanceof, and switch (Third Preview)
+
+In https://openjdk.org/jeps/507. See JDK 24.
+
+### Module Import Declarations
+
+In https://openjdk.org/jeps/511.
+
+* Syntax
+
+    ```java
+    import module M; // can't import unnamed module
+    ```
+
+* Example
+
+    ```java
+    import module java.sql;
+    ```
+
+    The above imports is equals to,
+
+    ```java
+    import java.sql.*; // with on-demand package imports for the indirect exports of the java.sql module.
+    ```
+
+* Resolving ambiguous imports
+
+    ```java
+    // example 1
+    import module java.desktop;   // exports javax.swing.text,
+                                  // which has a public Element interface,
+                                  // and also exports javax.swing.text.html.parser,
+                                  // which has a public Element class
+
+    ...
+    Element e = ...               // Error - Ambiguous name!
+    ...
+
+
+    // example 2
+    import module java.base;      // exports java.util, which has a public List interface
+    import module java.desktop;   // exports java.awt, which a public List class
+
+    ...
+    List l = ...                  // Error - Ambiguous name!
+    ...
+
+
+    // example 3
+    import module java.base;      // exports java.util, which has a public Date class
+    import module java.sql;       // exports java.sql, which has a public Date class
+
+    ...
+    Date d = ...                  // Error - Ambiguous name!
+    ...
+
+    // solution 1
+    import module java.base;      // exports java.util, which has a public Date class
+    import module java.sql;       // exports java.sql, which has a public Date class
+
+    import java.sql.Date;         // resolve the ambiguity of the simple name Date!
+
+    ...
+    Date d = ...                  // Ok!  Date is resolved to java.sql.Date
+    ...
+
+    // solution 2
+    import module java.base;
+    import module java.desktop;
+    import java.util.*;
+    import javax.swing.text.*;
+
+    ...
+    Element e = ...     // Element is resolved to javax.swing.text.Element
+    List l = ...        // List is resolved to java.util.List
+    Document d = ...    // Document is resolved to javax.swing.text.Document,
+                        // regardless of any module imports
+    ...
+    ```
+
+* Coalescing import declarations
+
+    ```java
+    import javax.xml.*;
+    import javax.xml.parsers.*;
+    import javax.xml.stream.*;
+    ```
+
+    The above imports can be replaced as a simple module import,
+
+    ```java
+    import module java.xml;
+    ```
+
+* Grouping import declarations
+
+    If a source file has a mix of different kinds of import declarations then grouping them by kind may further improve readability; for example:
+
+    ```java
+    // Module imports
+    import module M1;
+    import module M2;
+    ...
+
+    // Package imports
+    import P1.*;
+    import P2.*;
+    ...
+
+    // Single-type imports
+    import P1.C1;
+    import P2.C2;
+    ...
+
+    class Foo { ... }
+    ```
+
+### Compact Source Files and Instance Main Methods
+
+In https://openjdk.org/jeps/512.
+
+* Compact source files
+
+    The following `main.java`,
+
+    ```java
+    public class Main {
+        static void main(String [] args) {
+            System.out.println("hello java");
+        }
+    }
+    ```
+
+    Can be simplified as the following `main.java`,
+
+    ```java
+    String greeting() { return "Hello, World!"; }
+
+    void main(){
+        IO.println(greeting() + " java 25");
+    }
+    ```
+
+* Interacting with the console
+
+    A new class `java.lang.IO` to interact with IO, for example,
+
+    * IO.println
+    * IO.print
+    * IO.readln
+
+* Automatic import of the `java.base` module
+
+    * java.lang
+    * java.io
+    * java.util
+    * java.time
+    * java.text
+    * java.net
+    * java.math
+    * java.security
+    * java.nio
+    * java.util.concurrent
+    * java.util.function
+
+### Flexible Constructor Bodies
+
+In https://openjdk.org/jeps/513.
+
+* A new model for constructor bodies
+
+    ```java
+    class Object {
+        Object() {
+            // Object constructor body
+        }
+    }
+
+    class A extends Object {
+        A() {
+            // A prologue
+            super();
+            // A epilogue
+        }
+    }
+
+    class B extends A {
+        B() {
+            // B prologue
+            super();
+            // B epilogue
+        }
+    }
+
+    class C extends B {
+        C() {
+            // C prologue
+            super();
+            // C epilogue
+        }
+    }
+
+    class D extends C {
+        D() {
+            // D prologue
+            super();
+            // D epilogue
+        }
+    }
+    ```
+
+    The invocations of the constructors and the executions of the prologues and epilogues flow like this:
+
+    ```java
+    D prologue
+    --> C prologue
+        --> B prologue
+            --> A prologue
+                --> Object constructor body
+            --> A epilogue
+        --> B epilogue
+    --> C epilogue
+    D epilogue
+    ```
+
+* Example
+
+    ```java
+    class Employee extends Person {
+
+        String officeID;
+
+        Employee(..., int age, String officeID) {
+            if (age < 18  || age > 67)
+                // Now fails fast!
+                throw new IllegalArgumentException(...);
+            this.officeID = officeID;   // Initialize before calling superclass constructor!
+            super(..., age);
+        }
+
+    }
+    ```
+
+### Structured Concurrency (Fifth Preview)
+
+In https://openjdk.org/jeps/505.
+
+### Scoped Values
+
+In https://openjdk.org/jeps/506.
+
+### Stable Values (Preview)
+
+In https://openjdk.org/jeps/502.
+A stable value is an object, of type StableValue, that holds a single data value, its content. A stable value must be initialized some time before its content is first retrieved, and it is immutable thereafter. A stable value is a way to achieve deferred immutability.
+
+* Example
+
+    ```java
+    class OrderController {
+
+        // OLD:
+        // private Logger logger = null;
+
+        // NEW:
+        private final StableValue<Logger> logger = StableValue.of();
+
+        Logger getLogger() {
+            return logger.orElseSet(() -> Logger.create(OrderController.class));
+        }
+
+        void submitOrder(User user, List<Product> products) {
+            getLogger().info("order started");
+            ...
+            getLogger().info("order submitted");
+        }
+
+    }
+    ```
+
+### Vector API (Tenth Incubator)
+
+In https://openjdk.org/jeps/508.
+
+### PEM Encodings of Cryptographic Objects (Preview)
+
+In https://openjdk.org/jeps/470.
+
+* Decode
+
+    ```java
+    String pem = readpemfile;
+    PEMDecoder pd = PEMDecoder.of();
+    switch (pd.decode(pem)) {
+        case PublicKey publicKey -> ...;
+        case PrivateKey privateKey -> ...;
+        default -> throw new IllegalArgumentException(...);
+    }
+    ```
+
+* Encode
+
+    ```java
+    PEMencoder pe = PEMEncoder.of();
+    byte[] pem = pe.encode(privateKey);
+    String pem = pe.encodeToString(new KeyPair(publicKey, privateKey));
+    String pem = pe.withEncryption(password).encodeToString(privateKey);
+    ```
+
+### Key Derivation Function API
+
+In https://openjdk.org/jeps/510.
+
+```java
+// Create a KDF object for the specified algorithm
+KDF hkdf = KDF.getInstance("HKDF-SHA256");
+
+// Create an ExtractExpand parameter specification
+AlgorithmParameterSpec params =
+    HKDFParameterSpec.ofExtract()
+                     .addIKM(initialKeyMaterial)
+                     .addSalt(salt).thenExpand(info, 32);
+
+// Derive a 32-byte AES key
+SecretKey key = hkdf.deriveKey("AES", params);
+
+// Additional deriveKey calls can be made with the same KDF object
+```
+
+### Compact Object Headers
+
+In https://openjdk.org/jeps/519.
+
+It's enabled in Jdk25 by default.
+
+### Ahead-of-Time Command-Line Ergonomics
+
+In https://openjdk.org/jeps/514. See [https://exia.dev/blog/2025-09-18/Use-JDK-25-AOT-Cache/](https://exia.dev/blog/2025-09-18/Use-JDK-25-AOT-Cache/).
+
+### Ahead-of-Time Method Profiling
+
+In https://openjdk.org/jeps/515.
+
+### JFR CPU-Time Profiling (Experimental)
+
+In https://openjdk.org/jeps/509.
+
+### JFR Cooperative Sampling
+
+In https://openjdk.org/jeps/518.
+
+### JFR Method Timing & Tracing
+
+In https://openjdk.org/jeps/520.
+
+### Removal of Experimental Feature - Graal JIT
+
+The optional experimental Graal JIT compiler has been removed.
+
+## JDK24
+
+### Primitive Types in Patterns, instanceof, and switch (Second Preview)
+
+In https://openjdk.org/jeps/488.
+
+* Safety of conversions
+
+    ```java
+    byte b = 42;
+    b instanceof int;         // true (unconditionally exact)
+
+    int i = 42;
+    i instanceof byte;        // true (exact)
+
+    int i = 1000;
+    i instanceof byte;        // false (not exact)
+
+    int i = 16_777_217;       // 2^24 + 1
+    i instanceof float;       // false (not exact)
+    i instanceof double;      // true (unconditionally exact)
+    i instanceof Integer;     // true (unconditionally exact)
+    i instanceof Number;      // true (unconditionally exact)
+
+    float f = 1000.0f;
+    f instanceof byte;        // false
+    f instanceof int;         // true (exact)
+    f instanceof double;      // true (unconditionally exact)
+
+    double d = 1000.0d;
+    d instanceof byte;        // false
+    d instanceof int;         // true (exact)
+    d instanceof float;       // true (exact)
+
+    Integer ii = 1000;
+    ii instanceof int;        // true (exact)
+    ii instanceof float;      // true (exact)
+    ii instanceof double;     // true (exact)
+
+    Integer ii = 16_777_217;
+    ii instanceof float;      // false (not exact)
+    ii instanceof double;     // true (exact)
+    ```
+
+* Primitive type patterns in instanceof and switch
+
+    ```java
+    int i = 1000;
+    if (i instanceof byte) {    // false -- i cannot be converted exactly to byte
+        byte b = (byte)i;       // potentially lossy
+        ... b ...
+    }
+    ```
+
+    can be written as
+
+    ```java
+    if (i instanceof byte b) {
+        ... b ...               // no loss of information
+    }
+    ```
+
+* Exhaustiveness
+
+    ```java
+    Byte b = ...
+    switch (b) {             // exhaustive switch
+        case int p -> 0;
+    }
+    ```
+
+    This behavior is similar to the exhaustiveness treatment of record patterns.
+
+    Just as switch uses pattern exhaustiveness to determine if the cases cover all input values, switch uses dominance to determine if there are any cases that will match no input values.
+
+* Expanded primitive support in switch
+
+    ```java
+    float v = ...
+    switch (v) {
+        case 0f -> 5f;
+        case float x when x == 1f -> 6f + x;
+        case float x -> 7f + x;
+    }
+    ```
+
+    The following switch is illegal because the literal 0.999999999f is rounded up to 1.0f, creating a duplicate case label.
+
+    ```java
+    float v = ...
+    switch (v) {
+        case 1.0f -> ...
+        case 0.999999999f -> ...    // error: duplicate label
+        default -> ...
+    }
+    ```
+
+    Since the boolean type has only two distinct values, a switch that lists both the true and false cases is considered exhaustive. The following switch is legal, but it would be illegal if there were a default clause.
+
+    ```java
+    boolean v = ...
+    switch (v) {
+        case true -> ...
+        case false -> ...
+        // Alternatively: case true, false -> ...
+    }
+    ```
+
+### Flexible Constructor Bodies (Third Preview)
+
+In https://openjdk.org/jeps/492.
+
+* Validating superclass constructor arguments
+
+    ```java
+    public class PositiveBigInteger extends BigInteger {
+
+        public PositiveBigInteger(long value) {
+            if (value <= 0) throw new IllegalArgumentException(..);
+            super(value);
+        }
+
+    }
+    ```
+
+* Preparing superclass constructor arguments
+
+    ```java
+    public Sub(Certificate certificate) {
+        var publicKey = certificate.getPublicKey();
+        if (publicKey == null) throw ...
+        byte[] certBytes = switch (publicKey) {
+            case RSAKey rsaKey -> ...
+            case DSAPublicKey dsaKey -> ...
+            default -> ...
+        };
+        super(certBytes );
+    }
+    ```
+
+* Sharing superclass constructor arguments
+
+    ```java
+    public class Sub extends Super {
+        public Sub(int i) {
+            var x = new C(i);
+            super(x, x);
+        }
+    }
+    ```
+
+* Early construction contexts
+
+    Any explicit or implicit use of this to refer to the current instance, or to access fields or invoke methods of the current instance, is disallowed in an early construction context:
+
+    ```java
+    class A {
+
+        int i;
+
+        A() {
+
+            System.out.print(this);  // Error - refers to the current instance
+
+            var x = this.i;          // Error - explicitly refers to field of the current instance
+            this.hashCode();         // Error - explicitly refers to method of the current instance
+
+            var x = i;               // Error - implicitly refers to field of the current instance
+            hashCode();              // Error - implicitly refers to method of the current instance
+
+            super();
+
+        }
+
+    }
+    ```
+
+    Similarly, any field access, method invocation, or method reference qualified by super is disallowed in an early construction context:
+
+    ```java
+    class B {
+        int i;
+        void m() { ... }
+    }
+
+    class C extends B {
+
+        C() {
+            var x = super.i;         // Error
+            super.m();               // Error
+            super();
+        }
+
+    }
+    ```
+
+* Using enclosing instances in early construction contexts
+
+    ```java
+    class Outer {
+
+        int i;
+
+        void hello() { System.out.println("Hello"); }
+
+        class Inner {
+
+            int j;
+
+            Inner() {
+                var x = i;             // OK - implicitly refers to field of enclosing instance
+                var y = Outer.this.i;  // OK - explicitly refers to field of enclosing instance
+                hello();               // OK - implicitly refers to method of enclosing instance
+                Outer.this.hello();    // OK - explicitly refers to method of enclosing instance
+                super();
+            }
+
+        }
+
+    }
+
+    // by contrast
+    class Outer {
+
+        class Inner {}
+
+        Outer() {
+            var x = new Inner();       // Error - implicitly refers to the current instance of Outer
+            var y = this.new Inner();  // Error - explicitly refers to the current instance of Outer
+            super();
+        }
+
+    }
+    ```
+
+* Early assignment to fields
+
+    We solve the conundrum by allowing the Sub constructor to initialize the field in Sub before invoking the Super constructor explicitly. The example can be rewritten as follows, where only the Sub class is changed:
+
+    ```java
+    class Super {
+
+        Super() { overriddenMethod(); }
+
+        void overriddenMethod() { System.out.println("hello"); }
+
+    }
+
+    class Sub extends Super {
+
+        final int x;
+
+        Sub(int x) {
+            this.x = x;    // Initialize the field
+            super();       // Then invoke the Super constructor explicitly
+        }
+
+        @Override
+        void overriddenMethod() { System.out.println(x); }
+
+    }
+    ```
+
+### Module Import Declarations (Second Preview)
+
+In https://openjdk.org/jeps/494.
+
+A module import declaration has the form `import module M;`,
+
+> * It imports, on demand, all of the public top-level classes and interfaces in
+> * The packages exported by the module M to the current module, and
+> * The packages exported by the modules that are read by the current module due to reading the module M.
+
+* Resolving ambiguous imports
+
+    ```java
+    import module java.base;      // exports java.util, which has a public Date class
+    import module java.sql;       // exports java.sql, which has a public Date class
+
+    import java.sql.Date;         // resolve the ambiguity of the simple name Date!
+
+    ...
+    Date d = ...                  // Ok!  Date is resolved to java.sql.Date
+    ...
+    ```
+
+* Coalescing import declarations
+
+    You may be able to coalesce multiple on-demand declarations into a single module import declaration; for example:
+
+    ```java
+    import javax.xml.*;
+    import javax.xml.parsers.*;
+    import javax.xml.stream.*;
+    could be replaced with:
+
+    import module java.xml;
+    ```
+
+* Grouping import declarations
+
+    If a source file has a mix of different kinds of import declarations then grouping them by kind may further improve readability; for example:
+
+    ```java
+    // Module imports
+    import module M1;
+    import module M2;
+    ...
+
+    // Package imports
+    import P1.*;
+    import P2.*;
+    ...
+
+    // Single-type imports
+    import P1.C1;
+    import P2.C2;
+    ...
+
+    class Foo { ... }
+    ```
+
+    The order of the groups reflects their shadowing behavior: The least-specific module import declarations are first, the most-specific single-type imports are last, and the on-demand imports are in between.
+
+### Simple Source Files and Instance Main Methods (Fourth Preview)
+
+In https://openjdk.org/jeps/495.
+
+First, we allow main methods to omit the infamous boilerplate of public static void main(String[] args), which simplifies the Hello, World! program to:
+
+```java
+class HelloWorld {
+    void main() {
+        System.out.println("Hello, World!");
+    }
+}
+```
+
+Second, we introduce a simple form of source file that lets developers get straight to the code, without a superfluous class declaration:
+
+```java
+void main() {
+    System.out.println("Hello, World!");
+}
+```
+
+Third, in simple source files we automatically import a few useful methods for console input and output, thereby avoiding the mysterious System.out.println:
+
+```java
+void main() {
+    println("Hello, World!");
+}
+```
+
+### Compact Object Headers (Experimental)
+
+In https://openjdk.org/jeps/450.
+
+Reduce the size of object headers in the HotSpot JVM from between 96 and 128 bits down to 64 bits on 64-bit architectures. This will reduce heap size, improve deployment density, and increase data locality.
+
+### Late Barrier Expansion for G1
+
+In https://openjdk.org/jeps/475.
+
+Simplify the implementation of the G1 garbage collector's barriers, which record information about application memory accesses, by shifting their expansion from early in the C2 JIT's compilation pipeline to later.
+
+### Ahead-of-Time Class Loading & Linking
+
+In https://openjdk.org/jeps/483.
+
+Improve startup time by making the classes of an application instantly available, in a loaded and linked state, when the HotSpot Java Virtual Machine starts. Achieve this by monitoring the application during one run and storing the loaded and linked forms of all classes in a cache for use in subsequent runs. Lay a foundation for future improvements to both startup and warmup time.
+
+### Synchronize Virtual Threads without Pinning
+
+In https://openjdk.org/jeps/491.
+
+Improve the scalability of Java code that uses synchronized methods and statements by arranging for virtual threads that block in such constructs to release their underlying platform threads for use by other virtual threads. This will eliminate nearly all cases of virtual threads being pinned to platform threads, which severely restricts the number of virtual threads available to handle an application's workload.
+
+### Stream Gatherers
+
+In https://openjdk.org/jeps/485.
+
+Enhance the Stream API to support custom intermediate operations. This will allow stream pipelines to transform data in ways that are not easily achievable with the existing built-in intermediate operations.
+
+See JDK 23 below.
+
+### Class-File API
+
+In https://openjdk.org/jeps/484.
+
+Provide a standard API for parsing, generating, and transforming Java class files.
+
+### Scoped Values (Fourth Preview)
+
+In https://openjdk.org/jeps/487.
+
+### Vector API (Ninth Incubator)
+
+In https://openjdk.org/jeps/489.
+
+### Structured Concurrency (Fourth Preview)
+
+In https://openjdk.org/jeps/499.
+
+### Key Derivation Function API (Preview)
+
+In https://openjdk.org/jeps/478.
+
+```java
+// Create a KDF object for the specified algorithm
+KDF hkdf = KDF.getInstance("HKDF-SHA256");
+
+// Create an ExtractExpand parameter specification
+AlgorithmParameterSpec params =
+    HKDFParameterSpec.ofExtract()
+                     .addIKM(initialKeyMaterial)
+                     .addSalt(salt).thenExpand(info, 32);
+
+// Derive a 32-byte AES key
+SecretKey key = hkdf.deriveKey("AES", params);
+
+// Additional deriveKey calls can be made with the same KDF object
+```
+
+### Quantum-Resistant Module-Lattice-Based Key Encapsulation Mechanism
+
+In https://openjdk.org/jeps/496.
+
+### Quantum-Resistant Module-Lattice-Based Digital Signature Algorithm
+
+In https://openjdk.org/jeps/497.
+
+### Prepare to Restrict the Use of JNI
+
+In https://openjdk.org/jeps/472.
+
+### Permanently Disable the Security Manager
+
+In https://openjdk.org/jeps/486.
+
+### ZGC: Remove the Non-Generational Mode
+
+Remove the non-generational mode of the Z Garbage Collector (ZGC), keeping the generational mode as the default for ZGC.
+
+In https://openjdk.org/jeps/490.
+
+### Warn upon Use of Memory-Access Methods in sun.misc.Unsafe
+
+In https://openjdk.org/jeps/498.
+
+## JDK23
+
+### Primitive Types in Patterns, instanceof, and switch (Preview) JEP 455
+
+In https://openjdk.org/jeps/455.
+
+With support for primitive type patterns in switch, we could improve the switch expression
+
+```java
+switch (x.getStatus()) {
+    case 0 -> "okay";
+    case 1 -> "warning";
+    case 2 -> "error";
+    default -> "unknown status: " + x.getStatus();
+}
+```
+
+by turning the default clause into a case clause with a primitive type pattern that exposes the matched value:
+
+```java
+switch (x.getStatus()) {
+    case 0 -> "okay";
+    case 1 -> "warning";
+    case 2 -> "error";
+    case int i -> "unknown status: " + i;
+}
+```
+
+Supporting primitive type patterns would also allow guards to inspect the matched value:
+
+```java
+switch (x.getYearlyFlights()) {
+    case 0 -> ...;
+    case 1 -> ...;
+    case 2 -> issueDiscount();
+    case int i when i >= 100 -> issueGoldCard();
+    case int i -> ... appropriate action when i > 2 && i < 100 ...
+}
+```
+
+And, supporting primitive type patterns in instanceof would allow us to write
+
+```java
+if (i instanceof byte) {  // value of i fits in a byte
+    ... (byte)i ...       // traditional cast required
+}
+```
+
+### Module Import Declarations (Preview) JEP 476
+
+In https://openjdk.org/jeps/476.
+
+To import all class under a module, we can use the following syntax:
+
+```java
+import java.sql.*;
+```
+
+With module import, we could write as,
+
+```java
+import module java.sql
+```
+
+If two modules have the same exported class name, we could use the following syntax to disambiguate the class name,
+
+```java
+import module java.sql; // export java.sql.Date
+import module java.base; // export java.util.Date
+
+import java.util.Date;
+```
+
+### Flexible Constructor Bodies (Second Preview) JEP 482
+
+In https://openjdk.org/jeps/482.
+
+* Validating superclass constructor arguments
+
+    ```java
+    public class PositiveBigInteger extends BigInteger {
+
+        private static long verifyPositive(long value) {
+            if (value <= 0) throw new IllegalArgumentException(..);
+            return value;
+        }
+
+        public PositiveBigInteger(long value) {
+            super(verifyPositive(value));
+        }
+
+    }
+    // or
+    public class PositiveBigInteger extends BigInteger {
+
+        public PositiveBigInteger(long value) {
+            if (value <= 0) throw new IllegalArgumentException(..);
+            super(value);
+        }
+
+    }
+    ```
+
+* Preparing superclass constructor arguments
+
+    ```java
+    public Sub(Certificate certificate) {
+        var publicKey = certificate.getPublicKey();
+        if (publicKey == null) throw ...
+        byte[] certBytes = switch (publicKey) {
+            case RSAKey rsaKey -> ...
+            case DSAPublicKey dsaKey -> ...
+            default -> ...
+        };
+        super(certBytes );
+    }
+    ```
+
+* Sharing superclass constructor arguments
+
+    ```java
+    public class Sub extends Super {
+        public Sub(int i) {
+            var x = new C(i);
+            super(x, x);
+        }
+    }
+    ```
+
+### Implicitly Declared Classes and Instance Main Methods (Third Preview) JEP 477
+
+In https://openjdk.org/jeps/477.
+
+### Class-File API (Second Preview) JEP 466
+
+In https://openjdk.org/jeps/466.
+
+Stream Gatherers (Second Preview) JEP 473
+
+In https://openjdk.org/jeps/473.
+Stream::gather(Gatherer) is a new intermediate stream operation that processes the elements of a stream by applying a user-defined entity called a gatherer. With the gather operation we can build efficient, parallel-ready streams that implement almost any intermediate operation. Stream::gather(Gatherer) is to intermediate operations what Stream::collect(Collector) is to terminal operations.
+
+The following built-in gatherers introduced in the java.util.stream.Gatherers class:
+
+* fold is a stateful many-to-one gatherer which constructs an aggregate incrementally and emits that aggregate when no more input elements exist.
+
+    ```java
+    // will contain: Optional["123456789"]
+    Optional<String> numberString =
+        Stream.of(1,2,3,4,5,6,7,8,9)
+            .gather(
+                Gatherers.fold(() -> "", (string, number) -> string + number)
+            )
+            .findFirst();
+    ```
+
+* mapConcurrent is a stateful one-to-one gatherer which invokes a supplied function for each input element concurrently, up to a supplied limit.
+
+    ```java
+    List<Integer> numbers = List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+
+        long startTime = System.currentTimeMillis();
+
+        List<String> results = numbers.stream()
+                .gather(Gatherers.mapConcurrent(4, number -> {
+                    // Simulate a time-consuming operation (e.g., I/O, network call)
+                    try {
+                        Thread.sleep(1000); // 1 second delay
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException(e);
+                    }
+                    return "Processed: " + number + " (" + Thread.currentThread().threadId() + ")";
+                }))
+                .toList();
+
+        long duration = System.currentTimeMillis() - startTime;
+
+        System.out.println("Processing time: " + duration + " ms");
+        System.out.println("Results:");
+        results.forEach(System.out::println);
+    ```
+
+* scan is a stateful one-to-one gatherer which applies a supplied function to the current state and the current element to produce the next element, which it passes downstream.
+
+    ```java
+    // will contain: ["1", "12", "123", "1234", "12345", "123456", "1234567", "12345678", "123456789"]
+    List<String> numberStrings =
+        Stream.of(1,2,3,4,5,6,7,8,9)
+              .gather(
+                  Gatherers.scan(() -> "", (string, number) -> string + number)
+               )
+              .toList();
+    ```
+
+* windowFixed is a stateful many-to-many gatherer which groups input elements into lists of a supplied size, emitting the windows downstream when they are full.
+
+    ```java
+    // will contain: [[1, 2, 3], [4, 5, 6], [7, 8]]
+    List<List<Integer>> windows =
+        Stream.of(1,2,3,4,5,6,7,8).gather(Gatherers.windowFixed(3)).toList();
+    ```
+
+* windowSliding is a stateful many-to-many gatherer which groups input elements into lists of a supplied size. After the first window, each subsequent window is created from a copy of its predecessor by dropping the first element and appending the next element from the input stream..
+
+    ```java
+    // will contain: [[1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8]]
+    List<List<Integer>> windows2 =
+        Stream.of(1,2,3,4,5,6,7,8).gather(Gatherers.windowSliding(2)).toList();
+
+    // will contain: [[1, 2, 3, 4, 5, 6], [2, 3, 4, 5, 6, 7], [3, 4, 5, 6, 7, 8]]
+    List<List<Integer>> windows6 =
+        Stream.of(1,2,3,4,5,6,7,8).gather(Gatherers.windowSliding(6)).toList();
+    ```
+
+### Structured Concurrency (Third Preview) JEP 480
+
+In https://openjdk.org/jeps/480
+
+With thread concurrency,
+
+```java
+Response handle() throws ExecutionException, InterruptedException {
+    Future<String>  user  = esvc.submit(() -> findUser());
+    Future<Integer> order = esvc.submit(() -> fetchOrder());
+    String theUser  = user.get();   // Join findUser
+    int    theOrder = order.get();  // Join fetchOrder
+    return new Response(theUser, theOrder);
+}
+```
+
+However, if any task `findUser` or `fetchOrder` throws an exception, the other task will continue to run in its own thread. This is a thread leak which, at best, wastes resources; at worst, the fetchOrder() thread will interfere with other tasks.
+
+With Structured Concurrency, we can use `StructuredTaskScope.ShutdownOnFailure` to ensure that the other task will be cancelled if the current task throws an exception.
+
+```java
+Response handle() throws ExecutionException, InterruptedException {
+    try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+        Supplier<String>  user  = scope.fork(() -> findUser());
+        Supplier<Integer> order = scope.fork(() -> fetchOrder());
+
+        scope.join()            // Join both subtasks
+             .throwIfFailed();  // ... and propagate errors
+
+        // Here, both subtasks have succeeded, so compose their results
+        return new Response(user.get(), order.get());
+    }
+}
+```
+
+### Scoped Values (Third Preview) JEP 481
+
+In https://openjdk.org/jeps/481
+
+A scoped value is a container object that allows a data value to be safely and efficiently shared by a method with its direct and indirect callees within the same thread, and with child threads, without resorting to method parameters. It is a variable of type ScopedValue. It is typically declared as a final static field, and its accessibility is set to private so that it cannot be directly accessed by code in other classes.
+
+Like a thread-local variable, a scoped value has multiple values associated with it, one per thread. The particular value that is used depends on which thread calls its methods. Unlike a thread-local variable, a scoped value is written once, and is available only for a bounded period during execution of the thread.
+
+```java
+class Framework {
+
+    private final static ScopedValue<FrameworkContext> CONTEXT
+                        = ScopedValue.newInstance();    // (1)
+
+    void serve(Request request, Response response) {
+        var context = createContext(request);
+        ScopedValue.runWhere(CONTEXT, context,          // (2)
+                   () -> Application.handle(request, response));
+    }
+
+    public PersistedObject readKey(String key) {
+        var context = CONTEXT.get();                    // (3)
+        var db = getDBConnection(context);
+        db.readKey(key);
+    }
+
+    ...
+}
+```
+
+* Rebinding scoped values
+
+    That scoped values have no set method means that a caller can use a scoped value to reliably communicate a value to its callees in the same thread. However, there are occasions when one of its callees might need to use the same scoped value to communicate a different value to its own callees. The ScopedValue API allows a new nested binding to be established for subsequent calls:
+
+    ```java
+    private static final ScopedValue<String> X = ScopedValue.newInstance();
+
+    void foo() {
+        ScopedValue.runWhere(X, "hello", () -> bar());
+    }
+
+    void bar() {
+        System.out.println(X.get()); // prints hello
+        ScopedValue.runWhere(X, "goodbye", () -> baz());
+        System.out.println(X.get()); // prints hello
+    }
+
+    void baz() {
+        System.out.println(X.get()); // prints goodbye
+    }
+    ```
+
+* Inheriting scoped values
+
+### Vector API (Eighth Incubator) JEP 469
+
+In https://openjdk.org/jeps/469.
+
+### Graal JIT now Available as Part of the Oracle JDK
+
+The Oracle GraalVM JIT compiler (Graal JIT) is now included among the JITs available as part of the Oracle JDK. This integration offers innovations previously made available via GraalVM, such as novel JIT code optimization techniques. This provides developers and sysadmins more options to help fine tune and improve peak performance of their applications. The Graal JIT is enabled by passing the command line options to the Java executable:
+
+`-XX:+UnlockExperimentalVMOptions -XX:+UseGraalJIT`
+
+If you do not pass these flags at JVM startup the Oracle JDK default JIT (C2) will run as usual.
+
+### ZGC: Generational Mode by Default JEP 474
+
+In https://openjdk.org/jeps/474.
+
+Switch the default mode of the Z Garbage Collector (ZGC) to the generational mode. Deprecate the non-generational mode, with the intent to remove it in a future release.
+
+### Markdown Documentation Comments JEP 467
+
+In https://openjdk.org/jeps/467.
+
+### Withdraw String Templates
+
+## JDK22
+
+### Unnamed Variables & Patterns
+
+In https://openjdk.org/jeps/456.
+
+* Unnamed variables
+
+    Here are the examples to use unnamed variables.
+
+    * An enhanced for loop with side effects:
+
+        ```java
+        static int count(Iterable<Order> orders) {
+            int total = 0;
+            for (Order _ : orders)    // Unnamed variable
+                total++;
+            return total;
+        }
+        ```
+
+        The initialization of a simple for loop can also declare unnamed local variables:
+
+        ```java
+        for (int i = 0, _ = sideEffect(); i < 10; i++) { ... i ... }
+        ```
+
+    * An assignment statement, where the result of the expression on the right-hand side is not needed:
+
+        ```java
+        Queue<Integer> q = ... // x1, y1, z1, x2, y2, z2, ...
+        while (q.size() >= 3) {
+        var x = q.remove();
+        var y = q.remove();
+        var _ = q.remove();        // Unnamed variable
+        ... new Point(x, y) ...
+        }
+        ```
+
+        If the program needed to process only the x1, x2, etc., coordinates then unnamed variables could be used in multiple assignment statements:
+
+        ```java
+        while (q.size() >= 3) {
+            var x = q.remove();
+            var _ = q.remove();       // Unnamed variable
+            var _ = q.remove();       // Unnamed variable
+            ... new Point(x, 0) ...
+        }
+        ```
+
+    * A catch block:
+
+        ```java
+        String s = ...
+        try {
+            int i = Integer.parseInt(s);
+            ... i ...
+        } catch (NumberFormatException _) {        // Unnamed variable
+            System.out.println("Bad number: " + s);
+        }
+        ```
+
+        Unnamed variables can be used in multiple catch blocks:
+
+        ```java
+        try { ... }
+        catch (Exception _) { ... }                // Unnamed variable
+        catch (Throwable _) { ... }                // Unnamed variable
+        ```
+
+    * In try-with-resources:
+
+        ```java
+        try (var _ = ScopedContext.acquire()) {    // Unnamed variable
+            ... no use of acquired resource ...
+        }
+        ```
+
+    * A lambda whose parameter is irrelevant:
+
+        ```java
+        ...stream.collect(Collectors.toMap(String::toUpperCase,
+                                    _ -> "NODATA"))    // Unnamed variable
+        ```
+
+### Statements before super(...) (Preview)
+
+In https://openjdk.org/jeps/447.
+
+In constructors in the Java programming language, allow statements that do not reference the instance being created to appear before an explicit constructor invocation.
+
+* Validating superclass constructor arguments
+
+    Sometimes we need to validate an argument that is passed to a superclass constructor. We can validate the argument after the fact, but that means potentially doing unnecessary work:
+
+    ```java
+    public class PositiveBigInteger extends BigInteger {
+
+        public PositiveBigInteger(long value) {
+            super(value);               // Potentially unnecessary work
+            if (value <= 0)
+                throw new IllegalArgumentException("non-positive value");
+        }
+
+    }
+    ```
+
+    It would be better to declare a constructor that fails fast, by validating its arguments before it invokes the superclass constructor. Today we can only do that in-line, using an auxiliary static method:
+
+    ```java
+    public class PositiveBigInteger extends BigInteger {
+
+        public PositiveBigInteger(long value) {
+            super(verifyPositive(value));
+        }
+
+        private static long verifyPositive(long value) {
+            if (value <= 0)
+                throw new IllegalArgumentException("non-positive value");
+            return value;
+        }
+
+    }
+    ```
+
+    This code would be more readable if we could include the validation logic directly in the constructor. What we would like to write is:
+
+    ```java
+    public class PositiveBigInteger extends BigInteger {
+
+        public PositiveBigInteger(long value) {
+            if (value <= 0)
+                throw new IllegalArgumentException("non-positive value");
+            super(value);
+        }
+
+    }
+    ```
+
+* Preparing superclass constructor arguments
+
+    Sometimes we must perform non-trivial computation in order to prepare arguments for a superclass constructor, resorting, yet again, to auxiliary methods:
+
+    ```java
+    public class Sub extends Super {
+
+        public Sub(Certificate certificate) {
+            super(prepareByteArray(certificate));
+        }
+
+        // Auxiliary method
+        private static byte[] prepareByteArray(Certificate certificate) {
+            var publicKey = certificate.getPublicKey();
+            if (publicKey == null)
+                throw new IllegalArgumentException("null certificate");
+            return switch (publicKey) {
+            case RSAKey rsaKey -> rsaKey.getEncoded();
+            case DSAPublicKey dsaKey -> dsaKey.getEncoded();
+            default -> throw new IllegalArgumentException("Unsupported key type");
+        };
+    }
+
+    }
+    ```
+
+* Sharing superclass constructor arguments
+
+    Sometimes we need to compute a value and share it between the arguments of a superclass constructor invocation. The requirement that the constructor invocation appear first means that the only way to achieve this sharing is via an intermediate auxiliary constructor:
+
+    ```java
+    public class Super {
+
+        public Super(F f1, F f2) {
+            ...
+        }
+
+    }
+
+    public class Sub extends Super {
+
+        // Auxiliary constructor
+        private Sub(int i, F f) {
+            super(f, f);                // f is shared here
+            ... i ...
+        }
+
+        public Sub(int i) {
+            this(i, new F());
+        }
+
+    }
+    ```
+
+    In the public Sub constructor we want to create a new instance of a class F and pass two references to that instance to the superclass constructor. We do that by declaring an auxiliary private constructor.
+
+    The code that we would like to write does the copying directly in the constructor, obviating the need for an auxiliary constructor:
+
+    ```java
+    public Sub(int i) {
+            var f = new F();
+            super(f, f);
+            ... i ...
+    }
+    ```
+
+* Pre-construction contexts
+
+    * any unqualified this expression is disallowed in a pre-construction context
+
+        ```java
+        class A {
+
+            int i;
+
+            A() {
+                this.i++;                   // Error
+                this.hashCode();            // Error
+                System.out.print(this);     // Error
+                super();
+            }
+
+        }
+        }
+        ```
+
+    * any field access, method invocation, or method reference qualified by super is disallowed in a pre-construction context
+
+        ```java
+        class D {
+            int i;
+        }
+
+        class E extends D {
+
+            E() {
+                super.i++;                  // Error
+                super();
+            }
+
+        }
+        ```
+
+    * an illegal access does not need to contain a this or super keyword
+
+        ```java
+        class A {
+
+            int i;
+
+            A() {
+                i++;                        // Error
+                hashCode();                 // Error
+                super();
+            }
+
+        }
+        ```
+
+        More confusingly, sometimes an expression involving this does not refer to the current instance but, rather, to the enclosing instance of an inner class:
+
+        ```java
+        class B {
+
+            int b;
+
+            class C {
+
+                int c;
+
+                C() {
+                    B.this.b++;             // Allowed - enclosing instance
+                    C.this.c++;             // Error - same instance
+                    super();
+                }
+
+            }
+
+        }
+        ```
+
+        Unqualified method invocations are also complicated by the semantics of inner classes:
+
+        ```java
+        class Outer {
+
+            void hello() {
+                System.out.println("Hello");
+            }
+
+            class Inner {
+
+                Inner() {
+                    hello();                // Allowed - enclosing instance method
+                    super();
+                }
+
+            }
+
+        }
+        ```
+
+        The invocation hello() that appears in the pre-construction context of the Inner constructor is allowed because it refers to the enclosing instance of Inner (which, in this case, has the type Outer), not the instance of Inner that is being constructed.
+
+        In the previous example, the Outer enclosing instance was already constructed, and therefore accessible, whereas the Inner instance was under construction and therefore not accessible. The reverse situation is also possible:
+
+        ```java
+        class Outer {
+
+            class Inner {
+            }
+
+            Outer() {
+                new Inner();                // Error - 'this' is enclosing instance
+                super();
+            }
+
+        }
+        ```
+
+        The expression new Inner() is illegal because it requires providing the Inner constructor with an enclosing instance of Outer, but the instance of Outer that would be provided is still under construction and therefore inaccessible.
+
+        Similarly, in a pre-construction context, class instance creation expressions that declare anonymous classes cannot have the newly created object as the implicit enclosing instance:
+
+        ```java
+        class X {
+
+            class S {
+            }
+
+            X() {
+                var tmp = new S() { };      // Error
+                super();
+            }
+
+        }
+        ```
+
+        Here the anonymous class being declared is a subclass of S, which is an inner class of X. This means that the anonymous class would also have an enclosing instance of X, and hence the class instance creation expression would have the newly created object as the implicit enclosing instance. Again, since this occurs in the pre-construction context it results in a compile-time error. If the class S were declared static, or if it were an interface instead of a class, then it would have no enclosing instance and there would be no compile-time error.
+
+        This example, by contrast, is permitted:
+
+        ```java
+        class O {
+
+            class S {
+            }
+
+            class U {
+
+                U() {
+                    var tmp = new S() { };  // Allowed
+                    super();
+                }
+
+            }
+
+        }
+        ```
+
+    * Unlike in a static context, code in a pre-construction context may refer to the type of the instance under construction, as long as it does not access the instance itself
+
+        ```java
+        class A<T> extends B {
+
+            A() {
+                super(this);                // Error - refers to 'this'
+            }
+
+            A(List<?> list) {
+                super((T)list.get(0));      // Allowed - refers to 'T' but not 'this'
+            }
+
+        }
+        ```
+
+### Stream Gatherers (Preview)
+
+In https://openjdk.org/jeps/461.
+
+Enhance the Stream API to support custom intermediate operations. This will allow stream pipelines to transform data in ways that are not easily achievable with the existing built-in intermediate operations.
+
+Built-in gatherers,
+
+* `fold` is a stateful many-to-one gatherer which constructs an aggregate incrementally and emits that aggregate when no more input elements exist.
+* `mapConcurrent` is a stateful one-to-one gatherer which invokes a supplied function for each input element concurrently, up to a supplied limit.
+* `scan` is a stateful one-to-one gatherer which applies a supplied function to the current state and the current element to produce the next element, which it passes downstream.
+* `windowFixed` is a stateful many-to-many gatherer which groups input elements into lists of a supplied size, emitting the windows downstream when they are full.
+* `windowSliding` is a stateful many-to-many gatherer which groups input elements into lists of a supplied size. After the first window, each subsequent window is created from a copy of its predecessor by dropping the first element and appending the next element from the input stream..
+
+For example, `Stream.of(1,2,3,4,5,6,7,8,9).gather(Gatherers.windowFixed(3)).toList()`.
+
+### String Templates (Second Preview)
+
+In https://openjdk.org/jeps/459.
+
+* The STR template processor
+
+    ```java
+    // Embedded expressions can be strings
+    String firstName = "Bill";
+    String lastName  = "Duck";
+    String fullName  = STR."\{firstName} \{lastName}";
+    | "Bill Duck"
+    String sortName  = STR."\{lastName}, \{firstName}";
+    | "Duck, Bill"
+
+    // Embedded expressions can perform arithmetic
+    int x = 10, y = 20;
+    String s = STR."\{x} + \{y} = \{x + y}";
+    | "10 + 20 = 30"
+
+    // Embedded expressions can invoke methods and access fields
+    String s = STR."You have a \{getOfferType()} waiting for you!";
+    | "You have a gift waiting for you!"
+    String t = STR."Access at \{req.date} \{req.time} from \{req.ipAddress}";
+    | "Access at 2022-03-25 15:34 from 8.8.8.8"
+    ```
+
+* Multi-line template expressions
+
+    ```java
+    record Rectangle(String name, double width, double height) {
+        double area() {
+            return width * height;
+        }
+    }
+    Rectangle[] zone = new Rectangle[] {
+        new Rectangle("Alfa", 17.8, 31.4),
+        new Rectangle("Bravo", 9.6, 12.4),
+        new Rectangle("Charlie", 7.1, 11.23),
+    };
+    String table = STR."""
+        Description  Width  Height  Area
+        \{zone[0].name}  \{zone[0].width}  \{zone[0].height}     \{zone[0].area()}
+        \{zone[1].name}  \{zone[1].width}  \{zone[1].height}     \{zone[1].area()}
+        \{zone[2].name}  \{zone[2].width}  \{zone[2].height}     \{zone[2].area()}
+        Total \{zone[0].area() + zone[1].area() + zone[2].area()}
+        """;
+    | """
+    | Description  Width  Height  Area
+    | Alfa  17.8  31.4     558.92
+    | Bravo  9.6  12.4     119.03999999999999
+    | Charlie  7.1  11.23     79.733
+    | Total 757.693
+    | """
+    ```
+
+* The FMT template processor
+
+    ```java
+    record Rectangle(String name, double width, double height) {
+        double area() {
+            return width * height;
+        }
+    }
+    Rectangle[] zone = new Rectangle[] {
+        new Rectangle("Alfa", 17.8, 31.4),
+        new Rectangle("Bravo", 9.6, 12.4),
+        new Rectangle("Charlie", 7.1, 11.23),
+    };
+    String table = FMT."""
+        Description     Width    Height     Area
+        %-12s\{zone[0].name}  %7.2f\{zone[0].width}  %7.2f\{zone[0].height}     %7.2f\{zone[0].area()}
+        %-12s\{zone[1].name}  %7.2f\{zone[1].width}  %7.2f\{zone[1].height}     %7.2f\{zone[1].area()}
+        %-12s\{zone[2].name}  %7.2f\{zone[2].width}  %7.2f\{zone[2].height}     %7.2f\{zone[2].area()}
+        \{" ".repeat(28)} Total %7.2f\{zone[0].area() + zone[1].area() + zone[2].area()}
+        """;
+    | """
+    | Description     Width    Height     Area
+    | Alfa            17.80    31.40      558.92
+    | Bravo            9.60    12.40      119.04
+    | Charlie          7.10    11.23       79.73
+    |                              Total  757.69
+    | """
+    ```
+
+### Implicitly Declared Classes and Instance Main Methods (Second Preview)
+
+In https://openjdk.org/jeps/463.
+
+Allow to write a Java main like,
+
+```java
+class HelloWorld {
+    void main() {
+        System.out.println("Hello, World!");
+    }
+}
+
+// or
+
+void main() {
+    System.out.println("Hello, World!");
+}
+```
+
+### Foreign Function & Memory API
+
+In https://openjdk.org/jeps/454.
+
+Introduce an API by which Java programs can interoperate with code and data outside of the Java runtime. By efficiently invoking foreign functions (i.e., code outside the JVM), and by safely accessing foreign memory (i.e., memory not managed by the JVM), the API enables Java programs to call native libraries and process native data without the brittleness and danger of JNI.
+
+The Foreign Function & Memory API (FFM API) defines classes and interfaces so that client code in libraries and applications can
+
+* Control the allocation and deallocation of foreign memory(MemorySegment, Arena, and SegmentAllocator),
+* Manipulate and access structured foreign memory(MemoryLayout and VarHandle), and
+* Call foreign functions (Linker, SymbolLookup, FunctionDescriptor, and MethodHandle).
+
+> The FFM API resides in the java.lang.foreign package of the java.base module.
+
+As a brief example of using the FFM API, here is Java code that obtains a method handle for a C library function radixsort and then uses it to sort four strings which start life in a Java array (a few details are elided).
+
+```java
+// 1. Find foreign function on the C library path
+Linker linker          = Linker.nativeLinker();
+SymbolLookup stdlib    = linker.defaultLookup();
+MethodHandle radixsort = linker.downcallHandle(stdlib.find("radixsort"), ...);
+// 2. Allocate on-heap memory to store four strings
+String[] javaStrings = { "mouse", "cat", "dog", "car" };
+// 3. Use try-with-resources to manage the lifetime of off-heap memory
+try (Arena offHeap = Arena.ofConfined()) {
+    // 4. Allocate a region of off-heap memory to store four pointers
+    MemorySegment pointers
+        = offHeap.allocate(ValueLayout.ADDRESS, javaStrings.length);
+    // 5. Copy the strings from on-heap to off-heap
+    for (int i = 0; i < javaStrings.length; i++) {
+        MemorySegment cString = offHeap.allocateFrom(javaStrings[i]);
+        pointers.setAtIndex(ValueLayout.ADDRESS, i, cString);
+    }
+    // 6. Sort the off-heap data by calling the foreign function
+    radixsort.invoke(pointers, javaStrings.length, MemorySegment.NULL, '\0');
+    // 7. Copy the (reordered) strings from off-heap to on-heap
+    for (int i = 0; i < javaStrings.length; i++) {
+        MemorySegment cString = pointers.getAtIndex(ValueLayout.ADDRESS, i);
+        javaStrings[i] = cString.reinterpret(...).getString(0);
+    }
+} // 8. All off-heap memory is deallocated here
+assert Arrays.equals(javaStrings,
+                     new String[] {"car", "cat", "dog", "mouse"});  // true
+```
+
+This code is far clearer than any solution that uses JNI, since the implicit conversions and memory accesses that would have been hidden behind native method calls are now expressed directly in Java code. Modern Java idioms can also be used; for example, streams can allow multiple threads to copy data between on-heap and off-heap memory in parallel.
+
+### Class-File API (Preview)
+
+In https://openjdk.org/jeps/457
+
+Provide a standard API for parsing, generating, and transforming Java class files.
+
+### Structured Concurrency (Second Preview)
+
+In https://openjdk.org/jeps/462.
+
+For example,
+
+```java
+<T> List<Future<T>> executeAll(List<Callable<T>> tasks)
+        throws InterruptedException {
+    try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+        List<? extends Supplier<Future<T>>> futures = tasks.stream()
+            .map(task -> asFuture(task))
+            .map(scope::fork)
+            .toList();
+        scope.join();
+        return futures.stream().map(Supplier::get).toList();
+    }
+}
+
+static <T> Callable<Future<T>> asFuture(Callable<T> task) {
+   return () -> {
+       try {
+           return CompletableFuture.completedFuture(task.call());
+       } catch (Exception ex) {
+           return CompletableFuture.failedFuture(ex);
+       }
+   };
+}
+```
+
+### Scoped Values (Second Preview)
+
+In https://openjdk.org/jeps/464.
+
+For example,
+
+```java
+class Framework {
+    private final static ScopedValue<FrameworkContext> CONTEXT
+                        = ScopedValue.newInstance();   // (1)
+
+    void serve(Request request, Response response) {
+        var context = createContext(request);
+        ScopedValue.where(CONTEXT, context)            // (2)
+                   .run(() -> Application.handle(request, response));
+    }
+
+    public PersistedObject readKey(String key) {
+        var context = CONTEXT.get();            // (3)
+        var db = getDBConnection(context);
+        db.readKey(key);
+    }
+
+    ...
+}
+```
+
+### Vector API (Seventh Incubator)
+
+In https://openjdk.org/jeps/460.
+
+Introduce an API to express vector computations that reliably compile at runtime to optimal vector instructions on supported CPU architectures, thus achieving performance superior to equivalent scalar computations.
+
+Here is a simple scalar computation over elements of arrays:
+
+```java
+void scalarComputation(float[] a, float[] b, float[] c) {
+   for (int i = 0; i < a.length; i++) {
+        c[i] = (a[i] * a[i] + b[i] * b[i]) * -1.0f;
+   }
+}
+```
+
+(We assume that the array arguments are of the same length.)
+
+Here is an equivalent vector computation, using the Vector API:
+
+```java
+static final VectorSpecies<Float> SPECIES = FloatVector.SPECIES_PREFERRED;
+
+void vectorComputation(float[] a, float[] b, float[] c) {
+    int i = 0;
+    int upperBound = SPECIES.loopBound(a.length);
+    for (; i < upperBound; i += SPECIES.length()) {
+        // FloatVector va, vb, vc;
+        var va = FloatVector.fromArray(SPECIES, a, i);
+        var vb = FloatVector.fromArray(SPECIES, b, i);
+        var vc = va.mul(va)
+                   .add(vb.mul(vb))
+                   .neg();
+        vc.intoArray(c, i);
+    }
+    for (; i < a.length; i++) {
+        c[i] = (a[i] * a[i] + b[i] * b[i]) * -1.0f;
+    }
+}
+```
+
+### Region Pinning for G1
+
+In https://openjdk.org/jeps/423.
+
+Reduce latency by implementing region pinning in G1, so that garbage collection need not be disabled during Java Native Interface (JNI) critical regions..
+
+Pinning regions during minor collection operations, we aim to achieve the above goals by extending G1 to pin arbitrary regions during both major and minor collection operations, as follows:
+
+* Maintain a count of the number of critical objects in each region: Increment it when a critical object in that region is obtained, and decrement it when that object is released. When the count is zero then garbage-collect the region normally; when the count is non-zero, consider the region to be pinned.
+* During a major collection, do not evacuate any pinned region.
+* During a minor collection, treat pinned regions in the young generation as having failed evacuation, thus promoting them to the old generation. Do not evacuate existing pinned regions in the old generation.
+* Once we have done this then we can implement JNI critical regions — without disabling GC — by pinning regions that contain critical objects and continuing to collect garbage in unpinned regions.
+
+### Launch Multi-File Source-Code Programs
+
+In https://openjdk.org/jeps/458.
+
+Enhance the java application launcher to be able to run a program supplied as multiple files of Java source code. This will make the transition from small programs to larger ones more gradual, enabling developers to choose whether and when to go to the trouble of configuring a build tool.
+
+For example, suppose a directory contains two small programs plus a helper class, alongside some library JAR files:
+
+```bash
+Prog1.java
+Prog2.java
+Helper.java
+library1.jar
+library2.jar
+```
+
+You can quickly run these programs by passing --class-path '*' to the java launcher:
+
+```bash
+$ java --class-path '*' Prog1.java
+$ java --class-path '*' Prog2.java
+```
+
+## JDK21
+
+### Record Patterns
+
+Enhance the Java programming language with record patterns to deconstruct record values. Record patterns and type patterns can be nested to enable a powerful, declarative, and composable form of data navigation and processing.
+
+* Support deconstruct record values
+
+    As of Java 16, it supports pattern match with record value.
+
+    ```java
+    record Point(int x, int y) {}
+
+    static void printSum(Object obj) {
+        if (obj instanceof Point p) {
+            int x = p.x();
+            int y = p.y();
+            System.out.println(x+y);
+        }
+    }
+    ```
+
+    As of Java 21, it supports to deconstruct record values.
+
+    ```java
+    // As of Java 21
+    static void printSum(Object obj) {
+        if (obj instanceof Point(int x, int y)) {
+            System.out.println(x+y);
+        }
+    }
+    ```
+
+* Nested record patterns
+
+    ```java
+    record Point(int x, int y) {}
+    enum Color { RED, GREEN, BLUE }
+    record ColoredPoint(Point p, Color c) {}
+    record Rectangle(ColoredPoint upperLeft, ColoredPoint lowerRight) {}
+
+    // as of Java 21, we can extract the Rectangle record's values
+    static void printUpperLeftColoredPoint(Rectangle r) {
+        if (r instanceof Rectangle(ColoredPoint ul, ColoredPoint lr)) {
+            System.out.println(ul.c());
+        }
+    }
+
+    // event, extract the ColoredPoint values
+    static void printColorOfUpperLeftPoint(Rectangle r) {
+        if (r instanceof Rectangle(ColoredPoint(Point p, Color c),
+                                ColoredPoint lr)) {
+            System.out.println(c);
+        }
+    }
+
+    // or with var
+    static void printXCoordOfUpperLeftPointWithPatterns(Rectangle r) {
+        if (r instanceof Rectangle(ColoredPoint(Point(var x, var y), var c),
+                                var lr)) {
+            System.out.println("Upper-left corner: " + x);
+        }
+    }
+    ```
+
+* Record patterns and exhaustive switch
+
+    JEP 441 enhances both switch expressions and switch statements to support pattern labels. Both switch expressions and pattern switch statements must be exhaustive: The switch block must have clauses that deal with all possible values of the selector expression. For pattern labels this is determined by analysis of the types of the patterns; for example, the case label case Bar b matches values of type Bar and all possible subtypes of Bar.
+
+    With pattern labels involving record patterns, the analysis is more complex since we must consider the types of the component patterns and make allowances for sealed hierarchies. For example, consider the declarations:
+
+    ```java
+    class A {}
+    class B extends A {}
+    sealed interface I permits C, D {}
+    final class C implements I {}
+    final class D implements I {}
+    record Pair<T>(T x, T y) {}
+
+    Pair<A> p1;
+    Pair<I> p2;
+    The following switch is not exhaustive, since there is no match for a pair containing two values both of type A:
+
+    // As of Java 21
+    switch (p1) {                 // Error!
+        case Pair<A>(A a, B b) -> ...
+        case Pair<A>(B b, A a) -> ...
+    }
+    These two switches are exhaustive, since the interface I is sealed and so the types C and D cover all possible instances:
+
+    // As of Java 21
+    switch (p2) {
+        case Pair<I>(I i, C c) -> ...
+        case Pair<I>(I i, D d) -> ...
+    }
+
+    switch (p2) {
+        case Pair<I>(C c, I i) -> ...
+        case Pair<I>(D d, C c) -> ...
+        case Pair<I>(D d1, D d2) -> ...
+    }
+    In contrast, this switch is not exhaustive since there is no match for a pair containing two values both of type D:
+
+    // As of Java 21
+    switch (p2) {                        // Error!
+        case Pair<I>(C fst, D snd) -> ...
+        case Pair<I>(D fst, C snd) -> ...
+        case Pair<I>(I fst, C snd) -> ...
+    }
+    ```
+
+### Pattern Matching for switch
+
+Enhance the Java programming language with pattern matching for switch expressions and statements. Extending pattern matching to switch allows an expression to be tested against a number of patterns, each with a specific action, so that complex data-oriented queries can be expressed concisely and safely.
+
+* Support switch for pattern match
+
+    ```java
+    // Prior to Java 21
+    static String formatter(Object obj) {
+        String formatted = "unknown";
+        if (obj instanceof Integer i) {
+            formatted = String.format("int %d", i);
+        } else if (obj instanceof Long l) {
+            formatted = String.format("long %d", l);
+        } else if (obj instanceof Double d) {
+            formatted = String.format("double %f", d);
+        } else if (obj instanceof String s) {
+            formatted = String.format("String %s", s);
+        }
+        return formatted;
+    }
+
+    // As of Java 21
+    static String formatterPatternSwitch(Object obj) {
+        return switch (obj) {
+            case Integer i -> String.format("int %d", i);
+            case Long l    -> String.format("long %d", l);
+            case Double d  -> String.format("double %f", d);
+            case String s  -> String.format("String %s", s);
+            default        -> obj.toString();
+        };
+    }
+    ```
+
+* Support null for patten match
+
+    ```java
+    // Prior to Java 21
+    static void testFooBarOld(String s) {
+        if (s == null) {
+            System.out.println("Oops!");
+            return;
+        }
+        switch (s) {
+            case "Foo", "Bar" -> System.out.println("Great");
+            default           -> System.out.println("Ok");
+        }
+    }
+
+    // As of Java 21
+    static void testFooBarNew(String s) {
+        switch (s) {
+            case null         -> System.out.println("Oops");
+            case "Foo", "Bar" -> System.out.println("Great");
+            default           -> System.out.println("Ok");
+        }
+    }
+    ```
+
+* Case refinement with when keyword
+
+    ```java
+    // As of Java 21
+    static void testStringOld(String response) {
+        switch (response) {
+            case null -> { }
+            case String s -> {
+                if (s.equalsIgnoreCase("YES"))
+                    System.out.println("You got it");
+                else if (s.equalsIgnoreCase("NO"))
+                    System.out.println("Shame");
+                else
+                    System.out.println("Sorry?");
+            }
+        }
+    }
+
+    // As of Java 21
+    static void testStringNew(String response) {
+        switch (response) {
+            case null -> { }
+            case String s
+            when s.equalsIgnoreCase("YES") -> {
+                System.out.println("You got it");
+            }
+            case String s
+            when s.equalsIgnoreCase("NO") -> {
+                System.out.println("Shame");
+            }
+            case String s -> {
+                System.out.println("Sorry?");
+            }
+        }
+    }
+
+    //  with extra rules for other known constant strings:
+    static void testStringEnhanced(String response) {
+        switch (response) {
+            case null -> { }
+            case "y", "Y" -> {
+                System.out.println("You got it");
+            }
+            case "n", "N" -> {
+                System.out.println("Shame");
+            }
+            case String s
+            when s.equalsIgnoreCase("YES") -> {
+                System.out.println("You got it");
+            }
+            case String s
+            when s.equalsIgnoreCase("NO") -> {
+                System.out.println("Shame");
+            }
+            case String s -> {
+                System.out.println("Sorry?");
+            }
+        }
+    }
+    ```
+
+* Switches and enum constants
+
+    The use of enum constants in case labels is, at present, highly constrained: The selector expression of the switch must be of the enum type, and the labels must be simple names of the enum's constants. For example:
+
+    ```java
+    // Prior to Java 21
+    public enum Suit { CLUBS, DIAMONDS, HEARTS, SPADES }
+
+    static void testforHearts(Suit s) {
+        switch (s) {
+            case HEARTS -> System.out.println("It's a heart!");
+            default -> System.out.println("Some other suit");
+        }
+    }
+    ```
+
+    Even after adding pattern labels, this constraint leads to unnecessarily verbose code. For example:
+
+    ```java
+    // As of Java 21
+    sealed interface CardClassification permits Suit, Tarot {}
+    public enum Suit implements CardClassification { CLUBS, DIAMONDS, HEARTS, SPADES }
+    final class Tarot implements CardClassification {}
+
+    static void exhaustiveSwitchWithoutEnumSupport(CardClassification c) {
+        switch (c) {
+            case Suit s when s == Suit.CLUBS -> {
+                System.out.println("It's clubs");
+            }
+            case Suit s when s == Suit.DIAMONDS -> {
+                System.out.println("It's diamonds");
+            }
+            case Suit s when s == Suit.HEARTS -> {
+                System.out.println("It's hearts");
+            }
+            case Suit s -> {
+                System.out.println("It's spades");
+            }
+            case Tarot t -> {
+                System.out.println("It's a tarot");
+            }
+        }
+    }
+    ```
+
+    This code would be more readable if we could have a separate case for each enum constant rather than lots of guarded patterns. We therefore relax the requirement that the selector expression be of the enum type and we allow case constants to use qualified names of enum constants. This allows the above code to be rewritten as:
+
+    ```java
+    // As of Java 21
+    static void exhaustiveSwitchWithBetterEnumSupport(CardClassification c) {
+        switch (c) {
+            case Suit.CLUBS -> {
+                System.out.println("It's clubs");
+            }
+            case Suit.DIAMONDS -> {
+                System.out.println("It's diamonds");
+            }
+            case Suit.HEARTS -> {
+                System.out.println("It's hearts");
+            }
+            case Suit.SPADES -> {
+                System.out.println("It's spades");
+            }
+            case Tarot t -> {
+                System.out.println("It's a tarot");
+            }
+        }
+    }
+    ```
+
+    There are five major language design areas to consider when supporting patterns in switch:
+
+    * Enhanced type checking
+    * Exhaustiveness of switch expressions and statements
+    * Scope of pattern variable declarations
+    * Dealing with null
+    * Errors
+
+        https://openjdk.org/jeps/441
+
+### String Templates (Preview)
+
+In https://openjdk.org/jeps/430.
+
+Java doesn't choose a Javascript way to interpolate string,
+
+```javascript
+const title = "My Web Page";
+const text  = "Hello, world";
+
+var html = `<html>
+            <head>
+                <title>${title}</title>
+            </head>
+            <body>
+                <p>${text}</p>
+            </body>
+            </html>`;
+```
+
+String interpolation is dangerous, especially for SQL.
+
+* The STR template processor
+
+    ```java
+    // Embedded expressions can be strings
+    String firstName = "Bill";
+    String lastName  = "Duck";
+    String fullName  = STR."\{firstName} \{lastName}";
+    | "Bill Duck"
+    String sortName  = STR."\{lastName}, \{firstName}";
+    | "Duck, Bill"
+
+    // Embedded expressions can perform arithmetic
+    int x = 10, y = 20;
+    String s = STR."\{x} + \{y} = \{x + y}";
+    | "10 + 20 = 30"
+
+    // Embedded expressions can invoke methods and access fields
+    String s = STR."You have a \{getOfferType()} waiting for you!";
+    | "You have a gift waiting for you!"
+    String t = STR."Access at \{req.date} \{req.time} from \{req.ipAddress}";
+    | "Access at 2022-03-25 15:34 from 8.8.8.8"
+
+    //The template expression STR."..." is a shortcut for invoking the process method of the STR template processor. That is, the //////now-familiar example:
+
+    String name = "Joan";
+    String info = STR."My name is \{name}";
+    //is equivalent to:
+
+    String name = "Joan";
+    StringTemplate st = RAW."My name is \{name}";
+    String info = STR.process(st);
+    ```
+
+* Multi-line template expressions
+
+    ```java
+    String title = "My Web Page";
+    String text  = "Hello, world";
+    String html = STR."""
+        <html>
+          <head>
+            <title>\{title}</title>
+          </head>
+          <body>
+            <p>\{text}</p>
+          </body>
+        </html>
+        """;
+    | """
+    | <html>
+    |   <head>
+    |     <title>My Web Page</title>
+    |   </head>
+    |   <body>
+    |     <p>Hello, world</p>
+    |   </body>
+    | </html>
+    | """
+
+    String name    = "Joan Smith";
+    String phone   = "555-123-4567";
+    String address = "1 Maple Drive, Anytown";
+    String json = STR."""
+        {
+            "name":    "\{name}",
+            "phone":   "\{phone}",
+            "address": "\{address}"
+        }
+        """;
+    | """
+    | {
+    |     "name":    "Joan Smith",
+    |     "phone":   "555-123-4567",
+    |     "address": "1 Maple Drive, Anytown"
+    | }
+    | """
+
+    record Rectangle(String name, double width, double height) {
+        double area() {
+            return width * height;
+        }
+    }
+    Rectangle[] zone = new Rectangle[] {
+        new Rectangle("Alfa", 17.8, 31.4),
+        new Rectangle("Bravo", 9.6, 12.4),
+        new Rectangle("Charlie", 7.1, 11.23),
+    };
+    String table = STR."""
+        Description  Width  Height  Area
+        \{zone[0].name}  \{zone[0].width}  \{zone[0].height}     \{zone[0].area()}
+        \{zone[1].name}  \{zone[1].width}  \{zone[1].height}     \{zone[1].area()}
+        \{zone[2].name}  \{zone[2].width}  \{zone[2].height}     \{zone[2].area()}
+        Total \{zone[0].area() + zone[1].area() + zone[2].area()}
+        """;
+    | """
+    | Description  Width  Height  Area
+    | Alfa  17.8  31.4     558.92
+    | Bravo  9.6  12.4     119.03999999999999
+    | Charlie  7.1  11.23     79.733
+    | Total 757.693
+    | """
+    ```
+
+* The FMT template processor
+
+    FMT is another template processor defined in the Java Platform. FMT is like STR in that it performs interpolation, but it also interprets format specifiers which appear to the left of embedded expressions. The format specifiers are the same as those defined in java.util.Formatter. Here is the zone table example, tidied up by format specifiers in the template:
+
+    ```java
+    record Rectangle(String name, double width, double height) {
+        double area() {
+            return width * height;
+        }
+    }
+    Rectangle[] zone = new Rectangle[] {
+        new Rectangle("Alfa", 17.8, 31.4),
+        new Rectangle("Bravo", 9.6, 12.4),
+        new Rectangle("Charlie", 7.1, 11.23),
+    };
+    String table = FMT."""
+        Description     Width    Height     Area
+        %-12s\{zone[0].name}  %7.2f\{zone[0].width}  %7.2f\{zone[0].height}     %7.2f\{zone[0].area()}
+        %-12s\{zone[1].name}  %7.2f\{zone[1].width}  %7.2f\{zone[1].height}     %7.2f\{zone[1].area()}
+        %-12s\{zone[2].name}  %7.2f\{zone[2].width}  %7.2f\{zone[2].height}     %7.2f\{zone[2].area()}
+        \{" ".repeat(28)} Total %7.2f\{zone[0].area() + zone[1].area() + zone[2].area()}
+        """;
+    | """
+    | Description     Width    Height     Area
+    | Alfa            17.80    31.40      558.92
+    | Bravo            9.60    12.40      119.04
+    | Charlie          7.10    11.23       79.73
+    |                              Total  757.69
+    | """
+    ```
+
+* Safely composing and executing database queries
+
+    The template processor class below, QueryBuilder, first creates a SQL query string from a string template. It then creates a JDBC PreparedStatement from that query string and sets its parameters to the values of the embedded expressions.
+
+    ```java
+    record QueryBuilder(Connection conn)
+    implements StringTemplate.Processor<PreparedStatement, SQLException> {
+
+        public PreparedStatement process(StringTemplate st) throws SQLException {
+            // 1. Replace StringTemplate placeholders with PreparedStatement placeholders
+            String query = String.join("?", st.fragments());
+
+            // 2. Create the PreparedStatement on the connection
+            PreparedStatement ps = conn.prepareStatement(query);
+
+            // 3. Set parameters of the PreparedStatement
+            int index = 1;
+            for (Object value : st.values()) {
+                switch (value) {
+                    case Integer i -> ps.setInt(index++, i);
+                    case Float f   -> ps.setFloat(index++, f);
+                    case Double d  -> ps.setDouble(index++, d);
+                    case Boolean b -> ps.setBoolean(index++, b);
+                    default        -> ps.setString(index++, String.valueOf(value));
+                }
+            }
+
+            return ps;
+        }
+    }
+    ```
+
+    If we instantiate this hypothetical QueryBuilder for a specific Connection:
+
+    ```java
+    var DB = new QueryBuilder(conn);
+    ```
+
+    then instead of the unsafe, injection-attack-prone code
+
+    ```java
+    String query = "SELECT * FROM Person p WHERE p.last_name = '" + name + "'";
+    ResultSet rs = conn.createStatement().executeQuery(query);
+    ```
+
+    we can write the more secure and more readable code
+
+    ```java
+    PreparedStatement ps = DB."SELECT * FROM Person p WHERE p.last_name = \{name}";
+    ResultSet rs = ps.executeQuery();
+    ```
+
+### Unnamed Patterns and Variables
+
+* The unnamed pattern
+
+    In https://openjdk.org/jeps/443.
+
+    Supports `_` keyword for unnamed Patterns and Variables.
+    For example, `... instanceof Point(_, int y)` is legal, but these are not:
+
+    * `r instanceof _`
+    * `r instanceof _(int x, int y)`
+
+        ```java
+        if (r instanceof ColoredPoint(Point(int x, int y), _)) { ... x ... y ... }
+
+        if (r instanceof ColoredPoint(_, Color c)) { ... c ... }
+
+        if (r instanceof ColoredPoint(Point(int x, _), _)) { ... x ... }
+        ```
+
+* Unnamed pattern variables
+
+    An unnamed pattern variable can appear in any type pattern, whether the type pattern appears at the top level or is nested in a record pattern. For example, both of these appearances are legal:
+
+    * `r instanceof Point _`
+    * `r instanceof ColoredPoint(Point(int x, int _), Color _)`
+
+        By allowing us to elide names, unnamed pattern variables make run-time data exploration based on type patterns visually clearer, especially when used in switch statements and expressions.
+
+        Unnamed pattern variables are particularly helpful when a switch executes the same action for multiple cases. For example, the earlier Box and Ball code can be rewritten as:
+
+        ```java
+        switch (b) {
+            case Box(RedBall _), Box(BlueBall _) -> processBox(b);
+            case Box(GreenBall _)                -> stopProcessing();
+            case Box(_)                          -> pickAnotherBox();
+        }
+        ```
+
+        The first two cases use unnamed pattern variables because their right-hand sides do not use the Box's component. The third case, which is new, uses the unnamed pattern in order to match a Box with a null component.
+
+        A case label with multiple patterns can have a guard. A guard governs the case as a whole, rather than the individual patterns. For example, assuming that there is an int variable x, the first case of the previous example could be further constrained:
+
+        `case Box(RedBall _), Box(BlueBall _) when x == 42 -> processBox(b);`
+        Pairing a guard with each pattern is not allowed, so this is prohibited:
+
+        `case Box(RedBall _) when x == 0, Box(BlueBall _) when x == 42 -> processBox(b);`
+        The unnamed pattern is shorthand for the type pattern var `_`. Neither the unnamed pattern nor `var _` may be used at the top level of a pattern, so all of these are prohibited:
+
+    * `... instanceof _`
+    * `... instanceof var _`
+    * `case _`
+    * `case var _`
+
+* Unnamed variables
+
+    The following kinds of declarations can introduce either a named variable (denoted by an identifier) or an unnamed variable (denoted by an underscore):
+
+    * A local variable declaration statement in a block (JLS 14.4.2),
+    * A resource specification of a try-with-resources statement (JLS 14.20.3),
+    * The header of a basic for statement (JLS 14.14.1),
+    * The header of an enhanced for loop (JLS 14.14.2),
+    * An exception parameter of a catch block (JLS 14.20), and
+    * A formal parameter of a lambda expression (JLS 15.27.1).
+
+        (The possibility of an unnamed local variable being declared by a pattern, i.e., a pattern variable (JLS 14.30.1), was covered above.)
+
+        Declaring an unnamed variable does not place a name in scope, so the variable cannot be written or read after it has been initialized. An initializer must be provided for an unnamed variable in each kind of declaration above.
+
+        An unnamed variable never shadows any other variable, since it has no name, so multiple unnamed variables can be declared in the same block.
+
+        Here are the examples from above, modified to use unnamed variables.
+
+        An enhanced for loop with side effects:
+
+        ```java
+        int acc = 0;
+        for (Order _ : orders) {
+            if (acc < LIMIT) {
+                ... acc++ ...
+            }
+        }
+        ```
+
+        The initialization of a basic for loop can also declare unnamed local variables:
+
+        ```java
+        for (int i = 0, _ = sideEffect(); i < 10; i++) { ... i ... }
+        ```
+
+        An assignment statement, where the result of the expression on the right hand side is not needed:
+
+        ```java
+        Queue<Integer> q = ... // x1, y1, z1, x2, y2, z2, ...
+        while (q.size() >= 3) {
+        var x = q.remove();
+        var y = q.remove();
+        var _ = q.remove();
+        ... new Point(x, y) ...
+        }
+        ```
+
+        If the program needed to process only the x1, x2, etc., coordinates then unnamed variables could be used in multiple assignment statements:
+
+        ```java
+        while (q.size() >= 3) {
+            var x = q.remove();
+            var _ = q.remove();
+            var _ = q.remove();
+            ... new Point(x, 0) ...
+        }
+        ```
+
+        A catch block:
+
+        ```java
+        String s = ...
+        try {
+            int i = Integer.parseInt(s);
+            ... i ...
+        } catch (NumberFormatException _) {
+            System.out.println("Bad number: " + s);
+        }
+        ```
+
+        Unnamed variables can be used in multiple catch blocks:
+
+        ```java
+        try { ... }
+        catch (Exception _) { ... }
+        catch (Throwable _) { ... }
+        ```
+
+        In try-with-resources:
+
+        ```java
+        try (var _ = ScopedContext.acquire()) {
+            ... no use of acquired resource ...
+        }
+        ```
+
+        A lambda whose parameter is irrelevant:
+
+        ```java
+        ...stream.collect(Collectors.toMap(String::toUpperCase, _ -> "NODATA"))
+        ```
+
+### Unnamed Classes and Instance Main Methods
+
+In https://openjdk.org/jeps/445.
+
+* Offer a smooth on-ramp to Java so that educators can introduce programming concepts in a gradual manner.
+* Help students to write basic programs in a concise manner and grow their code gracefully as their skills grow.
+* Reduce the ceremony of writing simple programs such as scripts and command-line utilities.
+* Do not introduce a separate beginner's dialect of Java.
+* Do not introduce a separate beginners' toolchain; student programs should be compiled and run with the same tools that compile and run any Java program.
+
+For example,
+
+```java
+// Prior to Java 21
+public class HelloWorld {
+    public static void main(String[] args) {
+        System.out.println("Hello, World!");
+    }
+}
+
+// As of Java 21
+
+class HelloWorld {
+    void main() {
+        System.out.println("Hello, World!");
+    }
+}
+
+// or
+
+void main() {
+    System.out.println("Hello, World!");
+}
+```
+
+* Selecting a main method
+
+    When launching a class, the launch protocol chooses the first of the following methods to invoke:
+
+    1. A static void main(String[] args) method of non-private access (i.e., public, protected or package) declared in the launched class,
+    2. A static void main() method of non-private access declared in the launched class,
+    3. A void main(String[] args) instance method of non-private access declared in the launched class or inherited from a superclass, or, finally,
+    4. A void main() instance method of non-private access declared in the launched class or inherited from a superclass.
+
+* Unnamed classes
+
+    In the Java language, every class resides in a package and every package resides in a module. These namespacing and encapsulation constructs apply to all code, but small programs that do not need them can omit them. A program that does not need class namespaces can omit the package statement, making its classes implicit members of the unnamed package; classes in the unnamed package cannot be referenced explicitly by classes in named packages. A program that does not need to encapsulate its packages can omit the module declaration, making its packages implicit members of the unnamed module; packages in the unnamed module cannot be referenced explicitly by packages in named modules.
+
+    Before classes serve their main purpose as templates for the construction of objects, they serve only as namespaces for methods and fields. We should not require students to confront the concept of classes before they are comfortable with the more basic building blocks of variables, control flow, and subroutines, before they embark on learning object orientation, and when they are still writing simple, single-file programs. Even though every method resides in a class, we can stop requiring explicit class declarations for code that does not need it — just as we do not require explicit package or module declarations for code that does not need them.
+
+    Henceforth, when the Java compiler encounters a source file with a method that is not enclosed in a class declaration it will implicitly consider such methods, as well as any unenclosed fields and any classes declared in the file, to be members of an unnamed top-level class.
+
+    An unnamed class is always a member of the unnamed package. It is also final and cannot implement any interface nor extend any class other than Object. An unnamed class cannot be referenced by name, so there can be no method references to its static methods; the this keyword can still be used, however, and so can method references to instance methods.
+
+    No code can refer to an unnamed class by name, so instances of an unnamed class cannot be constructed directly. Such a class is useful only as a standalone program or as an entry point to a program. Therefore, an unnamed class must have a main method that can be launched as described above. This requirement is enforced by the Java compiler.
+
+    An unnamed class resides in the unnamed package, and the unnamed package resides in the unnamed module. While there can be only one unnamed package (barring multiple class loaders) and only one unnamed module, there can be multiple unnamed classes in the unnamed module. Every unnamed class contains a main method and so represents a program, thus multiple such classes in the unnamed package represent multiple programs.
+
+    An unnamed class is almost exactly like an explicitly declared class. Its members can have the same modifiers (e.g., private and static) and the modifiers have the same defaults (e.g., package access and instance membership). One key difference is that while an unnamed class has a default zero-parameter constructor, it can have no other constructor.
+
+    With these changes we can now write Hello, World! as:
+
+    ```java
+    void main() {
+        System.out.println("Hello, World!");
+    }
+    ```
+
+    Top-level members are interpreted as members of the unnamed class, so we can also write the program as:
+
+    ```java
+    String greeting() { return "Hello, World!"; }
+
+    void main() {
+        System.out.println(greeting());
+    }
+    ```
+
+    or, using a field, as:
+
+    ```java
+    String greeting = "Hello, World!";
+
+    void main() {
+        System.out.println(greeting);
+    }
+    ```
+
+    If an unnamed class has an instance main method rather than a static main method then launching it is equivalent to the following, which employs the existing anonymous class declaration construct:
+
+    ```java
+    new Object() {
+        // the unnamed class's body
+    }.main();
+    ```
+
+    A source file named HelloWorld.java containing an unnamed class can be launched with the source-code launcher, like so:
+
+    ```bash
+    $ java HelloWorld.java
+    ```
+
+    The Java compiler will compile that file to the launchable class file HelloWorld.class. In this case the compiler chooses HelloWorld for the class name as an implementation detail, but that name still cannot be used directly in Java source code.
+
+    The javadoc tool will fail when asked to generate API documentation for a Java file with an unnamed class, as unnamed classes do not define any API accessible from other classes. This behavior may change in a future release.
+
+    The Class.isSynthetic method returns true for an unnamed class.
+
+### Virtual Threads
+
+In https://openjdk.org/jeps/444.
+
+The platform/kernel threads are limited resource on a server, we can't create platform/kernel threads as many as we want. Thus, virtual thread doesn't have this limitation.
+
+* Enable server applications written in the simple thread-per-request style to scale with near-optimal hardware utilization.
+* Enable existing code that uses the java.lang.Thread API to adopt virtual threads with minimal change.
+* Enable easy troubleshooting, debugging, and profiling of virtual threads with existing JDK tools.
+
+For example,
+
+```java
+try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+    IntStream.range(0, 10_000).forEach(i -> {
+        executor.submit(() -> {
+            Thread.sleep(Duration.ofSeconds(1));
+            return i;
+        });
+    });
+}  // executor.close() is called implicitly, and waits
+```
+
+virtual threads can significantly improve application throughput when
+
+* The number of concurrent tasks is high (more than a few thousand), and
+* The workload is not CPU-bound, since having many more threads than processor cores cannot improve throughput in that case.
+
+> Do not pool virtual threads.
+> jcmd can emit the new thread dump in JSON format in addition to plain text:
+> `jcmd <pid> Thread.dump_to_file -format=json <file>`
+
+### Sequenced Collections
+
+In [See JEP 431](https://openjdk.org/jeps/431).
+
+* Sequenced collections
+
+    A sequenced collection is a Collection whose elements have a defined encounter order. (The word "sequenced" as used here is the past participle of the verb to sequence, meaning "to arrange elements in a particular order.") A sequenced collection has first and last elements, and the elements between them have successors and predecessors. A sequenced collection supports common operations at either end, and it supports processing the elements from first to last and from last to first (i.e., forward and reverse).
+
+    ```java
+    interface SequencedCollection<E> extends Collection<E> {
+        // new method
+        SequencedCollection<E> reversed();
+        // methods promoted from Deque
+        void addFirst(E);
+        void addLast(E);
+        E getFirst();
+        E getLast();
+        E removeFirst();
+        E removeLast();
+    }
+    ```
+
+* Sequenced sets
+
+    A sequenced set is a Set that is a SequencedCollection that contains no duplicate elements.
+
+    ```java
+    interface SequencedSet<E> extends Set<E>, SequencedCollection<E> {
+        SequencedSet<E> reversed();    // covariant override
+    }
+    ```
+
+* Sequenced maps
+
+    A sequenced map is a Map whose entries have a defined encounter order.
+
+    ```java
+    interface SequencedMap<K,V> extends Map<K,V> {
+        // new methods
+        SequencedMap<K,V> reversed();
+        SequencedSet<K> sequencedKeySet();
+        SequencedCollection<V> sequencedValues();
+        SequencedSet<Entry<K,V>> sequencedEntrySet();
+        V putFirst(K, V);
+        V putLast(K, V);
+        // methods promoted from NavigableMap
+        Entry<K, V> firstEntry();
+        Entry<K, V> lastEntry();
+        Entry<K, V> pollFirstEntry();
+        Entry<K, V> pollLastEntry();
+    }
+    ```
+
+In detail, we make the following adjustments to retrofit existing classes and interfaces:
+
+* List now has SequencedCollection as its immediate superinterface,
+* Deque now has SequencedCollection as its immediate superinterface,
+* LinkedHashSet additionally implements SequencedSet,
+* SortedSet now has SequencedSet as its immediate superinterface,
+* LinkedHashMap additionally implements SequencedMap, and
+* SortedMap now has SequencedMap as its immediate superinterface.
+
+We define covariant overrides for the reversed() method in the appropriate places. For example, List::reversed is overridden to return a value of type List rather than a value of type SequencedCollection.
+
+We also add new methods to the Collections utility class to create unmodifiable wrappers for the three new types:
+
+* Collections.unmodifiableSequencedCollection(sequencedCollection)
+* Collections.unmodifiableSequencedSet(sequencedSet)
+* Collections.unmodifiableSequencedMap(sequencedMap)
+
+### Structured Concurrency (Preview)
+
+In https://openjdk.org/jeps/453.
+
+Take the following code as example,
+
+```java
+Response handle() throws ExecutionException, InterruptedException {
+    Future<String>  user  = esvc.submit(() -> findUser());
+    Future<Integer> order = esvc.submit(() -> fetchOrder());
+    String theUser  = user.get();   // Join findUser
+    int    theOrder = order.get();  // Join fetchOrder
+    return new Response(theUser, theOrder);
+}
+```
+
+* If findUser() throws an exception then handle() will throw an exception when calling user.get() but fetchOrder() will continue to run in its own thread. This is a thread leak which, at best, wastes resources; at worst, the fetchOrder() thread will interfere with other tasks.
+* If the thread executing handle() is interrupted, the interruption will not propagate to the subtasks. Both the findUser() and fetchOrder() threads will leak, continuing to run even after handle() has failed.
+* If findUser() takes a long time to execute, but fetchOrder() fails in the meantime, then handle() will wait unnecessarily for findUser() by blocking on user.get() rather than cancelling it. Only after findUser() completes and user.get() returns will order.get() throw an exception, causing handle() to fail.
+
+With Structured Concurrency,
+
+```java
+Response handle() throws ExecutionException, InterruptedException {
+    try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+        Supplier<String>  user  = scope.fork(() -> findUser());
+        Supplier<Integer> order = scope.fork(() -> fetchOrder());
+
+        scope.join()            // Join both subtasks
+            .throwIfFailed();  // ... and propagate errors
+
+        // Here, both subtasks have succeeded, so compose their results
+        return new Response(user.get(), order.get());
+    }
+}
+```
+
+* Error handling with short-circuiting — If either the findUser() or fetchOrder() subtasks fail, the other is cancelled if it has not yet completed. (This is managed by the shutdown policy implemented by ShutdownOnFailure; other policies are possible).
+* Cancellation propagation — If the thread running handle() is interrupted before or during the call to join(), both subtasks are cancelled automatically when the thread exits the scope.
+* Clarity — The above code has a clear structure: Set up the subtasks, wait for them to either complete or be cancelled, and then decide whether to succeed (and process the results of the child tasks, which are already finished) or fail (and the subtasks are already finished, so there is nothing more to clean up).
+* Observability — A thread dump, as described below, clearly displays the task hierarchy, with the threads running findUser() and fetchOrder() shown as children of the scope.
+
+### Scoped Values (Preview)
+
+In https://openjdk.org/jeps/446.
+
+A scoped value allows data to be safely and efficiently shared between methods in a large program without resorting to method arguments. It is a variable of type ScopedValue. Typically, it is declared as a final static field so it can easily be reached from many methods.
+
+For example,
+
+```java
+class Frameowrk {
+    private final static ScopedValue<FrameworkContext> CONTEXT
+                        = ScopedValue.newInstance();   // (1)
+
+    void serve(Request request, Response response) {
+        var context = createContext(request);
+        ScopedValue.where(CONTEXT, context)            // (2)
+                .run(() -> Application.handle(request, response));
+    }
+
+    public PersistedObject readKey(String key) {
+        var context = CONTEXT.get();            // (3)
+        var db = getDBConnection(context);
+        db.readKey(key);
+    }
+
+    ...
+}
+```
+
+### Generational ZGC
+
+Improve application performance by extending the Z Garbage Collector (ZGC) to maintain separate generations for young and old objects. This will allow ZGC to collect young objects — which tend to die young — more frequently.
+
+## JDK20
+
+### JEP 432 Record Patterns (Second Preview)
+
+Enhance the Java programming language with record patterns to deconstruct record values. Record patterns and type patterns can be nested to enable a powerful, declarative, and composable form of data navigation and processing.
+
+In JDK 16, JEP 394 extended the instanceof operator to take a type pattern and perform pattern matching. This modest extension allows the familiar instanceof-and-cast idiom to be simplified:
+
+```java
+// Old code
+if (obj instanceof String) {
+    String s = (String)obj;
+    ... use s ...
+}
+
+// New code
+if (obj instanceof String s) {
+    ... use s ...
+}
+```
+
+For Record class, JDK 20 supports to extract the values from a record class directly.
+
+```java
+record Point(int x, int y) {}
+
+// old code for record class
+if (obj instanceof Point p) {
+    System.out.println(p.x() + ", " + p.y())
+}
+
+// new code with JEP 394
+if (obj instanceof Point(int x, int y) {
+    System.out.println(x + ", " + y)
+}
+```
+
+### JEP 433 Pattern Matching for switch (Fourth Preview)
+
+Enhance the Java programming language with pattern matching for switch expressions and statements. Extending pattern matching to switch allows an expression to be tested against a number of patterns, each with a specific action, so that complex data-oriented queries can be expressed concisely and safely.
+
+Since Java 14, switch expressions (JEP 361), but unfortunately switch is very limited. You can only switch on values of a few types — integral primitive types (excluding long), their corresponding boxed forms, enum types, and String — and you can only test for exact equality against constants. We might like to use patterns to test the same variable against a number of possibilities, taking a specific action on each, but since the existing switch does not support that we end up with a chain of if...else tests such as:
+
+```java
+static String formatter(Object obj) {
+    String formatted = "unknown";
+    if (obj instanceof Integer i) {
+        formatted = String.format("int %d", i);
+    } else if (obj instanceof Long l) {
+        formatted = String.format("long %d", l);
+    } else if (obj instanceof Double d) {
+        formatted = String.format("double %f", d);
+    } else if (obj instanceof String s) {
+        formatted = String.format("String %s", s);
+    }
+    return formatted;
+}
+```
+
+In JDK 20, we can use switch with pattern match,
+
+```java
+record Point(int i, int j) {}
+enum Color { RED, GREEN, BLUE; }
+
+static void typeTester(Object obj) {
+    switch (obj) {
+        case null     -> System.out.println("null");
+        case String s -> System.out.println("String");
+        case Color c  -> System.out.println("Color: " + c.toString());
+        case Point p  -> System.out.println("Record class: " + p.toString());
+        case int[] ia -> System.out.println("Array of ints of length" + ia.length);
+        default       -> System.out.println("Something else");
+    }
+}
+```
+
+### JEP 434 Foreign Function & Memory API (Second Preview)
+
+Introduce an API by which Java programs can interoperate with code and data outside of the Java runtime. By efficiently invoking foreign functions (i.e., code outside the JVM), and by safely accessing foreign memory (i.e., memory not managed by the JVM), the API enables Java programs to call native libraries and process native data without the brittleness and danger of JNI.
+
+### JEP 438 Vector API (Fifth Incubator)
+
+Introduce an API to express vector computations that reliably compile at runtime to optimal vector instructions on supported CPU architectures, thus achieving performance superior to equivalent scalar computations.
+
+### JEP 429 Scoped Values (Incubator)
+
+Introduce scoped values, which enable the sharing of immutable data within and across threads. They are preferred to thread-local variables, especially when using large numbers of virtual threads.
+
+### JEP 436 Virtual Threads (Second Preview)
+
+Introduce virtual threads to the Java Platform. Virtual threads are lightweight threads that dramatically reduce the effort of writing, maintaining, and observing high-throughput concurrent applications.
+
+### JEP 437 Structured Concurrency (Second Incubator)
+
+Simplify multithreaded programming by introducing an API for structured concurrency. Structured concurrency treats multiple tasks running in different threads as a single unit of work, thereby streamlining error handling and cancellation, improving reliability, and enhancing observability.
+
+> Reference: [JDK 20 Release Notes](https://www.oracle.com/java/technologies/javase/20-relnote-issues.html)
+
+## JDK19
+
+### JEP 425 Virtual Threads (Preview)
+
+Introduce virtual threads to the Java Platform. Virtual threads are lightweight threads that dramatically reduce the effort of writing, maintaining, and observing high-throughput concurrent applications. This is a [preview API](https://openjdk.org/jeps/12).
+
+### JEP 428 Structured Concurrency (Incubator)
+
+Simplify multithreaded programming by introducing an API for structured concurrency. Structured concurrency treats multiple tasks running in different threads as a single unit of work, thereby streamlining error handling and cancellation, improving reliability, and enhancing observability. This is an [incubating API](https://openjdk.org/jeps/11).
+
+### JEP 405 Record Patterns (Preview)
+
+Enhance the Java programming language with record patterns to deconstruct record values. Record patterns and type patterns can be nested to enable a powerful, declarative, and composable form of data navigation and processing. This is a [preview language feature](https://openjdk.java.net/jeps/12).
+
+### JEP 427 Pattern Matching for switch (Third Preview)
+
+Enhance the Java programming language with pattern matching for switch expressions and statements. Extending pattern matching to switch allows an expression to be tested against a number of patterns, each with a specific action, so that complex data-oriented queries can be expressed concisely and safely. This is a [preview language feature](https://openjdk.java.net/jeps/12).
+
+### JEP 424 Foreign Function & Memory API (Preview)
+
+Introduce an API by which Java programs can interoperate with code and data outside of the Java runtime. By efficiently invoking foreign functions (i.e., code outside the JVM), and by safely accessing foreign memory (i.e., memory not managed by the JVM), the API enables Java programs to call native libraries and process native data without the brittleness and danger of JNI. This is a (preview API)[https://openjdk.java.net/jeps/12].
+
+### JEP 426 Vector API (Fourth Incubator)
+
+Introduce an API to express vector computations that reliably compile at runtime to optimal vector instructions on supported CPU architectures, thus achieving performance superior to equivalent scalar computations.
+
+### Support Unicode 14.0
+
+### New system properties for System.out and System.err
+
+Two new system properties, stdout.encoding and stderr.encoding, have been added. The value of these system properties is the encoding used by the standard output and standard error streams (System.out and System.err).
+
+The default values of these system properties depend on the platform. The values take on the value of the native.encoding property when the platform does not provide streams for the console. The properties can be overridden on the launcher's command line option (with -D) to set them to UTF-8 where required.
+
+### HTTPS Channel Binding Support for Java GSS/Kerberos
+
+Support has been added for TLS channel binding tokens for Negotiate/Kerberos authentication over HTTPS through javax.net.HttpsURLConnection.
+
+Channel binding tokens are increasingly required as an enhanced form of security. They work by communicating from a client to a server the client's understanding of the binding between connection security, as represented by a TLS server cert, and higher level authentication credentials, such as a username and password. The server can then detect if the client has been fooled by a MITM and shutdown the session or connection.
+
+The feature is controlled through a new system property jdk.https.negotiate.cbt which is described fully in [Networking Properties](https://docs.oracle.com/en/java/javase/19/docs/api/java.base/java/net/doc-files/net-properties.html#jdk.https.negotiate.cbt).
+
+### Additional Date-Time Formats
+
+Additional date/time formats are now introduced in java.time.format.DateTimeFormatter/DateTimeFormatterBuilder classes. In prior releases, only 4 predefined styles, i.e., FormatStyle.FULL/LONG/MEDIUM/SHORT are available. Now the users can specify their own flexible style with this new DateTimeFormatter.ofLocalizedPattern(String requestedTemplate) method. For example,
+
+DateTimeFormatter.ofLocalizedPattern("yMMM")
+
+produces a formatter, which can format a date in a localized manner, such as "Feb 2022" in the US locale, while "2022年2月" in the Japanese locale. Supporting method DateTimeFormatterBuilder.appendLocalized(String requestedTemplate)is also provided.
+
+### New Methods to Create Preallocated HashMaps and HashSets
+
+New static factory methods have been introduced to allow creation of HashMap and related instances that are preallocated to accommodate an expected number of mappings or elements. After using the HashMap.newHashMap method, the requested number of mappings can be added to the newly created HashMap without it being resized. There are similar new static factory methods for LinkedHashMap, WeakHashMap, HashSet, and LinkedHashSet. The complete set of new methods is:
+
+* HashMap.newHashMap
+* LinkedHashMap.newLinkedHashMap
+* WeakHashMap.newWeakHashMap
+* HashSet.newHashSet
+* LinkedHashSet.newLinkedHashSet
+
+The int-argument constructors for these classes set the "capacity" (internal table size) which is not the same as the number of elements that can be accommodated. The capacity is related to the number of elements by a simple but error-prone calculation. For this reason, programs should use these new static factory methods in preference to the int-argument constructors.
+
+### Support for PAC-RET Protection on Linux/AArch64
+
+### Automatic Generation of the CDS Archive
+
+### Windows KeyStore Updated to Include Access to the Local Machine Location
+
+### Break Up SEQUENCE in X509Certificate::getSubjectAlternativeNames and X509Certificate::getIssuerAlternativeNames in otherName
+
+### (D)TLS Signature Schemes
+
+### Add a -providerPath Option to jarsigner
+
+### New Options for ktab to Provide Non-default Salt
+
+### New XML Processing Limits
+
+Three processing limits have been added to the XML libraries. These are:
+
+* jdk.xml.xpathExprGrpLimit
+
+    Description: Limits the number of groups an XPath expression can contain.
+
+    Type: integer
+
+    Value: A positive integer. A value less than or equal to 0 indicates no limit. If the value is not an integer, a NumberFormatException is thrown. Default 10.
+
+* jdk.xml.xpathExprOpLimit
+
+    Description: Limits the number of operators an XPath expression can contain.
+
+    Type: integer
+
+    Value: A positive integer. A value less than or equal to 0 indicates no limit. If the value is not an integer, a NumberFormatException is thrown. Default 100.
+
+* jdk.xml.xpathTotalOpLimit
+
+    Description: Limits the total number of XPath operators in an XSL Stylesheet.
+
+    Type: integer
+
+    Value: A positive integer. A value less than or equal to 0 indicates no limit. If the value is not an integer, a NumberFormatException is thrown. Default 10000.
+
+Supported processors,
+
+* jdk.xml.xpathExprGrpLimit
+* jdk.xml.xpathExprOpLimit
+
+All three limits are supported by the XSLT processor.
+
+Setting properties
+
+* For the XSLT processor, the properties can be changed through the TransformerFactory. For example,
+
+    ```java
+    TransformerFactory factory = TransformerFactory.newInstance();
+
+    factory.setAttribute("jdk.xml.xpathTotalOpLimit", "1000");
+    ```
+
+* For the XPath processor, the properties can be changed through the XPathFactory. For example,
+
+    ```java
+    XPathFactory xf = XPathFactory.newInstance();
+
+    xf.setProperty("jdk.xml.xpathExprGrpLimit", "20");
+    ```
+
+* For both the XPath and XSLT processors, the properties can be set through the system property and jaxp.properties configuration file located in the conf directory of the Java installation. For example,
+
+    ```java
+    System.setProperty("jdk.xml.xpathExprGrpLimit", "20");
+    ```
+
+    or in the jaxp.properties file,
+
+    ```properties
+    jdk.xml.xpathExprGrpLimit=20
+    ```
+
+There are two known issues:
+
+* An XPath expression that contains a short form of the parent axis ".." can return incorrect results. See JDK-8284920 for details.
+* An invalid XPath expression that ends with a relational operator such as ‘<’ ‘>’ and ‘=’ will cause the processor to erroneously throw StringIndexOutOfBoundsException instead of XPathExpressionException. See JDK-8284548 for details.
+
+### Removal of Diagnostic Flag GCParallelVerificationEnabled
+
+### Remove Finalizer Implementation in SSLSocketImpl
+
+### Remove the Alternate ThreadLocal Implementation of the Subject::current and Subject::callAs APIs
+
+### java.lang.ThreadGroup Is Degraded
+
+### Deprecation of Locale Class Constructors
+
+### PSSParameterSpec(int) Constructor and DEFAULT Static Constant Are Deprecated
+
+### OAEPParameterSpec.DEFAULT Static Constant Is Deprecated
+
+> Reference: https://www.oracle.com/java/technologies/javase/19-relnote-issues.html
+
+## JDK18
+
+### JEP 400: UTF-8 by Default
+
+Starting with JDK 18, UTF-8 is the default charset for the Java SE APIs. APIs that depend on the default charset now behave consistently across all JDK implementations and independently of the user’s operating system, locale, and configuration. Specifically, `java.nio.charset.Charset#defaultCharset()` now returns `UTF-8` charset by default. The `file.encoding` system property is now a part of the implementation specification, which may accept `UTF-8` or `COMPAT`. The latter is a new property value that instructs the runtime to behave as previous releases. This change is significant to users who call APIs that depend on the default charset. Users can determine whether they'd be affected or not, by specifying `-Dfile.encoding=UTF-8` as the command line option with the existing Java runtime environment.
+
+### JEP 408: Simple Web Server
+
+jwebserver, a command-line tool to start a minimal static web server, has been introduced. The tool and the accompanying API are located in the com.sun.net.httpserver package of the jdk.httpserver module and are designed to be used for prototyping, ad-hoc coding, and testing, particularly in educational contexts.
+
+```bash
+jwebserver [-b bind address] [-p port] [-d directory]
+        [-o none|info|verbose] [-h to show options]
+        [-version to show version information]
+```
+
+* Example of a simple file server
+
+    ```java
+    var addr = new InetSocketAddress(8080);
+    var server = SimpleFileServer.createFileServer(addr, Path.of("/some/path"), OutputLevel.INFO);
+    server.start();
+    ```
+
+* Example of composing a single handler
+
+    ```java
+    var handler = HttpHandlers.handleOrElse(
+        (req) -> req.getRequestMethod().equals("PUT"),
+        (exchange) -> {
+            // validate and handle PUT request
+        },
+        SimpleFileServer.createFileHandler(Path.of("/some/path")))
+    );
+    ```
+
+* Example of an output filter
+
+    ```java
+    var filter = SimpleFileServer.createOutputFilter(System.out, OutputLevel.VERBOSE);
+    var server = HttpServer.create(new InetSocketAddress(8080), 10, "/some/path/", new SomeHandler(), filter);
+    server.start();
+    ```
+
+### JEP 416: Reimplement Core Reflection With Method Handles
+
+[JEP 416](https://openjdk.java.net/jeps/416) reimplements core reflection with method handles. Code that depends upon highly implementation-specific and undocumented aspects of the existing implementation might be impacted. Issues that might arise include:
+
+* Code that inspects the internal generated reflection classes (such as, subclasses of `MagicAccessorImpl`) no longer works and must be updated.
+* Code that attempts to break the encapsulation and change the value of the private final `modifiers` field of `Method`, `Field` and `Constructor` class to be different from the underlying member might cause a runtime error. Such code must be updated.
+
+To mitigate this compatibility risk, you can enable the old implementation as a workaround by using `-Djdk.reflect.useDirectMethodHandle=false`. We will remove the old core reflection implementation in a future release. The `-Djdk.reflect.useDirectMethodHandle=false` workaround will stop working at that point.
+
+### JEP 418: Internet-Address Resolution SPI
+
+Introduce a service-provider interface (SPI) for host name and address resolution, so that java.net.InetAddress can make use of resolvers other than the platform's built-in resolver. This new SPI allows replacing the operating system's native resolver, which is typically configured to use a combination of a local hosts file and the Domain Name System (DNS).
+
+### JEP 413: Code Snippets in Java API Documentation
+
+An @snippet tag for JavaDoc's Standard Doclet has been added, to simplify the inclusion of example source code in API documentation.
+
+```java
+/**
+    * The following code shows how to use {@code Optional.isPresent}:
+    * {@snippet :
+    * if (v.isPresent()) {
+    *     System.out.println("v: " + v.get());
+    * }
+    * }
+ */
+```
+
+### JEP 417: Vector API (Third Incubator)
+
+Introduce an API to express vector computations that reliably compile at runtime to optimal vector instructions on supported CPU architectures, thus achieving performance superior to equivalent scalar computations.
+
+### JEP 419: Foreign Function & Memory API (Second Incubator)
+
+Introduce an API by which Java programs can interoperate with code and data outside of the Java runtime. By efficiently invoking foreign functions (i.e., code outside the JVM), and by safely accessing foreign memory (i.e., memory not managed by the JVM), the API enables Java programs to call native libraries and process native data without the brittleness and danger of JNI.
+
+### JEP 420: Pattern Matching for switch (Second Preview)
+
+Enhance the Java programming language with pattern matching for switch expressions and statements, along with extensions to the language of patterns. Extending pattern matching to switch allows an expression to be tested against a number of patterns, each with a specific action, so that complex data-oriented queries can be expressed concisely and safely.
+
+### ZGC/SerialGC/ParallelGC Supports String Deduplication
+
+The ZGC/SerialGC/ParallelGCGarbage Collector now supports string deduplication ([JEP 192](https://openjdk.java.net/jeps/192) ).
+
+### Charset.forName() Taking fallback Default Value
+
+A new method `Charset.forName()` that takes `fallback` charset object has been introduced in `java.nio.charset` package. The new method returns `fallback` if `charsetName` is illegal or the charset object is not available for the name. If `fallback` is passed as `null` the caller can check if the named charset was available without having to catch the exceptions thrown by the `Charset.forName(name)` method.
+
+### New System Property to Control the Default Date Comment Written Out by java.util.Properties::store Methods
+
+A new system property, `java.properties.date`, has been introduced to allow applications to control the default date comment written out by the `java.util.Properties::store` methods. This system property is expected to be set while launching `java`. Any non-empty value of this system property results in that value being used as a comment instead of the default date comment. In the absence of this system property or when the value is empty, the `Properties::store` methods continue to write the default date comment. An additional change has also been made in the implementation of the `Properties::store` methods to write out the key/value property pairs in a deterministic order. The implementation of these methods now uses the natural sort order of the property keys while writing them out. However, the implementation of these methods continues to use the iteration order when any sub-class of `java.util.Properties` overrides the `entrySet()` method to return a different `Set` than that returned by `super.entrySet()`.
+
+The combination of the deterministic ordering of the properties that get written out with the new system property is particularly useful in environments where applications require the contents of the stored properties to be reproducible. In such cases, applications are expected to provide a fixed value of their choice to this system property.
+
+### printError, printWarning, and printNote methods on Messager
+
+For annotation processors, the `Messager` interface now has methods `printError`, `printWarning`, and `printNote` to directly report errors, warnings, and notes, respectively.
+
+### Improve Compilation Replay
+
+Compilation Replay has been improved to make it more stable and catch up with new JVM features. Enhancements include:
+
+* Best-effort support for hidden classes, allowing more cases involving invokedynamic, MethodHandles, and lambdas to replay successfully
+* DumpReplay support for C1
+* Incremental inlining support
+* Numerous bug fixes to improve stability
+
+Compilation Replay is a JVM feature of debug builds that is mainly used to reproduce crashes in the C1 or C2 JIT compilers.
+
+### Configurable Card Table Card Size
+
+JDK-8272773 introduces the VM option `-XX:GCCardSizeInBytes` used to set a size of the area that a card table entry covers (the "card size") that is different from the previous fixed value of 512 bytes. Permissible values are now 128, 256, and 512 bytes for all platforms, and 1024 bytes for 64 bit platforms only. The default value remains 512 bytes.
+
+The card size impacts the amount of work to be done when searching for references into an area that is to be evacuated (for example, young generation) during garbage collection. Smaller card sizes give more precise information about the location of these references, often leading to less work during garbage collection. At the same time, however, smaller card sizes can lead to more memory usage in storing this information. The increase in memory usage might result in slower performance of maintenance work during the garbage collection.
+
+### Allow G1 Heap Regions up to 512MB
+
+The [JDK-8275056](https://bugs.openjdk.java.net/browse/JDK-8275056) enhancement extends the maximum allowed heap region size from 32MB to 512MB for the G1 garbage collector. Default ergonomic heap region size selection is still limited to 32MB regions maximum. Heap region sizes beyond that must be selected manually by using the `-XX:G1HeapRegionSize` command line option.
+
+This can be used to mitigate both inner and outer fragmentation issues with large objects on large heaps.
+
+On very large heaps, using a larger heap region size may also decrease internal region management overhead and increase performance due to larger local allocation buffers.
+
+### Removal of Support for Pre JDK 1.4 DatagramSocketImpl Implementations
+
+### JEP 421: Deprecated Finalization for Removal
+
+The finalization mechanism has been deprecated for removal in a future release. The `finalize` methods in standard Java APIs, such as `Object.finalize()` and `Enum.finalize()`, have also been deprecated for removal in a future release, along with methods related to finalization, such as `Runtime.runFinalization()` and `System.runFinalization()`.
+
+Finalization remains enabled by default, but it can be disabled for testing purposes by using the command-line option `--finalization=disabled` introduced in this release. Maintainers of libraries and applications that rely upon finalization should migrate to other resource management techniques in their code, such as [try-with-resources](https://dev.java/learn/catching-and-handling-exceptions/#anchor_6) and [cleaners](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/ref/Cleaner.html).
+
+### Terminally Deprecated Thread.stop
+
+`Thread.stop` is terminally deprecated in this release so that it can be degraded in a future release and eventually removed. The method is inherently unsafe and has been deprecated since Java 1.2 (1998).
+
+## JDK17
+
+### JEP 409: Sealed Classes
+
+Sealed Classes have been added to the Java Language. Sealed classes and interfaces restrict which other classes or interfaces may extend or implement them.
+
+Sealed Classes were proposed by JEP 360 and delivered in JDK 15 as a preview feature. They were proposed again, with refinements, by JEP 397 and delivered in JDK 16 as a preview feature. Now in JDK 17, Sealed Classes are being finalized with no changes from JDK 16.
+
+### JEP 406: Pattern Matching for switch (Preview)
+
+Enhance the Java programming language with pattern matching for switch expressions and statements, along with extensions to the language of patterns. Extending pattern matching to switch allows an expression to be tested against a number of patterns, each with a specific action, so that complex data-oriented queries can be expressed concisely and safely.
+
+```java
+// old code
+static String formatter(Object o) {
+    String formatted = "unknown";
+    if (o instanceof Integer i) {
+        formatted = String.format("int %d", i);
+    } else if (o instanceof Long l) {
+        formatted = String.format("long %d", l);
+    } else if (o instanceof Double d) {
+        formatted = String.format("double %f", d);
+    } else if (o instanceof String s) {
+        formatted = String.format("String %s", s);
+    }
+    return formatted;
+}
+
+// new code
+static String formatterPatternSwitch(Object o) {
+    return switch (o) {
+        case Integer i -> String.format("int %d", i);
+        case Long l    -> String.format("long %d", l);
+        case Double d  -> String.format("double %f", d);
+        case String s  -> String.format("String %s", s);
+        default        -> o.toString();
+    };
+}
+```
+
+### JEP 382: New macOS Rendering Pipeline
+
+The Java 2D API used by the Swing APIs for rendering, can now use the new Apple Metal accelerated rendering API for macOS.
+
+This is currently disabled by default, so rendering still uses OpenGL APIs, which are deprecated by Apple but still available and supported.
+
+To enable Metal, an application should specify its use by setting the system property:
+
+\-Dsun.java2d.metal=true
+
+Use of Metal or OpenGL is transparent to applications since this is a difference of internal implementation and has no effect on Java APIs. The metal pipeline requires macOS 10.14.x or later. Attempts to set it on earlier releases will be ignored.
+
+### DatagramSocket Can Be Used Directly to Join Multicast Groups
+
+java.net.DatagramSocket has been updated in this release to add support for joining multicast groups. It now defines joinGroup and leaveGroup methods to join and leave multicast groups. The class level API documentation of java.net.DatagramSocket has been updated to explain how a plain DatagramSocket can be configured and used to join and leave multicast groups.
+
+This change means that the DatagramSocket API can be used for multicast applications without needing to use the legacy java.net.MulticastSocket API. The MulticastSocket API works as before, although most of its methods are deprecated.
+
+### Add support for UserDefinedFileAttributeView on macOS
+
+The file system provider implementation on macOS has been updated in this release to support extended attributes. The java.nio.file.attribute.UserDefinedFileAttributeView API can now be used to obtain a view of a file's extended attributes. This (optional) view was not supported in previous JDK releases.
+
+### JEP 356: Enhanced Pseudo-Random Number Generators
+
+Provide new interface types and implementations for pseudorandom number generators (PRNGs), including jumpable PRNGs and an additional class of splittable PRNG algorithms (LXM).
+
+```java
+public IntStream getPseudoInts(String algorithm, int streamSize) {
+    // returns an IntStream with size @streamSize of random numbers generated using the @algorithm
+    // where the lower bound is 0 and the upper is 100 (exclusive)
+    return RandomGeneratorFactory.of(algorithm)
+            .create()
+            .ints(streamSize, 0,100);
+}
+```
+
+Legacy random classes, such as java.util.Random, SplittableRandom and SecureRandom now extend the new RandomGenerator interface.
+
+### JEP 412: Foreign Function & Memory API (Incubator)
+
+Introduce an API by which Java programs can interoperate with code and data outside of the Java runtime. By efficiently invoking foreign functions (i.e., code outside the JVM), and by safely accessing foreign memory (i.e., memory not managed by the JVM), the API enables Java programs to call native libraries and process native data without the brittleness and danger of JNI.
+
+### Console Charset API
+
+java.io.Console has been updated to define a new method that returns the Charset for the console. The returned Charset may be different from the one returned from Charset.defaultCharset() method. For example, it returns IBM437 while Charset.defaultCharset() returns windows-1252 on Windows (en-US).
+
+### JDK Flight Recorder Event for Deserialization
+
+It is now possible to monitor deserialization of objects using JDK Flight Recorder (JFR). When JFR is enabled and the JFR configuration includes deserialization events, JFR will emit an event whenever the running program attempts to deserialize an object. The deserialization event is named `jdk.Deserialization`, and it is disabled by default. The deserialization event contains information that is used by the serialization filter mechanism; see the [ObjectInputFilter](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/ObjectInputFilter.html) specification. Additionally, if a filter is enabled, the JFR event indicates whether the filter accepted or rejected deserialization of the object. For further information about how to use the JFR deserialization event, see the article [Monitoring Deserialization to Improve Application Security](https://inside.java/2021/03/02/monitoring-deserialization-activity-in-the-jdk/). For reference information about using and configuring JFR, see the [JFR Runtime Guide](https://docs.oracle.com/javacomponents/jmc-5-5/jfr-runtime-guide/preface_jfrrt.htm#JFRRT165) and [JFR Command Reference](https://docs.oracle.com/javacomponents/jmc-5-5/jfr-command-reference/command-line-options.htm#JFRCR-GUID-FE61CA60-E1DF-460E-A8E0-F4FF5D58A7A0) sections of the JDK Mission Control documentation.
+
+### JEP 415: Implement Context-Specific Deserialization Filters
+
+[JEP 415: Context-Specific Deserialization Filters](https://openjdk.java.net/jeps/415) allows applications to configure context-specific and dynamically-selected deserialization filters via a JVM-wide filter factory that is invoked to select a filter for each individual deserialization operation.
+
+### System Property for Native Character Encoding Name
+
+A new system property `native.encoding` has been introduced. This system property provides the underlying host environment's character encoding name. For example, typically it has `UTF-8` in Linux and macOS platforms, and `Cp1252` in Windows (en-US). Refer to the [CSR](https://bugs.openjdk.java.net/browse/JDK-8266075) for more detail.
+
+### Add java.time.InstantSource
+
+A new interface `java.time.InstantSource` has been introduced. This interface is an abstraction from `java.time.Clock` that only focuses on the current instant and does not refer to the time zone.
+
+### Hex Formatting and Parsing Utility
+
+`java.util.HexFormat` provides conversions to and from hexadecimal for primitive types and byte arrays. The options for delimiter, prefix, suffix, and uppercase or lowercase are provided by factory methods returning HexFormat instances.
+
+### JEP 391: macOS/AArch64 Port
+
+macOS 11.0 now supports the AArch64 architecture. This JEP implements support for the macos-aarch64 platform in the JDK. One of the features added is support for the W^X (write xor execute) memory. It is enabled only for macos-aarch64 and can be extended to other platforms at some point. The JDK can be either cross-compiled on an Intel machine or compiled on an Apple M1-based machine.
+
+### JEP 403: Strongly Encapsulate JDK Internals
+
+Strongly encapsulate all internal elements of the JDK, except for [critical internal APIs](https://openjdk.java.net/jeps/260#Description) such as `sun.misc.Unsafe`.
+
+With this change, the `java` launcher option [`--illegal-access`](https://openjdk.java.net/jeps/261#Relaxed-strong-encapsulation) is obsolete. If used on the command line it causes a warning message to be issued, and otherwise has no effect. Existing code that must use internal classes, methods, or fields of the JDK can still be made to work by using the [`--add-opens`](https://openjdk.java.net/jeps/261#Breaking-encapsulation) launcher option, or the [`Add-Opens`](https://openjdk.java.net/jeps/261#Packaging:-Modular-JAR-files) JAR-file manifest attribute, to open specific packages.
+
+For further details, please see [JEP 403](https://openjdk.java.net/jeps/403).
+
+### JEP 398: Deprecate the Applet API for Removal
+
+### JEP 411: Deprecate the Security Manager for Removal
+
+### Removal of sun.misc.Unsafe::defineAnonymousClass
+
+### JEP 407: Remove RMI Activation
+
+### JEP 410: Remove the Experimental AOT and JIT Compiler
+
+## JDK16
+
+### JEP 389: Foreign Linker API (Incubator)
+
+Introduce an API that offers statically-typed, pure-Java access to native code. This API, together with the Foreign-Memory API (JEP 393), will considerably simplify the otherwise error-prone process of binding to a native library.
+
+### JEP 396: Strongly Encapsulate JDK Internals by Default
+
+The default value of the launcher option --illegal-access is now deny rather than permit. As a consequence, existing code that uses most internal classes, methods, or fields of the JDK will fail to run. Such code can be made to run on JDK 16 by specifying --illegal-access=permit. That option will, however, be removed in a future release.
+
+### JEP 393: Foreign-Memory Access API (Third Incubator)
+
+### JEP 390: Warnings for Value-based Classes
+
+The primitive wrapper classes in java.lang (Byte, Short, Integer, Long, Float, Double, Boolean, and Character) have been designated as value-based. Users of the value-based classes provided by the standard libraries—notably including users of the primitive wrapper classes—should avoid relying on the identity of class instances. Programmers are strongly discouraged from calling the wrapper class constructors, which are now deprecated for removal. New javac warnings discourage synchronization on value-based class instances. Runtime warnings about synchronization can also be activated, using command-line option -XX:DiagnoseSyncOnValueBasedClasses.
+
+### Add InvocationHandler::invokeDefault Method for Proxy's Default Method Support
+
+A new method, invokeDefault, has been added to the java.lang.reflect.InvocationHandler interface to allow a default method defined in a proxy interface to be invoked.
+
+```java
+interface HelloWorld {
+    default String hello() {
+        return "world";
+    }
+}
+
+Object proxy = Proxy.newProxyInstance(getSystemClassLoader(), new Class<?>[] { HelloWorld.class },
+    (prox, method, args) -> {
+        if (method.isDefault()) {
+            return InvocationHandler.invokeDefault(prox, method, args);
+        }
+        // ...
+    }
+);
+Method method = proxy.getClass().getMethod("hello");
+assertThat(method.invoke(proxy)).isEqualTo("world");
+```
+
+### JEP 380: Unix domain sockets
+
+Provides support for Unix domain sockets (AF_UNIX) in the java.nio.channels, SocketChannel, and ServerSocketChannel classes.
+
+### Day Period Support Added to java.time Formats
+
+A new formatter pattern, letter 'B', and its supporting method have been added to java.time.format.DateTimeFormatter/DateTimeFormatterBuilder classes. The pattern and method translate day periods defined in Unicode Consortium's CLDR (https://unicode.org/reports/tr35/tr35-dates.html#dayPeriods). Applications can now express periods in a day, such as "in the morning" or "at night", not just am/pm. The following example demonstrates translating the day periods:
+
+`DateTimeFormatter.ofPattern("B").format(LocalTime.now())`
+
+This example produces day period text depending on the time of the day and locale.
+
+### Add Stream.toList() Method
+
+A new method toList has been added to the java.util.Stream interface. This introduces a potential source incompatibility with classes that implement or interfaces that extend the Stream interface and that also statically import a toList method from elsewhere, for example, Collectors.toList. References to such methods must be changed to use a qualified name instead of a static import.
+
+### JEP 338: Vector API (Incubator)
+
+Provides an initial iteration of an incubator module, jdk.incubator.vector, to express vector computations that reliably compile at runtime to optimal vector hardware instructions on supported CPU architectures and thus achieve superior performance to equivalent scalar computations.
+
+### Improved CompileCommand Flag
+
+The CompileCommand flag has an option type that has been used for a collection of sub commands. These commands weren't verified for validity so spelling mistakes lead to the command being ignored. They had the form:
+
+`-XX:CompileCommand=option,<method pattern>,<option name>,<value type>,<value>`
+
+All option commands now exist as ordinary commands with this form:
+
+`-XX:CompileCommand=<option name>,<method pattern>,<value>`
+
+The option name is verified and the type is inferred. Helpful error messages are given if the command name doesn't exist, or if the value doesn't match the type of the command. All command names are case insensitive.
+
+The old syntax for option commands can still be used. Verification that the option name, value type, and value is consistent has been added.
+
+All available options can be listed with:
+
+`-XX:CompileCommand=help`
+
+### JEP 376: ZGC Concurrent Stack Processing
+
+The Z Garbage Collector now processes thread stacks concurrently. This allows all roots in the JVM to be processed by ZGC in a concurrent phase instead of stop-the-world pauses. The amount of work done in ZGC pauses has now become constant and typically not exceeding a few hundred microseconds.
+
+### Concurrently Uncommit Memory in G1
+
+This new feature is always enabled and changes the time when G1 returns Java heap memory to the operating system. G1 still makes sizing decisions during the GC pause, but offloads the expensive work to a thread running concurrently with the Java application.
+
+### JEP 387: Elastic Metaspace
+
+JEP 387 "Elastic Metaspace" overhauls the VM-internal metaspace- and class-space-implementation. Less memory is used for class metadata. The savings effect is mostly noticeable in scenarios involving lots of small grained class loaders. Upon class unloading, memory is timely returned to the operating system.
+
+A switch is added to fine-tune metaspace reclamation: -XX:MetaspaceReclaimPolicy=(balanced|aggressive|none). balanced, the default, causes the VM to reclaim memory while keeping computational overhead minimal; aggressive moderately increases the reclaim rate at the cost of somewhat more expensive bookkeeping; none switches reclamation off altogether.
+
+The switches InitialBootClassLoaderMetaspaceSize and UseLargePagesInMetaspace have been deprecated.
+
+### JEP 397: Sealed Classes (Second Preview)
+
+Sealed classes and interfaces have been previewed again in JDK 16, initially added to the Java language in JDK 15. Sealed classes and interfaces restrict which other classes or interfaces may extend or implement them.
+
+### JEP 395: Records
+
+Records have been added to the Java language. Records are a new kind of class in the Java language. They act as transparent carriers for immutable data with less ceremony than normal classes.
+
+Since nested classes were first introduced to Java, with the exception of static final fields initialized by constant expressions, nested class declarations that are inner have been prohibited from declaring static members. This restriction applies to non-static member classes, local classes, and anonymous classes.
+
+JEP 384: Records (Second Preview) added support for local interfaces, enum classes, and record classes, all of which are static definitions. This was a well-received enhancement, permitting coding styles that reduce the scope of certain declarations to local contexts.
+
+While JEP 384 allowed for static local classes and interfaces, it did not relax the restriction on static member classes and interfaces of inner classes. An inner class could declare a static interface inside one of its method bodies, but not as a class member.
+
+As a natural next step, JEP 395 further relaxes nesting restrictions, and permits static classes, methods, fields, etc., to be declared within inner classes.
+
+For further details, see JEP 395.
+
+### JEP 394: Pattern Matching for instanceof
+
+Pattern matching for the instanceof operator has been made a final and permanent feature of the Java language in JDK 16. Pattern matching allows common logic in a Java program to be expressed more concisely and safely, namely the conditional extraction of components from objects.
+
+For further details, see JEP 394.
+
+## JDK15
+
+### Added isEmpty Default Method to CharSequence Interface
+
+```java
+default boolean isEmpty() {
+    return this.length() == 0;
+}
+```
+
+### JEP 371 Hidden Classes
+
+Introduce _hidden classes_, which are classes that cannot be used directly by the bytecode of other classes. **Hidden classes are intended for use by frameworks that generate classes at run time and use them indirectly, via reflection.** A hidden class may be defined as a member of an access control nest, and may be unloaded independently of other classes.
+
+### Specialized Implementations of TreeMap Methods
+
+The TreeMap class now provides overriding implementations of the putIfAbsent, computeIfAbsent, computeIfPresent, compute, and merge methods. The new implementations provide a performance improvement. However, if the function provided to the compute- or merge methods modifies the map, ConcurrentModificationException may be thrown, because the function that is provided to these methods is prohibited from modifying the map. If a ConcurrentModificationException occurs, the function must either be changed to avoid modifying the map, or the surrounding code should be rewritten to replace uses of the compute- and merge methods with conventional Map methods such as get and put.
+
+### JEP 378 Text Blocks
+
+### JEP 375 Pattern Matching for instanceof (Second Preview)
+
+`if (obj instanceof String s && s.length() > 5) {.. s.contains(..) ..}`
+
+### JEP 360: Sealed Classes (Preview)
+
+Enhance the Java programming language with sealed classes and interfaces. Sealed classes and interfaces restrict which other classes or interfaces may extend or implement them.
+The goals are:
+
+* Allow the author of a class or interface to control which code is responsible for implementing it.
+* Provide a more declarative way than access modifiers to restrict the use of a superclass.
+* Support future directions in pattern matching by underpinning the exhaustive analysis of patterns.
+
+The goals are not to:
+
+* Provide new forms of access control such as "friends"
+* Change `final` in any way
+
+Example:
+
+```java
+package com.example.geometry;
+
+public abstract sealed class Shape
+    permits Circle, Rectangle, Square {...}
+
+public final class Circle extends Shape {...}
+
+public sealed class Rectangle extends Shape
+    permits TransparentRectangle, FilledRectangle {...}
+public final class TransparentRectangle extends Rectangle {...}
+public final class FilledRectangle extends Rectangle {...}
+
+public non-sealed class Square extends Shape {...}
+```
+
+> Any class that extends a sealed class must itself be declared sealed, non-sealed, or final.
+
+### JEP 383: Foreign-Memory Access API (Second Incubator)
+
+Introduce an API to allow Java programs to safely and efficiently access foreign memory outside of the Java heap.
+
+* A `MemorySegment` models a contiguous memory region with given spatial and temporal bounds
+* A `MemoryAddress` models an address. There are generally two kinds of addresses: A _checked_ address is an offset within a given memory segment, while an _unchecked_ address is an address whose spatial and temporal bounds are unknown, as in the case of a memory address obtained -- unsafely -- from native code
+* A `MemoryLayout` is a programmatic description of a memory segment's contents
+
+    ```java
+    VarHandle intHandle = MemoryHandles.varHandle(int.class,
+    ByteOrder.nativeOrder());
+
+    try (MemorySegment segment = MemorySegment.allocateNative(100)) {
+        MemoryAddress base = segment.baseAddress();
+        for (int i = 0; i < 25; i++) {
+            intHandle.set(base.addOffset(i * 4), i);
+        }
+    }
+    ```
+
+### GC
+
+Both ZGC (JEP 377) and Shenandoah (JEP 379) will be no longer be experimental. Both will be supported configurations that teams can opt to use, while the G1 collector will remain the default.
+
+## JDK14
+
+### Switch Expressions
+
+```java
+var log = switch (event) {
+    case PLAY -> "User has triggered the play button";
+    case STOP, PAUSE -> "User needs a break";
+    default -> {
+        String message = event.toString();
+        LocalDateTime now = LocalDateTime.now();
+        yield "Unknown event " + message +
+                " logged on " + now;
+    }
+};
+```
+
+### Text Block (Preview)
+
+### Pattern Matching for `instanceof` (Preview)
+
+```java
+if (obj instanceof Group) {
+    Group group = (Group) obj;
+
+    // use group specific methods
+    var entries = group.getEntries();
+}
+```
+
+The above code can be refactored as the following code using the preview feature.
+
+```java
+if (obj instanceof Group group) {
+    var entries = group.getEntries();
+}
+```
+
+### JEP 359 Records (Preview)
+
+Consider a simple domain class, BankTransaction, that models a transaction with three fields: a date, an amount, and a description. You need to worry about multiple components when you declare the class:
+
+1. The constructor
+2. Getter methods
+3. toString()
+4. hashCode() and equals()
+
+```java
+public class BankTransaction {
+    private final LocalDate date;
+    private final double amount;
+    private final String description;
+
+
+    public BankTransaction(final LocalDate date,
+                            final double amount,
+                            final String description) {
+        this.date = date;
+        this.amount = amount;
+        this.description = description;
+    }
+
+    public LocalDate date() {
+        return date;
+    }
+
+    public double amount() {
+        return amount;
+    }
+
+    public String description() {
+        return description;
+    }
+
+    @Override
+    public String toString() {
+        return "BankTransaction{" +
+                "date=" + date +
+                ", amount=" + amount +
+                ", description='" + description + '\'' +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        BankTransaction that = (BankTransaction) o;
+        return Double.compare(that.amount, amount) == 0 &&
+                date.equals(that.date) &&
+                description.equals(that.description);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(date, amount, description);
+    }
+}
+```
+
+Java 14 provides a way to remove the verbosity and make the intent clear that all you want is a class that only aggregates data together with implementations of the equals, hashCode, and toString methods. You can refactor BankTransaction as follows:
+
+```java
+public record BankTransaction(LocalDate date,
+                                double amount,
+                                String description) {}
+```
+
+With a record, you “automatically” get the implementations of equals, hashCode, and toString in addition to the constructor and getters.
+
+### Helpful NullPointerExceptions
+
+> [https://blogs.oracle.com/javamagazine/java-14-arrives-with-a-host-of-new-features](https://blogs.oracle.com/javamagazine/java-14-arrives-with-a-host-of-new-features)
+
+> [https://www.oracle.com/technetwork/java/javase/14all-relnotes-5809668.html#NewFeature](https://www.oracle.com/technetwork/java/javase/14all-relnotes-5809668.html#NewFeature "https://www.oracle.com/technetwork/java/javase/14all-relnotes-5809668.html#NewFeature")
+
+## JDK13
+
+### JEP 354 Switch Expressions (Preview)
+
+```java
+String formatted =
+    switch (obj) {
+        case Integer i -> String.format("int %d", i)
+        case Byte b    -> String.format("byte %d", b);
+        case Long l    -> String.format("long %d", l);
+        case Double d  -> String.format("double %f", d);
+        case String s  -> String.format("String %s", s);
+        default        -> obj.toString();
+    };
+```
+
+### JEP 355 Text Blocks (Preview)
+
+> [https://www.oracle.com/technetwork/java/13-relnote-issues-5460548.html#NewFeature](https://www.oracle.com/technetwork/java/13-relnote-issues-5460548.html#NewFeature "https://www.oracle.com/technetwork/java/13-relnote-issues-5460548.html#NewFeature")
+
+## JDK12
+
+### Support for Unicode 11
+
+### POSIX_SPAWN Option on Linux
+
+### JEP 334 JVM Constants API
+
+### JEP 325 Switch Expressions (Preview)
+
+### Java Strings New Methods
+
+### JEP 305: Pattern Matching for instanceof (Preview)
+
+> [https://www.journaldev.com/28666/java-12-features](https://www.journaldev.com/28666/java-12-features "https://www.journaldev.com/28666/java-12-features")
+
+## JDK11
+
+### New string methods: isBlank
+
+### New file methods
+
+### Pattern recognizing methods
+
+### Epsilon Garbage Collector
+
+### Removed the Java EE and CORBA modules
+
+### Removal of thread functions: stop(Throwable obj) and destroy()
+
+### Optional.isEmpty()
+
+### Local-Variable syntax for Lambda parameters
+
+> [https://www.geeksforgeeks.org/java-11-features-and-comparison/](https://www.geeksforgeeks.org/java-11-features-and-comparison/ "https://www.geeksforgeeks.org/java-11-features-and-comparison/")
+
+## JDK10
+
+### Local variable type inference
+
+### Unmodifiable collections. copyOf etc.
+
+### Container awareness
+
+> -XX:-UseContainerSupport
+>
+> -XX:ActiveProcessorCount=count
+>
+> -XX:InitialRAMPercentage
+>
+> -XX:MaxRAMPercentage
+>
+> -XX:MinRAMPercentage
+
+> [https://www.baeldung.com/java-10-overview](https://www.baeldung.com/java-10-overview "https://www.baeldung.com/java-10-overview")
+
+## JDK9
+
+### Java module system – Jigsaw Project
+
+### New HTTP Client
+
+### Process API
+
+### Try-With-Resources
+
+### Diamond operator extension
+
+### Interface private method
+
+### Jshell
+
+> [https://www.baeldung.com/new-java-9](https://www.baeldung.com/new-java-9 "https://www.baeldung.com/new-java-9")
+
+## JDK8
+
+### Lambda expressions
+
+### Default method in interface
+
+### Method reference
+
+### Repeating Annotations provide the ability to apply the same annotation type more than once to the same declaration or type use
+
+### Type Annotations provide the ability to apply an annotation anywhere a type is used, not just on a declaration.
+
+Used with a pluggable type system, this feature enables improved type checking of your code
+
+### Stream integration into Collections API
+
+> [https://www.oracle.com/technetwork/java/javase/8-whats-new-2157071.html](https://www.oracle.com/technetwork/java/javase/8-whats-new-2157071.html "https://www.oracle.com/technetwork/java/javase/8-whats-new-2157071.html")
+
