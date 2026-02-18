@@ -1,0 +1,433 @@
+cases:
+  - name: list_image_indent_and_blank_line
+    direction: write
+    md_config:
+      code_block_transforms: []
+    input: |
+      1. item one
+         ![img](a.png)
+      2. item two
+         ![img](b.png)
+      3. item three
+         text text
+      4. item four
+    expected: |
+      1. item one
+
+          ![img](a.png)
+
+      2. item two
+
+          ![img](b.png)
+
+      3. item three
+
+          text text
+
+      4. item four
+
+  - name: codeblock_transform_write
+    direction: write
+    md_config:
+      code_block_transforms:
+        - from_lang: bash
+          to_lang: sh
+          direction: write
+          enabled: true
+    input: |
+      ```bash
+      echo hi
+      ```
+    expected: |
+      ```sh
+      echo hi
+      ```
+
+  - name: list_dedented_paragraph_not_in_list
+    direction: write
+    md_config:
+      code_block_transforms: []
+    input: |
+      * list 1
+          list 1 content
+
+      Content not belongs to list item
+    expected: |
+      * list 1
+
+          list 1 content
+
+      Content not belongs to list item
+
+  - name: no_change_when_read
+    direction: read
+    md_config:
+      code_block_transforms: []
+    input: |
+      1. item one
+         ![img](a.png)
+      2. item two
+    expected: |
+      1. item one
+         ![img](a.png)
+      2. item two
+
+  - name: child_list_continuation
+    direction: write
+    md_config:
+      code_block_transforms: []
+    input: |
+      1. parent
+         - child a
+           child a continuation
+         - child b
+           child b continuation
+      2. next parent
+    expected: |
+      1. parent
+          - child a
+
+              child a continuation
+
+          - child b
+
+              child b continuation
+
+      2. next parent
+
+  - name: child_child_child
+    direction: write
+    md_config:
+      code_block_transforms: []
+    input: |
+      1. p
+         - c1
+           - c2
+             - c3
+               deep text
+      2. p2
+    expected: |
+      1. p
+          - c1
+              - c2
+                  - c3
+
+                      deep text
+
+      2. p2
+
+  - name: child_child_child_child
+    direction: write
+    md_config:
+      code_block_transforms: []
+    input: |
+      1. p
+         - c1
+           - c2
+             - c3
+               - c4
+                 deep text
+      2. p2
+    expected: |
+      1. p
+          - c1
+              - c2
+                  - c3
+                      - c4
+
+                          deep text
+
+      2. p2
+
+  - name: jep_512_513_sample
+    direction: write
+    md_config:
+      code_block_transforms: []
+    input: |
+      * Grouping import declarations
+  
+        If a source file has a mix of different kinds of import declarations then grouping them by kind may further improve readability; for example:
+        
+        ```java
+        // Module imports
+        import module M1;
+        import module M2;
+        ...
+        
+        // Package imports
+        import P1.*;
+        import P2.*;
+        ...
+        
+        // Single-type imports
+        import P1.C1;
+        import P2.C2;
+        ...
+        
+        class Foo { ... }
+        ```
+  
+      ### Compact Source Files and Instance Main Methods
+
+      In https://openjdk.org/jeps/512.
+
+      * Compact source files
+        
+        The following `main.java`,
+        
+        ```java
+        public class Main {
+            static void main(String [] args) {
+                System.out.println("hello java");
+            }
+        }
+        ```
+        
+        Can be simplified as the following `main.java`,
+        
+        ```java
+        String greeting() { return "Hello, World!"; }
+        
+        void main(){
+            IO.println(greeting() + " java 25");
+        }
+        ```
+      * Interacting with the console
+        
+        A new class `java.lang.IO` to interact with IO, for example,
+        
+        * IO.println
+        * IO.print
+        * IO.readln
+      * Automatic import of the `java.base` module
+        
+        * java.lang
+        * java.io
+        * java.util
+        * java.time
+        * java.text
+        * java.net
+        * java.math
+        * java.security
+        * java.nio
+        * java.util.concurrent
+        * java.util.function
+
+      ### Flexible Constructor Bodies
+
+      In https://openjdk.org/jeps/513.
+
+      * A new model for constructor bodies
+    expected: |
+      * Grouping import declarations
+
+          If a source file has a mix of different kinds of import declarations then grouping them by kind may further improve readability; for example:
+
+          ```java
+          // Module imports
+          import module M1;
+          import module M2;
+          ...
+
+          // Package imports
+          import P1.*;
+          import P2.*;
+          ...
+
+          // Single-type imports
+          import P1.C1;
+          import P2.C2;
+          ...
+
+          class Foo { ... }
+          ```
+
+      ### Compact Source Files and Instance Main Methods
+
+      In https://openjdk.org/jeps/512.
+
+      * Compact source files
+        
+          The following `main.java`,
+        
+          ```java
+          public class Main {
+              static void main(String [] args) {
+                  System.out.println("hello java");
+              }
+          }
+          ```
+        
+          Can be simplified as the following `main.java`,
+        
+          ```java
+          String greeting() { return "Hello, World!"; }
+        
+          void main(){
+              IO.println(greeting() + " java 25");
+          }
+          ```
+
+      * Interacting with the console
+        
+          A new class `java.lang.IO` to interact with IO, for example,
+        
+          * IO.println
+          * IO.print
+          * IO.readln
+
+      * Automatic import of the `java.base` module
+        
+          * java.lang
+          * java.io
+          * java.util
+          * java.time
+          * java.text
+          * java.net
+          * java.math
+          * java.security
+          * java.nio
+          * java.util.concurrent
+          * java.util.function
+
+      ### Flexible Constructor Bodies
+
+      In https://openjdk.org/jeps/513.
+
+      * A new model for constructor bodies
+
+
+
+
+  - name: jdk21_record_patterns_no_change
+    direction: write
+    md_config:
+      code_block_transforms: []
+    input: |
+      ## JDK21
+
+      ### Record Patterns
+
+      Enhance the Java programming language with record patterns to deconstruct record values. Record patterns and type patterns can be nested to enable a powerful, declarative, and composable form of data navigation and processing.
+
+      * Support deconstruct record values
+
+        As of Java 16, it supports pattern match with record value.
+
+        ```java
+        record Point(int x, int y) {}
+
+        static void printSum(Object obj) {
+            if (obj instanceof Point p) {
+                    int x = p.x();
+                    int y = p.y();
+                    System.out.println(x+y);
+            }
+        }
+        ```
+
+        As of Java 21, it supports to deconstruct record values.
+
+        ```java
+        // As of Java 21
+        static void printSum(Object obj) {
+            if (obj instanceof Point(int x, int y)) {
+                    System.out.println(x+y);
+            }
+        }
+        ```
+
+      * Nested record patterns
+
+        ```java
+        record Point(int x, int y) {}
+        enum Color { RED, GREEN, BLUE }
+        record ColoredPoint(Point p, Color c) {}
+        record Rectangle(ColoredPoint upperLeft, ColoredPoint lowerRight) {}
+
+        // as of Java 21, we can extract the Rectangle record's values
+        static void printUpperLeftColoredPoint(Rectangle r) {
+            if (r instanceof Rectangle(ColoredPoint ul, ColoredPoint lr)) {
+                    System.out.println(ul.c());
+            }
+        }
+
+        // event, extract the ColoredPoint values
+        static void printColorOfUpperLeftPoint(Rectangle r) {
+            if (r instanceof Rectangle(ColoredPoint(Point p, Color c),
+                                    ColoredPoint lr)) {
+                    System.out.println(c);
+            }
+        }
+
+        // or with var
+        static void printXCoordOfUpperLeftPointWithPatterns(Rectangle r) {
+            if (r instanceof Rectangle(ColoredPoint(Point(var x, var y), var c),
+                                    var lr)) {
+                    System.out.println("Upper-left corner: " + x);
+            }
+        }
+    expected: |
+      ## JDK21
+
+      ### Record Patterns
+
+      Enhance the Java programming language with record patterns to deconstruct record values. Record patterns and type patterns can be nested to enable a powerful, declarative, and composable form of data navigation and processing.
+
+      * Support deconstruct record values
+
+          As of Java 16, it supports pattern match with record value.
+
+          ```java
+          record Point(int x, int y) {}
+
+          static void printSum(Object obj) {
+              if (obj instanceof Point p) {
+                      int x = p.x();
+                      int y = p.y();
+                      System.out.println(x+y);
+              }
+          }
+          ```
+
+          As of Java 21, it supports to deconstruct record values.
+
+          ```java
+          // As of Java 21
+          static void printSum(Object obj) {
+              if (obj instanceof Point(int x, int y)) {
+                      System.out.println(x+y);
+              }
+          }
+          ```
+
+      * Nested record patterns
+
+          ```java
+          record Point(int x, int y) {}
+          enum Color { RED, GREEN, BLUE }
+          record ColoredPoint(Point p, Color c) {}
+          record Rectangle(ColoredPoint upperLeft, ColoredPoint lowerRight) {}
+
+          // as of Java 21, we can extract the Rectangle record's values
+          static void printUpperLeftColoredPoint(Rectangle r) {
+              if (r instanceof Rectangle(ColoredPoint ul, ColoredPoint lr)) {
+                      System.out.println(ul.c());
+              }
+          }
+
+          // event, extract the ColoredPoint values
+          static void printColorOfUpperLeftPoint(Rectangle r) {
+              if (r instanceof Rectangle(ColoredPoint(Point p, Color c),
+                                      ColoredPoint lr)) {
+                      System.out.println(c);
+              }
+          }
+
+          // or with var
+          static void printXCoordOfUpperLeftPointWithPatterns(Rectangle r) {
+              if (r instanceof Rectangle(ColoredPoint(Point(var x, var y), var c),
+                                      var lr)) {
+                      System.out.println("Upper-left corner: " + x);
+              }
+          }
