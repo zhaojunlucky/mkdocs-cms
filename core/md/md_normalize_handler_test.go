@@ -174,13 +174,13 @@ func TestHandleListItemStart(t *testing.T) {
 		t.Fatalf("expected desired=0 needBlank=false, got desired=%d needBlank=%v", desired, needBlank)
 	}
 	stack = append(stack, mdListStackEntry{rawIndent: 0, indent: 0, hadContinuation: true, sawMarkerLine: true})
-	stack, desired, needBlank = handleListItemStart(stack, 0, false)
+	_, desired, needBlank = handleListItemStart(stack, 0, false)
 	if desired != 0 || !needBlank {
 		t.Fatalf("expected desired=0 needBlank=true for sibling after continuation, got desired=%d needBlank=%v", desired, needBlank)
 	}
 
 	stack = []mdListStackEntry{{rawIndent: 0, indent: 0, hadContinuation: false, sawMarkerLine: true}}
-	stack, desired, needBlank = handleListItemStart(stack, 2, true)
+	_, desired, needBlank = handleListItemStart(stack, 2, true)
 	if desired != 4 || needBlank {
 		t.Fatalf("expected desired=4 needBlank=false for nested, got desired=%d needBlank=%v", desired, needBlank)
 	}
