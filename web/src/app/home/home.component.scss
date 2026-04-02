@@ -1,59 +1,51 @@
 .home-container {
-  width: 100vw;
+  width: 100%;
   max-width: 100%;
-  margin: 64px 0 0 0;
-  padding: 1rem;
+  margin: 0;
+  padding: 16px;
   box-sizing: border-box;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
-  margin-bottom: 30px;
+  margin-bottom: 24px;
   text-align: center;
 }
 
 .repositories-section {
-  margin-top: 30px;
+  margin-top: 24px;
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--mat-surface-200);
+  margin-bottom: 16px;
 }
 
 .loading-indicator, .error-message, .empty-state {
   text-align: center;
-  padding: 30px;
+  padding: 24px;
 }
 
 .error-message {
-  color: var(--mat-warn);
+  background-color: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+  border-radius: 4px;
 }
 
 .empty-state {
   p {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
 }
 
 .repositories-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  gap: 16px;
 }
 
 .repository-card {
-  transition: transform 0.2s, box-shadow 0.2s;
-
-  &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
 
   mat-card-header {
     display: flex;
@@ -82,7 +74,6 @@ h1 {
 
 
     .repo-date {
-      color: var(--mat-text-secondary);
       font-size: 14px;
     }
 
@@ -92,33 +83,34 @@ h1 {
       position: relative;
 
       &.status-synced {
-        color: var(--mat-success);
+        color: var(--mat-sys-primary);
       }
 
       &.status-syncing {
-        color: var(--mat-primary);
+        color: var(--mat-sys-primary);
         font-weight: bold;
         animation: pulse 1.5s infinite ease-in-out;
       }
 
       &.status-failed {
-        color: var(--mat-warn);
+        color: var(--mat-sys-error);
       }
 
       &.status-pending {
-        color: var(--mat-warning);
+        color: var(--mat-sys-tertiary);
       }
 
       &.status-warning {
-        color: var(--mat-warning);
+        color: var(--mat-sys-tertiary);
       }
 
       .error-tooltip {
         visibility: hidden;
-        color: red;
+        background-color: var(--mat-sys-error);
+        color: var(--mat-sys-on-error);
         text-align: center;
         border-radius: 4px;
-        padding: 5px 10px;
+        padding: 8px;
         position: absolute;
         z-index: 1;
         bottom: 125%;
@@ -138,18 +130,19 @@ h1 {
     }
 
     .warning-message {
-      margin-top: 15px;
-      padding: 10px;
-      border: 1px solid var(--mat-warning-200);
+      margin-top: 16px;
+      padding: 8px;
+      border: 1px solid var(--mat-sys-outline-variant);
       border-radius: 4px;
+      background-color: color-mix(in srgb, var(--mat-sys-tertiary) 10%, var(--mat-sys-surface));
 
       p {
-        color: var(--mat-warning-800);
-        margin-bottom: 10px;
+        color: var(--mat-sys-on-surface);
+        margin-bottom: 8px;
         font-size: 14px;
 
         i {
-          margin-right: 5px;
+          margin-right: 8px;
         }
       }
 
@@ -158,31 +151,12 @@ h1 {
 
   .repo-actions {
     display: flex;
-    padding: 10px 15px;
-    background-color: var(--mat-surface-50);
-    border-top: 1px solid var(--mat-surface-200);
-
-    a, button {
-      flex: 1;
-      padding: 8px;
-      margin: 0 5px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-      text-align: center;
-      text-decoration: none;
-      border: none;
-      transition: background-color 0.2s;
-    }
+    justify-content: center;
+    padding: 8px 16px;
   }
 
 }
 
-p {
-  font-size: 18px;
-  line-height: 1.6;
-  color: var(--mat-text-secondary);
-}
 
 @keyframes pulse {
   0% { opacity: 0.6; }

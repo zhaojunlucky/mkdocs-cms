@@ -6,8 +6,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../auth/auth.service';
-import {MatDivider} from '@angular/material/divider';
-
 @Component({
   selector: 'app-nav',
   standalone: true,
@@ -16,8 +14,7 @@ import {MatDivider} from '@angular/material/divider';
     MatButtonModule,
     MatIconModule,
     MatMenuModule,
-    RouterModule,
-    MatDivider
+    RouterModule
 ],
   templateUrl: './nav.component.html',
   styleUrls: ['./nav.component.scss']

@@ -18,7 +18,7 @@ import packageInfo from '../../../../package.json';
   styleUrls: ['./footer.component.scss']
 })
 export class FooterComponent implements OnInit {
-  version = 'Unknown';
+  backendVersion = 'Unknown';
   frontendVersion = packageInfo.version;
 
   constructor(private siteService: SiteServiceService) {
@@ -26,7 +26,7 @@ export class FooterComponent implements OnInit {
 
   ngOnInit(): void {
     this.siteService.getVersion().subscribe(version => {
-      this.version = version.version
+      this.backendVersion = version.version
     })
   }
 }

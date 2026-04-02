@@ -1,124 +1,75 @@
 :host {
   display: block;
-  flex-shrink: 0;
 }
 
-.app-footer {
-  padding: 8px 20px;
-  border-top: 1px solid var(--mat-surface-200);
-  margin-top: auto; /* Push to the bottom when there's not enough content */
-  width: 100%;
-  min-height: auto;
-  height: auto;
-  box-sizing: border-box;
+footer {
+  border-top: solid 1px var(--mat-sys-outline-variant);
 }
 
-.footer-content {
-  display: flex;
-  justify-content: space-between;
+.docs-footer {
+  // padding: 12px;
+  font-size: 12px;
+}
+
+.docs-footer-list {
   align-items: center;
-  max-width: 1200px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-.copyright {
-  color: var(--mat-text-secondary);
-  font-size: 13px;
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 12px;
+  flex-flow: row wrap;
+  padding: 8px;
 }
 
-.copyright-text {
-  font-weight: 500;
-}
-
-.version-info {
-  font-size: 11px;
-  opacity: 0.8;
-}
-
-.links {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.links a {
-  color: var(--mat-text-secondary);
-  text-decoration: none;
-  font-size: 14px;
-  transition: color 0.2s ease;
+.docs-footer-logo {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: 8px;
-}
 
-.links a:hover {
-  color: var(--mat-text-primary);
-}
-
-// Tablet and below
-@media (max-width: 768px) {
-  .app-footer {
-    padding: 8px 16px;
+  a {
+    display: inline-block;
+    line-height: 50px;
+    margin: 0 16px;
+    vertical-align: bottom;
+    font-size: 16px;
   }
+}
 
-  .footer-content {
+.footer-icon {
+  width: 50px;
+  height: 50px;
+  font-size: 50px;
+}
+
+.docs-footer-copyright {
+  display: flex;
+  flex: 1;
+  justify-content: flex-end;
+  flex-direction: column;
+  min-width: 225px;
+  margin-top: 16px;
+
+  > div {
+    display: flex;
     flex-direction: column;
-    gap: 8px;
+    align-self: flex-end;
     text-align: center;
   }
 
-  .copyright {
-    flex-direction: column;
-    align-items: center;
-    font-size: 12px;
-    gap: 2px;
-  }
-
-  .version-info {
-    font-size: 10px;
-  }
-
-  .links {
-    gap: 4px;
-    justify-content: center;
-    flex-wrap: wrap;
+  @media (min-width: 885px) {
+    margin-top: 0;
   }
 }
 
-// Mobile devices
-@media (max-width: 480px) {
-  .app-footer {
-    padding: 6px 12px;
-  }
+a {
+  color: var(--mat-sys-on-surface-variant);
+  text-decoration: none;
 
-  .copyright {
-    font-size: 11px;
+  &:hover,
+  &:focus {
+    text-decoration: underline;
   }
+}
 
-  .version-info {
-    font-size: 9px;
-  }
-
-  .links {
-    gap: 0;
-  }
-
-  .links a {
-    min-width: 40px;
-    padding: 6px;
-  }
-
-  // Hide link text on very small screens, show only icons
-  .link-text {
-    display: none;
-  }
-
-  .links a mat-icon {
-    margin: 0;
+@media screen and (max-width: 884px) {
+  .docs-footer-list {
+    flex-direction: column;
   }
 }

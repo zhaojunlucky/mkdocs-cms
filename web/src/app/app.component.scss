@@ -12,12 +12,10 @@
   flex-direction: column;
   flex: 1;
   min-height: 100%;
-  background-color: var(--mat-surface-50, #fafafa);
 }
 
 .content-wrapper {
   flex: 1 0 auto;
-  background-color: var(--mat-surface-50, #fafafa);
 }
 
 router-outlet {
