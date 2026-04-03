@@ -5,7 +5,7 @@ import {Title} from '@angular/platform-browser';
   providedIn: 'root'
 })
 export class PageTitleService {
-  base = 'MkDocs CMS'
+  base = 'Markdown CMS'
   _title = this.base;
 
   constructor(private bodyTitle: Title) {
