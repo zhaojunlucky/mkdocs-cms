@@ -1,36 +1,36 @@
 .task-status-container {
-  margin: 15px 0;
-  border-radius: 6px;
+  margin: 16px 0;
+  border-radius: 4px;
   overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .loading, .error {
-  padding: 15px;
+  padding: 16px;
   text-align: center;
 }
 
 .error {
-  /* Angular Material will handle error styling */
+  background-color: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
 }
 
 .task-details {
-  border-left: 4px solid var(--mat-surface-300);
+  border-left: 4px solid var(--mat-sys-outline-variant);
 
   &.status-completed {
-    border-left-color: var(--mat-success);
+    border-left-color: var(--mat-sys-primary);
   }
 
   &.status-failed {
-    border-left-color: var(--mat-warn);
+    border-left-color: var(--mat-sys-error);
   }
 
   &.status-running {
-    border-left-color: var(--mat-primary);
+    border-left-color: var(--mat-sys-primary);
   }
 
   &.status-pending {
-    border-left-color: var(--mat-warning);
+    border-left-color: var(--mat-sys-tertiary);
   }
 }
 
@@ -49,8 +49,7 @@
 }
 
 .task-actions {
-  padding: 10px 15px;
-  border-top: 1px solid var(--mat-surface-200);
+  padding: 8px 16px;
+  border-top: 1px solid var(--mat-sys-outline-variant);
   text-align: right;
-
 }

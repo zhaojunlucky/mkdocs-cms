@@ -1,11 +1,14 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
 .repository-detail-container {
-  width: 100vw;
+  width: 100%;
+  height: 100%;
   max-width: 100%;
-  margin: 64px 0 0 0;
-  padding: 1rem;
+  margin: 0;
   box-sizing: border-box;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   position: relative;
 }
 
@@ -26,12 +29,9 @@
   flex-direction: column;
   align-items: center;
   padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 
   p {
     margin-top: 16px;
-    font-weight: 500;
   }
 }
 
@@ -41,48 +41,28 @@
 }
 
 .error-message {
-  color: var(--mat-warn);
-
   .back-btn {
     display: inline-block;
     margin-top: 20px;
-    padding: 8px 16px;
-    background-color: var(--mat-primary);
-    color: white;
     text-decoration: none;
-    border-radius: 4px;
-
-    &:hover {
-      background-color: var(--mat-primary-700);
-    }
   }
 }
 
 .repository-header {
   margin-bottom: 30px;
   padding-bottom: 20px;
-  border-bottom: 1px solid var(--mat-surface-200);
 
   .back-link {
-    color: var(--mat-primary);
     text-decoration: none;
-    font-size: 14px;
-
-    &:hover {
-      text-decoration: underline;
-    }
   }
 
   h1 {
     margin: 0 0 10px 0;
-    color: var(--mat-text-primary);
   }
 
   .repo-path {
     font-family: monospace;
-    background-color: var(--mat-surface-50);
     padding: 8px 12px;
-    border-radius: 4px;
     margin: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -102,21 +82,15 @@
 
   h2 {
     margin: 0;
-    color: var(--mat-text-primary);
   }
 
   .info-message {
-    background-color: var(--mat-primary-50);
-    border-left: 4px solid var(--mat-primary);
     padding: 10px 15px;
-    border-radius: 4px;
     margin-left: 15px;
     flex-grow: 1;
 
     p {
       margin: 0;
-      color: var(--mat-primary-800);
-      font-size: 0.9em;
     }
   }
 }
@@ -128,25 +102,12 @@
 }
 
 .collection-card {
-  border: 1px solid var(--mat-surface-200);
-  border-radius: 6px;
-  overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
-
-  &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
 
   .collection-header {
-    background-color: var(--mat-surface-50);
     padding: 15px;
-    border-bottom: 1px solid var(--mat-surface-200);
 
     h3 {
       margin: 0;
-      font-size: 18px;
-      color: var(--mat-text-primary);
     }
   }
 
@@ -155,52 +116,33 @@
 
     .collection-path {
       font-family: monospace;
-      background-color: var(--mat-surface-50);
       padding: 8px;
-      border-radius: 4px;
       margin-bottom: 10px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-    }
-
-    .collection-date {
-      color: var(--mat-text-secondary);
-      font-size: 14px;
     }
   }
 
   .collection-actions {
     display: flex;
     padding: 10px 15px;
-    background-color: var(--mat-surface-50);
-    border-top: 1px solid var(--mat-surface-200);
 
     a, button {
       flex: 1;
-      padding: 8px;
       margin: 0 5px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-      text-align: center;
       text-decoration: none;
-      border: none;
-      transition: background-color 0.2s;
     }
   }
 }
 
 .empty-state {
-  background-color: var(--mat-surface-50);
-  border-radius: 8px;
   padding: 30px;
   text-align: center;
   margin-bottom: 30px;
 
   p {
     margin: 0 0 15px 0;
-    color: var(--mat-text-secondary);
   }
 
   p:last-child {
@@ -211,15 +153,12 @@
 .content-layout {
   display: flex;
   gap: 20px;
-  height: calc(100vh - 170px);
-  margin-top: 20px;
+  height: calc(100vh - 150px);
+  margin-top: 10px;
 }
 
 .sidenav {
   width: 250px;
-  border-right: 1px solid var(--mat-surface-200);
-  background-color: var(--mat-surface-50);
-  border-radius: 4px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -227,13 +166,9 @@
 
 .sidenav-header {
   padding: 15px;
-  border-bottom: 1px solid var(--mat-surface-200);
-  background-color: var(--mat-surface-100);
 
   h3 {
     margin: 0;
-    font-size: 16px;
-    font-weight: 500;
   }
 }
 
@@ -245,7 +180,6 @@
 .empty-state-sidenav {
   padding: 20px;
   text-align: center;
-  color: var(--mat-text-secondary);
 }
 
 .collection-list {
@@ -254,78 +188,43 @@
   margin: 0;
 }
 
-/* Collection list item styling - using Angular Material's activated state */
 .collection-list {
   ::ng-deep mat-list-item {
     cursor: pointer;
-    transition: all 0.2s ease;
   }
 }
 
 .main-content {
   flex: 1;
-  padding: 20px 20px 0 20px;
+  padding: 0 20px 0px 20px;
   overflow-y: auto;
-  position: relative; /* Added for positioning the back-to-top button */
+  position: relative;
 }
 
 .back-to-top-btn {
   position: fixed;
-  bottom: 90px; /* Position above the scroll-to-bottom button */
+  bottom: 90px;
   right: 30px;
   width: 50px;
   height: 50px;
-  border-radius: 50%;
-  color: white;
-  border: none;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 9999; /* Increased z-index to ensure visibility */
-  transition: background-color 0.3s, transform 0.3s;
-  opacity: 1; /* Ensure full opacity */
-  visibility: visible; /* Explicitly set visibility */
-
-  &:hover {
-    transform: translateY(-3px);
-  }
-
-  &:focus {
-    outline: none;
-  }
-
-  mat-icon {
-    font-size: 24px;
-    width: 24px;
-    height: 24px;
-    line-height: 24px; /* Ensure icon is properly centered */
-    display: block; /* Ensure proper display */
-  }
-}
-
-.scroll-to-bottom-btn {
-  position: fixed;
-  bottom: 30px;
-  right: 30px; /* Same right alignment as back-to-top button */
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  border: none;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   z-index: 9999;
-  transition: background-color 0.3s, transform 0.3s;
-  opacity: 1;
-  visibility: visible;
+}
 
-  &:hover {
-    transform: scale(1.05);
-  }
+.scroll-to-bottom-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 9999;
 }
 
 .info-message-large {
@@ -333,8 +232,6 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: var(--mat-text-secondary);
-  font-size: 16px;
   text-align: center;
   padding: 30px;
 }
@@ -358,21 +255,13 @@
   flex-wrap: wrap;
   align-items: center;
   padding: 8px 0;
-  background-color: var(--mat-surface-50);
-  border-radius: 4px;
 
   .breadcrumb-item {
-    color: var(--mat-primary);
     cursor: pointer;
-
-    &:hover {
-      text-decoration: underline;
-    }
   }
 
   .breadcrumb-separator {
     margin: 0 5px;
-    color: var(--mat-text-secondary);
   }
 }
 
@@ -386,41 +275,23 @@
   display: flex;
   align-items: center;
   padding: 10px;
-  border: 1px solid var(--mat-surface-200);
-  border-radius: 4px;
-  transition: background-color 0.2s;
 
   &.is-folder {
     cursor: pointer;
-
-    &:hover {
-      background-color: var(--mat-primary-50);
-    }
   }
 
   .file-icon {
     margin-right: 15px;
-
-    .material-icons {
-      font-size: 24px;
-      color: var(--mat-text-secondary);
-    }
-  }
-
-  &.is-folder .file-icon .material-icons {
-    color: var(--mat-warning);
   }
 
   .file-details {
     flex: 1;
 
     .file-name {
-      font-weight: 500;
       margin-bottom: 5px;
     }
 
     .file-meta {
-      font-size: 12px;
       display: flex;
       gap: 15px;
     }
@@ -428,13 +299,7 @@
 }
 
 .back-link {
-  color: var(--mat-primary);
   text-decoration: none;
-  font-size: 14px;
-
-  &:hover {
-    text-decoration: underline;
-  }
 }
 
 @media (max-width: 768px) {
@@ -488,7 +353,6 @@
 
 .file-editor-header {
   padding: 15px;
-  border-bottom: 1px solid var(--mat-surface-200);
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -510,9 +374,7 @@
 
 .file-error-message {
   padding: 10px 15px;
-  color: var(--mat-warn);
   margin: 10px 15px;
-  border-radius: 4px;
 }
 
 .file-editor-content {
@@ -539,14 +401,7 @@
   }
 }
 
-/* Active breadcrumb item */
 .breadcrumb-item.active {
-  color: var(--mat-text-primary);
-  font-weight: 500;
   cursor: default;
-
-  &:hover {
-    text-decoration: none;
-  }
 }
 

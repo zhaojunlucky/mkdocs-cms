@@ -1,12 +1,12 @@
-<mat-toolbar color="primary" class="nav-toolbar">
-  <a routerLink="/home" class="logo-link">
-    <span class="logo">MkDocs CMS</span>
+<nav class="docs-navbar" aria-label="Top Toolbar">
+  <a matButton="text" routerLink="/home" aria-label="Markdown CMS">
+    Markdown CMS
   </a>
 
-  <span class="spacer"></span>
+  <div class="spacer"></div>
 
   @if (authService.isLoggedIn) {
-    <button mat-icon-button [matMenuTriggerFor]="userMenu" class="user-menu-button">
+    <button matIconButton [matMenuTriggerFor]="userMenu">
       <mat-icon>account_circle</mat-icon>
     </button>
     <mat-menu #userMenu="matMenu">
@@ -24,24 +24,19 @@
         </div>
       }
       @if (showReqNotifyBtn()) {
-        <mat-divider></mat-divider>
         <button mat-menu-item (click)="requestNotificationPermission()">
           <mat-icon>notifications</mat-icon>
           <span>Enable Notifications</span>
         </button>
       }
-      <mat-divider></mat-divider>
       <button mat-menu-item (click)="logout()">
         <mat-icon>logout</mat-icon>
         <span>Logout</span>
       </button>
     </mat-menu>
-  }
-
-  @if (!authService.isLoggedIn) {
-    <a mat-button routerLink="/login">
+  } @else {
+    <a matIconButton routerLink="/login">
       <mat-icon>login</mat-icon>
-      <span>Login</span>
     </a>
   }
-</mat-toolbar>
+</nav>

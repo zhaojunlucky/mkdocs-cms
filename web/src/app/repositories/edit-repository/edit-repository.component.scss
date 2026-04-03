@@ -2,17 +2,15 @@
   width: 100vw;
   max-width: 100%;
   margin: 64px 0 0 0;
-  padding: 1rem;
+  padding: 16px;
   box-sizing: border-box;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 
   h1 {
     margin: 0;
@@ -21,25 +19,25 @@
 }
 
 .loading-indicator, .error-message {
-  padding: 20px;
+  padding: 16px;
   text-align: center;
-  border-radius: 6px;
-  margin-bottom: 20px;
+  border-radius: 4px;
+  margin-bottom: 16px;
 }
 
 .error-message {
-  /* Angular Material will handle error styling */
+  background-color: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
 }
 
 .repository-form {
-  border-radius: 6px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  padding: 16px;
 
   form {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
   }
 
   .full-width {
@@ -47,13 +45,11 @@
   }
 }
 
-
-
 .branch-suggestions {
-  margin-top: 10px;
+  margin-top: 8px;
 
   p {
-    margin: 0 0 5px;
+    margin: 0 0 4px;
     font-size: 14px;
   }
 
@@ -61,13 +57,12 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-
   }
 }
 
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 30px;
+  gap: 8px;
+  margin-top: 24px;
 }

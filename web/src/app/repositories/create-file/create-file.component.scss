@@ -1,9 +1,7 @@
 .create-file-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  max-height: 100vh;
-  padding: 20px 20px 0 20px;
+  min-height: 100%;
   position: relative;
 }
 
@@ -13,7 +11,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: color-mix(in srgb, var(--mat-sys-surface) 90%, transparent);
+  backdrop-filter: blur(2px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -31,10 +30,13 @@
   padding: 16px;
   border-radius: 4px;
   margin-bottom: 16px;
+  background-color: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
 }
 
 .create-file-header {
   margin-bottom: 24px;
+  padding-top: 16px;
 }
 
 .breadcrumbs-container {
@@ -71,6 +73,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin-bottom: 5px;
 }
 
 .markdown-editor-wrapper h3 {
@@ -81,6 +84,7 @@
   display: flex;
   gap: 12px;
   margin-top: 24px;
+  margin-bottom: 5px;
 }
 
 // Floating error container that appears when there's a file error
@@ -96,23 +100,17 @@
     align-items: center;
     padding: 12px 16px;
     border-radius: 4px;
-    background-color: #f44336;
-    color: white;
-    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+    background-color: var(--mat-sys-error);
+    color: var(--mat-sys-on-error);
     animation: slideIn 0.3s ease-out;
 
     mat-icon {
       margin-right: 8px;
-      color: white;
     }
 
     span {
       flex: 1;
       margin-right: 8px;
-    }
-    
-    .close-error {
-      color: white;
     }
   }
 }

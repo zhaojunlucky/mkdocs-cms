@@ -30,3 +30,4 @@ config/*.yml
 config/config*.yaml
 mkdocs-cms
 coverage.out
+__debug_bin*
