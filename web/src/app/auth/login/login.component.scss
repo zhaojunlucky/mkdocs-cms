@@ -1,44 +1,115 @@
 .login-container {
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
-  height: calc(100vh - 64px);
+  min-height: calc(100vh - 64px);
+  padding: 24px;
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--mat-sys-primary) 16%, transparent), transparent 34%),
+    radial-gradient(circle at bottom right, color-mix(in srgb, var(--mat-sys-tertiary) 14%, transparent), transparent 32%),
+    linear-gradient(180deg, var(--mat-sys-surface) 0%, var(--mat-sys-surface-container-low) 100%);
 }
 
 .login-card {
   width: 100%;
-  max-width: 400px;
+  max-width: 460px;
+  padding: 8px;
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--mat-sys-surface-container-high) 92%, white), var(--mat-sys-surface-container));
+  box-shadow:
+    0 24px 60px color-mix(in srgb, var(--mat-sys-shadow) 18%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 55%, transparent);
 }
 
-mat-card-header {
-  margin-bottom: 16px;
+.login-header {
+  padding: 24px 24px 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
+
+  mat-card-title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+  }
+
+  mat-card-subtitle {
+    max-width: 32ch;
+    color: var(--mat-sys-on-surface-variant);
+    line-height: 1.45;
+  }
+}
+
+.login-avatar {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 16px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--mat-sys-primary), color-mix(in srgb, var(--mat-sys-tertiary) 70%, var(--mat-sys-primary)));
+  color: var(--mat-sys-on-primary);
+  box-shadow: 0 12px 24px color-mix(in srgb, var(--mat-sys-primary) 28%, transparent);
+
+  mat-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 32px;
+  }
+}
+
+mat-card-content {
+  padding: 8px 24px 24px;
 }
 
 .login-message {
   text-align: center;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--mat-sys-outline-variant) 88%, transparent);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--mat-sys-primary) 7%, var(--mat-sys-surface));
+
+  p {
+    margin: 0;
+    color: var(--mat-sys-on-surface-variant);
+    line-height: 1.5;
+  }
+}
+
+.login-kicker {
+  display: inline-block;
+  margin-bottom: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mat-sys-primary);
 }
 
 .login-buttons {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 12px;
 }
 
 .login-button {
+  justify-content: center;
+  min-height: 52px;
+  border-radius: 16px;
+  font-weight: 600;
+
   mat-icon {
     margin-right: 8px;
   }
 }
 
-.footer-text {
-  text-align: center;
-  padding: 8px;
+.github-button {
+  box-shadow: 0 12px 22px color-mix(in srgb, var(--mat-sys-primary) 24%, transparent);
 }
 
 .loading-spinner {
@@ -46,9 +117,54 @@ mat-card-header {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px 0;
+  gap: 12px;
+  padding: 32px 0 20px;
 
   p {
-    margin-top: 16px;
+    margin: 0;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+.login-footer {
+  padding: 0 24px 24px;
+}
+
+.login-footer-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.92rem;
+  text-align: center;
+
+  mat-icon {
+    color: var(--mat-sys-primary);
+  }
+}
+
+@media (max-width: 599px) {
+  .login-container {
+    min-height: calc(100vh - 56px);
+    padding: 16px;
+  }
+
+  .login-card {
+    border-radius: 24px;
+    padding: 4px;
+  }
+
+  .login-header,
+  mat-card-content,
+  .login-footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .login-header {
+    padding-top: 20px;
   }
 }

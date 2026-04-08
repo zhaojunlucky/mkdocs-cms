@@ -3,95 +3,104 @@
   <!-- Loading overlay that blocks user interaction -->
   @if (isLoading) {
     <div class="loading-overlay">
-      <div class="spinner-container">
+      <div class="spinner-container surface-panel">
         <mat-spinner diameter="50"></mat-spinner>
-        <p>Loading...</p>
+        <div>
+          <h3>Loading repository</h3>
+          <p>Fetching repository details and available collections.</p>
+        </div>
       </div>
     </div>
   }
 
   @if (error) {
-    <mat-card class="error-message">
-      <mat-card-content>
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
-          <mat-icon color="warn">error</mat-icon>
+    <mat-card class="error-message state-card" appearance="outlined">
+      <mat-card-content class="state-card-content">
+        <div class="state-icon state-icon-error">
+          <mat-icon>error</mat-icon>
+        </div>
+        <div class="state-copy">
+          <h3>Could not load repository</h3>
           <p>{{ error }}</p>
         </div>
-        <button mat-button color="primary" routerLink="/home">
+        <button mat-flat-button color="primary" routerLink="/home">
           <mat-icon>home</mat-icon>
-          Back to Home
+          <span>Back to Home</span>
         </button>
       </mat-card-content>
     </mat-card>
   }
 
   @if (!isLoading && !error && repository) {
-    <div>
-      <div class="content-layout">
-        <!-- Sidenav for collections -->
-        <mat-card class="sidenav">
-          <mat-card-header>
-            <mat-card-title>Collections</mat-card-title>
-          </mat-card-header>
-          <mat-card-content class="sidenav-content">
-            @if (collections.length === 0) {
-              <div class="empty-state-sidenav">
-                <mat-icon style="color: #ccc; font-size: 24px;">folder_open</mat-icon>
-                <p>No collections found</p>
-              </div>
+    <div class="content-layout">
+      <!-- Sidenav for collections -->
+      <mat-card class="sidenav surface-panel" appearance="outlined">
+        <mat-card-header>
+          <mat-card-title>Collections</mat-card-title>
+        </mat-card-header>
+        <mat-card-content class="sidenav-content">
+          @if (collections.length === 0) {
+            <div class="empty-state-sidenav">
+              <mat-icon>folder_open</mat-icon>
+              <p>No collections found</p>
+            </div>
+          }
+          <mat-nav-list class="collection-list">
+            @for (collection of collections; track collection) {
+              <mat-list-item
+                [activated]="collection.name === selectedColName"
+                (click)="selectCollection(collection)"
+                (mouseenter)="onCollectionHover(collection.name)"
+                (mouseleave)="onCollectionLeave()"
+                class="collection-item">
+                <mat-icon matListItemIcon>folder</mat-icon>
+                <span matListItemTitle>{{ collection.label }}</span>
+              </mat-list-item>
             }
-            <mat-nav-list class="collection-list">
-              @for (collection of collections; track collection) {
-                <mat-list-item
-                  [activated]="collection.name === selectedColName"
-                  (click)="selectCollection(collection)"
-                  (mouseenter)="onCollectionHover(collection.name)"
-                  (mouseleave)="onCollectionLeave()"
-                  class="collection-item">
-                  <mat-icon matListItemIcon>folder</mat-icon>
-                  <span matListItemTitle>{{ collection.label }}</span>
-                </mat-list-item>
-              }
-            </mat-nav-list>
-          </mat-card-content>
-        </mat-card>
-        <!-- Main content area -->
-        <div class="main-content" (scroll)="handleScroll($event)">
-          <!-- Show info message if no collection is selected -->
-          @if (!selectedColName) {
-            <mat-card class="info-message-large">
-              <mat-card-content>
-                <div style="text-align: center; padding: 40px;">
-                  <mat-icon style="font-size: 48px; height: 48px; width: 48px; color: #ccc;">info</mat-icon>
-                  <p>Select a collection from the sidebar to browse its files.</p>
+          </mat-nav-list>
+        </mat-card-content>
+      </mat-card>
+      <!-- Main content area -->
+      <div class="main-content" (scroll)="handleScroll($event)">
+        <!-- Show info message if no collection is selected -->
+        @if (!selectedColName) {
+          <mat-card class="info-message-large surface-panel" appearance="outlined">
+            <mat-card-content>
+              <div class="empty-state-large">
+                <div class="empty-state-icon">
+                  <mat-icon>info</mat-icon>
                 </div>
-              </mat-card-content>
-            </mat-card>
-          }
-          <router-outlet></router-outlet>
-          <!-- Back to top button -->
-          @if (showBackToTop) {
-            <button
-              mat-fab
-              color="primary"
-              class="back-to-top-btn"
-              (click)="scrollToTop()"
-              matTooltip="Back to top">
-              <mat-icon>arrow_upward</mat-icon>
-            </button>
-          }
-          <!-- Scroll to bottom button -->
-          @if (showScrolltoBottom) {
-            <button
-              mat-fab
-              color="accent"
-              class="scroll-to-bottom-btn"
-              (click)="scrollToBottom()"
-              matTooltip="Scroll to bottom">
-              <mat-icon>arrow_downward</mat-icon>
-            </button>
-          }
-        </div>
+                <div class="state-copy">
+                  <h3>Select a collection</h3>
+                  <p>Choose a collection from the sidebar to browse files, create content, or open an editor.</p>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        }
+        <router-outlet></router-outlet>
+        <!-- Back to top button -->
+        @if (showBackToTop) {
+          <button
+            mat-fab
+            color="primary"
+            class="back-to-top-btn"
+            (click)="scrollToTop()"
+            matTooltip="Back to top">
+            <mat-icon>arrow_upward</mat-icon>
+          </button>
+        }
+        <!-- Scroll to bottom button -->
+        @if (showScrolltoBottom) {
+          <button
+            mat-fab
+            color="accent"
+            class="scroll-to-bottom-btn"
+            (click)="scrollToBottom()"
+            matTooltip="Scroll to bottom">
+            <mat-icon>arrow_downward</mat-icon>
+          </button>
+        }
       </div>
     </div>
   }
