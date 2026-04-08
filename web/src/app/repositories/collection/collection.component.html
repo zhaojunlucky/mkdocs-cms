@@ -3,32 +3,40 @@
   <!-- Loading overlay that blocks user interaction -->
   @if (isLoading) {
     <div class="loading-overlay">
-      <div class="spinner-container">
+      <div class="spinner-container surface-panel">
         <mat-spinner diameter="50"></mat-spinner>
-        <p>Loading...</p>
+        <div>
+          <h3>Loading collection</h3>
+          <p>Fetching folders, files, and metadata for this path.</p>
+        </div>
       </div>
     </div>
   }
 
   @if (error) {
-    <mat-card class="error-message">
-      <mat-card-content>
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
-          <mat-icon color="warn">error</mat-icon>
+    <mat-card class="error-message state-card" appearance="outlined">
+      <mat-card-content class="state-card-content">
+        <div class="state-icon state-icon-error">
+          <mat-icon>error</mat-icon>
+        </div>
+        <div class="state-copy">
+          <h3>Could not load collection</h3>
           <p>{{ error }}</p>
         </div>
-        <button mat-button color="primary" [routerLink]="['/repositories', repositoryId]">
+        <button mat-flat-button color="primary" [routerLink]="['/repositories', repositoryId]">
           <mat-icon>arrow_back</mat-icon>
-          Back to Repository
+          <span>Back to Repository</span>
         </button>
       </mat-card-content>
     </mat-card>
   }
 
   @if (!isLoading && !error && collectionName) {
-    <div>
+    <div class="collection-shell">
       <!-- Collection Header -->
-      <div class="collection-header">
+
+      <mat-card class="collection-header-bar" appearance="outlined">
+        <mat-card-content>
         <div class="breadcrumbs-container">
           <div class="breadcrumbs">
             <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" matTooltip="Home"><mat-icon>home</mat-icon></a>
@@ -50,24 +58,32 @@
             </mat-form-field>
           </div>
         </div>
-      </div>
+        </mat-card-content>
+      </mat-card>
+
       <!-- File Browser -->
-      <div class="file-browser">
+      <mat-card class="file-browser surface-panel" appearance="outlined">
+        <mat-card-content>
         <div class="file-browser-header">
-          <h2>Files</h2>
+          <div>
+            <span class="section-kicker">Directory</span>
+            <h2>Files</h2>
+          </div>
           <div class="file-actions">
-            <button mat-icon-button matTooltip="Create File" (click)="openCreateFileDialog()" class="action-btn create-file-btn">
+            <button mat-flat-button color="primary" (click)="openCreateFileDialog()" class="action-btn create-file-btn">
               <mat-icon>note_add</mat-icon>
+              <span>Create File</span>
             </button>
-            <button mat-icon-button matTooltip="Create Folder" (click)="openCreateFolderDialog()" class="action-btn create-folder-btn">
+            <button mat-stroked-button (click)="openCreateFolderDialog()" class="action-btn create-folder-btn">
               <mat-icon>create_new_folder</mat-icon>
+              <span>Create Folder</span>
             </button>
           </div>
         </div>
         <!-- Create Folder Dialog -->
         @if (isCreatingFolder) {
           <div class="dialog-overlay">
-            <mat-card class="dialog">
+            <mat-card class="dialog" appearance="outlined">
               <mat-card-header>
                 <mat-card-title>Create New Folder</mat-card-title>
               </mat-card-header>
@@ -90,7 +106,7 @@
         <!-- Rename Dialog -->
         @if (isRenaming) {
           <div class="dialog-overlay">
-            <mat-card class="dialog">
+            <mat-card class="dialog" appearance="outlined">
               <mat-card-header>
                 <mat-card-title>Rename File</mat-card-title>
               </mat-card-header>
@@ -114,19 +130,27 @@
         <div class="file-list">
           <!-- Empty State -->
           @if (filteredFiles.length === 0) {
-            <div class="empty-state">
-              @if (searchTerm) {
-                <p>No files match your search "{{ searchTerm }}".</p>
-              }
-              @if (!searchTerm) {
-                <p>No files in this collection{{ currentPath ? ' path' : '' }}.</p>
-              }
+            <div class="empty-state state-card">
+              <div class="empty-state-icon">
+                <mat-icon>{{ searchTerm ? 'search_off' : 'folder_open' }}</mat-icon>
+              </div>
+              <div class="state-copy">
+                <h3>{{ searchTerm ? 'No matching files' : 'This folder is empty' }}</h3>
+                @if (searchTerm) {
+                  <p>No files match your search "{{ searchTerm }}".</p>
+                }
+                @if (!searchTerm) {
+                  <p>No files in this collection{{ currentPath ? ' path' : '' }}.</p>
+                }
+              </div>
               <div class="empty-actions">
-                <button mat-icon-button matTooltip="Create File" (click)="openCreateFileDialog()" class="action-btn create-file-btn">
+                <button mat-flat-button color="primary" (click)="openCreateFileDialog()" class="action-btn create-file-btn">
                   <mat-icon>note_add</mat-icon>
+                  <span>Create File</span>
                 </button>
-                <button mat-icon-button matTooltip="Create Folder" (click)="openCreateFolderDialog()" class="action-btn create-folder-btn">
+                <button mat-stroked-button (click)="openCreateFolderDialog()" class="action-btn create-folder-btn">
                   <mat-icon>create_new_folder</mat-icon>
+                  <span>Create Folder</span>
                 </button>
               </div>
             </div>
@@ -137,7 +161,7 @@
               @for (file of filteredFiles; track file) {
                 <div class="file-item"
                      [class.is-directory]="file.is_dir"
-                     [style.background-color]="hoveredFile === file ? 'rgba(63, 81, 181, 0.05)' : ''"
+                     [class.is-hovered]="hoveredFile === file"
                      (mouseenter)="onFileHover(file)"
                      (mouseleave)="onFileLeave()">
                   <div class="file-item-content" (click)="file.is_dir ? navigateToFolder(file) : selectFile(file)">
@@ -183,7 +207,8 @@
             </div>
           }
         </div>
-      </div>
+        </mat-card-content>
+      </mat-card>
     </div>
   }
 </div>

@@ -1,28 +1,40 @@
 
 <div class="home-container">
-  <h1>Welcome to Markdown CMS</h1>
 
   <div class="repositories-section">
     <div class="section-header">
-      <h2>Your Repositories</h2>
-      <button mat-raised-button color="accent" routerLink="/repositories/import">
+      <div class="section-copy">
+        <span class="section-kicker">Repositories</span>
+        <h2>Your Repositories</h2>
+        <p>Import a repository or continue working with an existing collection.</p>
+      </div>
+
+      <button mat-flat-button color="primary" routerLink="/repositories/import" class="add-repository-button">
         <mat-icon>add</mat-icon>
-        Add Repository
+        <span>Add Repository</span>
       </button>
     </div>
 
     @if (loading) {
-      <div class="loading-indicator">
-        <mat-spinner diameter="40"></mat-spinner>
-        <p>Loading repositories...</p>
-      </div>
+      <mat-card class="state-card loading-card" appearance="outlined">
+        <mat-card-content class="state-card-content loading-indicator">
+          <mat-spinner diameter="40"></mat-spinner>
+          <div>
+            <h3>Loading repositories</h3>
+            <p>Fetching your latest repository connections and sync status.</p>
+          </div>
+        </mat-card-content>
+      </mat-card>
     }
 
     @if (error) {
-      <mat-card class="error-message">
-        <mat-card-content>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <mat-icon color="warn">error</mat-icon>
+      <mat-card class="state-card error-message" appearance="outlined">
+        <mat-card-content class="state-card-content">
+          <div class="state-icon state-icon-error">
+            <mat-icon>error</mat-icon>
+          </div>
+          <div class="state-copy">
+            <h3>Could not load repositories</h3>
             <p>{{ error }}</p>
           </div>
         </mat-card-content>
@@ -30,16 +42,21 @@
     }
 
     @if (!loading && !error && repositories.length === 0) {
-      <mat-card class="empty-state">
-        <mat-card-content>
-          <div style="text-align: center; padding: 40px;">
-            <mat-icon style="font-size: 48px; height: 48px; width: 48px; color: #ccc;">folder_open</mat-icon>
-            <p>You don't have any repositories yet.</p>
-            <button mat-raised-button color="primary" routerLink="/repositories/import">
-              <mat-icon>add</mat-icon>
-              Add Your First Repository
-            </button>
+      <mat-card class="state-card empty-state" appearance="outlined">
+        <mat-card-content class="empty-state-content">
+          <div class="empty-state-icon">
+            <mat-icon>folder_open</mat-icon>
           </div>
+
+          <div class="state-copy">
+            <h3>No repositories yet</h3>
+            <p>Import your first repository to start editing content and syncing changes.</p>
+          </div>
+
+          <button mat-flat-button color="primary" routerLink="/repositories/import">
+            <mat-icon>add</mat-icon>
+            <span>Add Your First Repository</span>
+          </button>
         </mat-card-content>
       </mat-card>
     }
@@ -47,9 +64,16 @@
     @if (!loading && repositories.length > 0) {
       <div class="repositories-list">
         @for (repo of repositories; track repo) {
-          <mat-card class="repository-card">
+          <mat-card class="repository-card" appearance="outlined">
             <mat-card-header>
-              <mat-card-title><mat-chip >{{ repo.name }}</mat-chip></mat-card-title>
+              <div class="repo-title-group">
+                <mat-chip class="repo-name-chip">{{ repo.name }}</mat-chip>
+                <span class="repo-branch-chip">
+                  <mat-icon>account_tree</mat-icon>
+                  {{ repo.branch || 'default' }}
+                </span>
+              </div>
+
               <div class="repo-menu">
                 <button mat-icon-button [matMenuTriggerFor]="repoMenu" aria-label="Repository menu">
                   <mat-icon>more_vert</mat-icon>
@@ -70,26 +94,38 @@
                 </mat-menu>
               </div>
             </mat-card-header>
+
             <mat-card-content>
               <div class="repo-details">
-                <p class="repo-status" [ngClass]="getStatusClass(repo)">
-                  Status: {{ repo.syncing ? 'Syncing...' : (repo.status | titlecase) }}
-                  @if (repo.error_msg) {
-                    <span class="error-tooltip">{{ repo.error_msg }}</span>
-                  }
-                </p>
-                <p class="repo-branch">Branch: {{ repo.branch || 'default' }}</p>
-                <p class="repo-date">Last synced: {{ repo.last_sync_at ? (repo.last_sync_at | date:'yyyy-MM-dd HH:mm:ssZ') : 'Never' }}</p>
-                <p class="repo-date">Added: {{ repo.created_at | date }}</p>
-                <!-- Show warning message directly if status is warning -->
+                <div class="repo-status-row">
+                  <p class="repo-status" [ngClass]="getStatusClass(repo)">
+                    <span class="status-label">Status</span>
+                    <span class="status-value">{{ repo.syncing ? 'Syncing...' : (repo.status | titlecase) }}</span>
+                    @if (repo.error_msg) {
+                      <span class="error-tooltip">{{ repo.error_msg }}</span>
+                    }
+                  </p>
+                </div>
+
+                <div class="repo-meta-grid">
+                  <div class="meta-item">
+                    <span class="meta-label">Last synced</span>
+                    <span class="meta-value">{{ repo.last_sync_at ? (repo.last_sync_at | date:'yyyy-MM-dd HH:mm:ssZ') : 'Never' }}</span>
+                  </div>
+                  <div class="meta-item">
+                    <span class="meta-label">Added</span>
+                    <span class="meta-value">{{ repo.created_at | date }}</span>
+                  </div>
+                </div>
+
                 @if (repo.status === 'warning') {
                   <div class="warning-message">
-                    <p><mat-icon>warning</mat-icon> {{ repo.error_msg }}</p>
+                    <p><mat-icon>warning</mat-icon><span>{{ repo.error_msg }}</span></p>
                     <button mat-stroked-button color="warn" (click)="syncRepository(repo)">Retry Sync</button>
                   </div>
                 }
               </div>
-              <!-- Task Status Component -->
+
               @if (activeTasks.has(repo.id.toString())) {
                 <app-task-status
                   [task]="activeTasks.get(repo.id.toString())"
@@ -97,8 +133,11 @@
                 </app-task-status>
               }
             </mat-card-content>
+
             <mat-card-actions class="repo-actions">
-              <a matButton="elevated" [routerLink]="['/repositories', repo.id]" class="view-btn">View Collections</a>
+              <a mat-flat-button color="primary" [routerLink]="['/repositories', repo.id]" class="view-btn">
+                <span>View Collections</span>
+              </a>
             </mat-card-actions>
           </mat-card>
         }

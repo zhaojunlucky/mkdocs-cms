@@ -2,17 +2,23 @@
   <!-- Loading overlay that blocks user interaction -->
   @if (isLoading) {
     <div class="loading-overlay">
-      <div class="spinner-container">
+      <div class="spinner-container surface-panel">
         <mat-spinner diameter="50"></mat-spinner>
-        <p>Loading...</p>
+        <div>
+          <h3>Loading file</h3>
+          <p>Fetching file contents, front matter, and editor configuration.</p>
+        </div>
       </div>
     </div>
   }
   @if (!error && !isLoading && (editor == null || !editorRendered)) {
     <div class="loading-overlay">
-      <div class="spinner-container">
+      <div class="spinner-container surface-panel">
         <mat-spinner diameter="50"></mat-spinner>
-        <p>Loading...</p>
+        <div>
+          <h3>Rendering editor</h3>
+          <p>Preparing the editor so you can resume writing.</p>
+        </div>
       </div>
     </div>
   }
@@ -31,64 +37,71 @@
   }
 
   @if (error) {
-    <mat-card class="error-message">
-      <mat-card-content>
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
-          <mat-icon color="warn">error</mat-icon>
+    <mat-card class="error-message state-card" appearance="outlined">
+      <mat-card-content class="state-card-content">
+        <div class="state-icon state-icon-error">
+          <mat-icon>error</mat-icon>
+        </div>
+        <div class="state-copy">
+          <h3>Could not open file editor</h3>
           <p>{{ error }}</p>
         </div>
-        <button mat-button color="primary" [routerLink]="['/repositories', repositoryId]">
+        <button mat-flat-button color="primary" [routerLink]="['/repositories', repositoryId]">
           <mat-icon>arrow_back</mat-icon>
-          Back to Repository
+          <span>Back to Repository</span>
         </button>
       </mat-card-content>
     </mat-card>
   }
 
   @if (!isLoading && !error) {
-    <div>
-      <!-- File Editor -->
-      <div class="file-editor">
-        <div class="file-editor-header">
-          <div class="file-editor-title">
-            <h2>{{ 'Editing: ' + fileName }}</h2>
-            <div class="breadcrumbs-container" style="display: flex; justify-content: space-between; align-items: center;">
-              <div class="breadcrumbs">
-                <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" matTooltip="Home"><mat-icon>home</mat-icon></a>
-                @for (segment of pathSegments; track segment) {
-                  <span>
-                    <span class="breadcrumb-separator">/</span>
-                    <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" [queryParams]="{path: segment.path}">{{ segment.name }}</a>
-                  </span>
+    <div class="edit-file-shell">
+
+      <mat-card class="header-bar" appearance="outlined">
+        <mat-card-content>
+          <div class="breadcrumbs-container">
+            <div class="breadcrumbs">
+              <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" matTooltip="Home"><mat-icon>home</mat-icon></a>
+              @for (segment of pathSegments; track segment) {
+                <span>
+                  <span class="breadcrumb-separator">/</span>
+                  <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" [queryParams]="{path: segment.path}">{{ segment.name }}</a>
+                </span>
+              }
+              @if (filePath) {
+                <span>
+                  <span class="breadcrumb-separator">/</span>
+                  <span class="active">{{ fileName }}</span>
+                </span>
+              }
+            </div>
+            <div class="action-buttons">
+              <button mat-flat-button color="primary" (click)="saveFile()" [disabled]="savingFile || !changed">
+                @if (savingFile) {
+                  <mat-spinner diameter="16" class="button-spinner"></mat-spinner>
                 }
-                @if (filePath) {
-                  <span>
-                    <span class="breadcrumb-separator">/</span>
-                    <span class="active">{{ fileName }}</span>
-                  </span>
+                @if (!savingFile) {
+                  <mat-icon>save</mat-icon>
                 }
-              </div>
-              <div style="display: flex; justify-content: flex-end; gap: 8px;">
-                <button mat-raised-button color="primary" (click)="saveFile()" [disabled]="savingFile || !changed">
-                  @if (savingFile) {
-                    <mat-spinner diameter="16" style="margin-right: 8px;"></mat-spinner>
-                  }
-                  @if (!savingFile) {
-                    <mat-icon>save</mat-icon>
-                  }
-                  {{ savingFile ? 'Saving...' : 'Save' }}
-                </button>
-                <button mat-button (click)="cancelEditing()" [disabled]="savingFile">Cancel</button>
-              </div>
+                {{ savingFile ? 'Saving...' : 'Save' }}
+              </button>
+              <button mat-stroked-button (click)="cancelEditing()" [disabled]="savingFile">Cancel</button>
             </div>
           </div>
-        </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- File Editor -->
+      <div class="file-editor surface-panel">
         <!-- File Error Message -->
         @if (fileError) {
-          <mat-card class="file-error-message">
-            <mat-card-content>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <mat-icon color="warn">error</mat-icon>
+          <mat-card class="file-error-message state-card" appearance="outlined">
+            <mat-card-content class="state-card-content compact-state">
+              <div class="state-icon state-icon-error compact-icon">
+                <mat-icon>error</mat-icon>
+              </div>
+              <div class="state-copy">
+                <h3>Editor warning</h3>
                 <p>{{ fileError }}</p>
               </div>
             </mat-card-content>
@@ -106,7 +119,7 @@
             </app-front-matter-editor>
           }
           <!-- Markdown Editor -->
-          <mat-card class="markdown-editor-wrapper">
+          <mat-card class="markdown-editor-wrapper" appearance="outlined">
             <mat-card-header>
               <mat-card-title>Content</mat-card-title>
             </mat-card-header>
