@@ -28,3 +28,42 @@
     }
   }
 }
+
+@media (max-width: 767px) {
+  .vditor-container {
+    ::ng-deep .vditor-toolbar {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      min-height: 40px;
+      padding: 2px 4px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      white-space: nowrap;
+
+      .vditor-toolbar__item,
+      .vditor-tooltipped {
+        flex: 0 0 auto;
+        width: 30px;
+        height: 30px;
+        padding: 2px;
+        font-size: 16px;
+      }
+
+      .vditor-toolbar__divider {
+        margin: 0 3px;
+      }
+
+      .vditor-counter {
+        flex: 0 0 auto;
+        margin-left: 4px;
+      }
+    }
+
+    ::ng-deep .vditor-reset {
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+  }
+}

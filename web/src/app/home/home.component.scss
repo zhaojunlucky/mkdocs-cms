@@ -201,6 +201,8 @@
     font-weight: 600;
     color: var(--mat-sys-on-secondary-container);
     background: var(--mat-sys-secondary-container);
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .repo-branch-chip {
@@ -213,6 +215,10 @@
     background: color-mix(in srgb, var(--mat-sys-tertiary) 10%, var(--mat-sys-surface));
     color: var(--mat-sys-on-surface-variant);
     font-size: 0.88rem;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 
     mat-icon {
       width: 16px;
@@ -255,6 +261,7 @@
     .meta-value {
       font-weight: 600;
       line-height: 1.4;
+      overflow-wrap: anywhere;
     }
 
     .repo-date {
@@ -381,6 +388,11 @@
     flex-direction: column;
     align-items: flex-start;
   }
+
+  .add-repository-button {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 @media (max-width: 767px) {
@@ -393,8 +405,26 @@
     gap: 20px;
   }
 
+  .section-copy {
+    h2 {
+      font-size: 1.6rem;
+    }
+  }
+
+  .repositories-list {
+    grid-template-columns: 1fr;
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+
   .repo-details .repo-meta-grid {
     grid-template-columns: 1fr;
+  }
+
+  .repo-details .repo-status {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .state-card-content,
@@ -407,12 +437,17 @@
   .repository-card {
     mat-card-header {
       padding: 16px 16px 8px;
+      gap: 8px;
     }
 
     mat-card-content,
     mat-card-actions {
       padding-left: 16px;
       padding-right: 16px;
+    }
+
+    .repo-menu {
+      margin-left: 0;
     }
   }
 }

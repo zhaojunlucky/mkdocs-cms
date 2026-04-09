@@ -1,7 +1,25 @@
+:host {
+  display: block;
+  width: 100%;
+  --edit-navbar-height: 56px;
+  --edit-footer-height: 84px;
+  --edit-vertical-offset-top: 8px;
+  --edit-vertical-offset-bottom: 8px;
+  --edit-header-bar-height: 92px;
+  --edit-layout-height: calc(
+    100dvh - var(--edit-navbar-height) - var(--edit-footer-height) -
+      var(--edit-vertical-offset-top) - var(--edit-vertical-offset-bottom)
+  );
+  --edit-markdown-editor-height: calc(var(--edit-layout-height) - var(--edit-header-bar-height) - 18px);
+
+  height: var(--edit-layout-height);
+}
+
 .edit-file-container {
   display: flex;
   flex-direction: column;
   min-height: 100%;
+  height: var(--edit-layout-height);
   position: relative;
   max-width: 1320px;
   margin: 0 auto;
@@ -14,6 +32,8 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+  height: 100%;
+  min-height: 0;
 }
 
 .surface-panel {
@@ -57,6 +77,7 @@
 
 .header-bar {
   border-radius: 24px;
+  flex: 0 0 auto;
 
   mat-card-content {
     padding: 16px 20px;
@@ -74,9 +95,12 @@
 .breadcrumbs {
   display: flex;
   align-items: center;
+  align-content: flex-start;
   flex-wrap: wrap;
   gap: 6px;
   font-size: 14px;
+  flex: 1 1 300px;
+  min-width: 0;
 
   a {
     cursor: pointer;
@@ -88,6 +112,11 @@
     border-radius: 999px;
     color: var(--mat-sys-on-surface);
     background: color-mix(in srgb, var(--mat-sys-primary) 8%, transparent);
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
@@ -101,6 +130,10 @@
   padding: 6px 10px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--mat-sys-tertiary) 10%, transparent);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .action-buttons {
@@ -124,6 +157,9 @@
   display: flex;
   flex-direction: column;
   border-radius: 28px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .file-error-message {
@@ -135,17 +171,29 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .markdown-editor-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  height: var(--edit-markdown-editor-height);
+  max-height: var(--edit-markdown-editor-height);
   margin-bottom: 5px;
   border-radius: 24px;
+  overflow: hidden;
 
   mat-card-header {
+    flex: 0 0 auto;
     padding: 20px 20px 0;
   }
 
   mat-card-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
     padding: 16px 20px 20px;
   }
 }
@@ -239,8 +287,21 @@
 }
 
 @media (max-width: 767px) {
+  :host {
+    --edit-navbar-height: 56px;
+    --edit-footer-height: 110px;
+    --edit-vertical-offset-top: 0px;
+    --edit-vertical-offset-bottom: 0px;
+    --edit-header-bar-height: 128px;
+  }
+
   .edit-file-container {
     padding: 16px;
+  }
+
+  .breadcrumbs-container {
+    justify-content: flex-start;
+    gap: 12px;
   }
 
   .header-bar mat-card-content,
@@ -255,6 +316,20 @@
   .breadcrumbs-container {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .breadcrumbs,
+  .action-buttons {
+    width: 100%;
+  }
+
+  .breadcrumbs {
+    flex: 0 1 auto;
+  }
+
+  .action-buttons button {
+    flex: 1 1 0;
+    min-width: 0;
   }
 
   .floating-error-container {

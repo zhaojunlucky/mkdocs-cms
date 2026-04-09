@@ -70,13 +70,12 @@
             <h2>Files</h2>
           </div>
           <div class="file-actions">
-            <button mat-flat-button color="primary" (click)="openCreateFileDialog()" class="action-btn create-file-btn">
+            <button mat-icon-button color="primary" (click)="openCreateFileDialog()" matTooltip="Create File">
               <mat-icon>note_add</mat-icon>
-              <span>Create File</span>
+              
             </button>
-            <button mat-stroked-button (click)="openCreateFolderDialog()" class="action-btn create-folder-btn">
+            <button mat-icon-button (click)="openCreateFolderDialog()" matTooltip="Create Folder">
               <mat-icon>create_new_folder</mat-icon>
-              <span>Create Folder</span>
             </button>
           </div>
         </div>
@@ -186,7 +185,7 @@
                   </div>
                   <!-- File Actions Menu (only for non-directories) -->
                   @if (!file.is_dir) {
-                    <div class="file-actions" (click)="$event.stopPropagation()">
+                    <div class="file-item-actions" (click)="$event.stopPropagation()">
                       <button mat-icon-button [matMenuTriggerFor]="fileMenu" aria-label="File actions">
                         <mat-icon>more_vert</mat-icon>
                       </button>

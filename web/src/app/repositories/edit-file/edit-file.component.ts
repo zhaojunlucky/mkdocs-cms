@@ -363,16 +363,18 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
   }
 
   calculateEditorHeight(): number {
-    // Calculate available height: viewport height minus nav (64px), footer (~53px),
-    // file editor header (~80px), front matter section (~100px), and padding/margins (~100px)
-    const navHeight = 64;
-    const footerHeight = 53;
-    const paddingMargins = 100;
+    const isMobile = window.innerWidth <= 767;
+    const navHeight = 56;
+    const footerHeight = isMobile ? 110 : 84;
+    const headerHeight = (document.querySelector('.header-bar') as HTMLElement | null)?.offsetHeight ?? (isMobile ? 128 : 92);
+    const toolbarHeight = (document.querySelector('.vditor-toolbar') as HTMLElement | null)?.offsetHeight ?? 44;
+    // Extra accounts for markdown card chrome (header title, card padding)
+    const verticalSpacing = isMobile ? 24 : 72;
 
-    const availableHeight = window.innerHeight - navHeight - footerHeight - paddingMargins;
+    // Editor content height = viewport - navbar - footer - header - vditor toolbar
+    const availableHeight = window.innerHeight - navHeight - footerHeight - headerHeight - toolbarHeight - verticalSpacing;
 
-    // Ensure minimum height of 300px
-    return Math.max(300, availableHeight);
+    return Math.max(240, availableHeight);
   }
 
   updateEditorHeight(): void {

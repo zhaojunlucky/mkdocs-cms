@@ -11,6 +11,7 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+  min-height: calc(100vh - 120px);
 }
 
 .surface-panel {
@@ -62,6 +63,9 @@
 
 .collection-header-bar {
   border-radius: 24px;
+  position: sticky;
+  top: 12px;
+  z-index: 20;
 
   mat-card-content {
     padding: 16px 20px;
@@ -79,9 +83,12 @@
 .breadcrumbs {
   display: flex;
   align-items: center;
+  align-content: flex-start;
   flex-wrap: wrap;
   gap: 6px;
   font-size: 14px;
+  flex: 1 1 300px;
+  min-width: 0;
 
   a {
     display: inline-flex;
@@ -92,6 +99,11 @@
     text-decoration: none;
     color: var(--mat-sys-on-surface);
     background: color-mix(in srgb, var(--mat-sys-primary) 8%, transparent);
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
@@ -117,7 +129,8 @@
     padding: 8px 0;
     min-height: 36px;
     height: 36px;
-    width: 200px !important;
+    width: auto !important;
+    min-width: 0;
   }
 
   ::ng-deep .mat-mdc-text-field-wrapper {
@@ -149,9 +162,17 @@
 
 .file-browser {
   border-radius: 28px;
+  flex: 1;
+  min-height: 0;
+  max-height: calc(100dvh - 240px);
+  overflow: hidden;
 
   mat-card-content {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
     padding: 20px;
+    min-height: 0;
   }
 }
 
@@ -173,6 +194,11 @@
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.file-item-actions {
+  margin-left: auto;
+  flex: 0 0 auto;
 }
 
 .action-btn {
@@ -220,6 +246,10 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .empty-state {
@@ -307,6 +337,7 @@
 
 .file-name {
   font-weight: 500;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -392,16 +423,45 @@ mat-icon {
     padding: 16px;
   }
 
+  .collection-shell {
+    min-height: calc(100vh - 96px);
+  }
+
+  .collection-header-bar {
+    top: 8px;
+  }
+
+  .file-browser {
+    max-height: calc(100vh - 190px);
+  }
+
+  .breadcrumbs-container {
+    justify-content: flex-start;
+    gap: 12px;
+  }
+
   .file-browser mat-card-content,
   .collection-header-bar mat-card-content {
     padding: 16px;
   }
 
   .breadcrumbs-container,
-  .file-browser-header,
   .state-card-content {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .file-browser-header {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+
+    h2 {
+      margin-top: 2px;
+      font-size: 1.3rem;
+    }
   }
 
   .search-box {
@@ -409,16 +469,49 @@ mat-icon {
     margin-left: 0;
   }
 
+  .breadcrumbs {
+    flex: 0 1 auto;
+    width: 100%;
+  }
+
+  .search-field {
+    ::ng-deep .mat-mdc-form-field-infix {
+      width: 100% !important;
+    }
+  }
+
   .file-item,
   .file-item .file-item-content {
     align-items: flex-start;
   }
 
-  .file-item {
-    flex-direction: column;
+  .file-item .file-item-content {
+    flex: 1;
+    min-width: 0;
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .file-item-actions {
+    margin-left: auto;
+    align-self: flex-start;
   }
 
   .file-meta {
     margin-left: 0;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .file-actions {
+    width: auto;
+    margin-left: auto;
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .action-btn {
+    width: 100%;
+    justify-content: center;
   }
 }
