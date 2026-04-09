@@ -75,10 +75,13 @@
 
 .breadcrumbs {
   display: flex;
+  align-content: flex-start;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   font-size: 14px;
+  flex: 1 1 300px;
+  min-width: 0;
 
   a {
     text-decoration: none;
@@ -89,6 +92,11 @@
     border-radius: 999px;
     color: var(--mat-sys-on-surface);
     background: color-mix(in srgb, var(--mat-sys-primary) 8%, transparent);
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
@@ -109,6 +117,7 @@
   flex-direction: column;
   gap: 8px;
   margin-bottom: 5px;
+  overflow: hidden;
 
   mat-card-header {
     padding: 20px 20px 0;
@@ -215,6 +224,11 @@
     padding: 16px;
   }
 
+  .breadcrumbs-container {
+    justify-content: flex-start;
+    gap: 12px;
+  }
+
   .header-bar mat-card-content,
   .markdown-editor-wrapper mat-card-header,
   .markdown-editor-wrapper mat-card-content {
@@ -230,6 +244,20 @@
   .state-card-content,
   .breadcrumbs-container {
     flex-direction: column;
+  }
+
+  .breadcrumbs,
+  .action-buttons {
+    width: 100%;
+  }
+
+  .breadcrumbs {
+    flex: 0 1 auto;
+  }
+
+  .action-buttons button {
+    flex: 1 1 0;
+    min-width: 0;
   }
 
   .floating-error-container {

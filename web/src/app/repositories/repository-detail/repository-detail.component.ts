@@ -42,6 +42,7 @@ export class RepositoryDetailComponent implements OnInit, AfterViewInit, OnDestr
   showBackToTop = false;
   showScrolltoBottom = false;
   hoveredCollection: string | null = null;
+  sidenavOpen = false;
   private windowScrollListener: any;
 
   constructor(
@@ -204,6 +205,15 @@ export class RepositoryDetailComponent implements OnInit, AfterViewInit, OnDestr
 
   selectCollection(collection: Collection) {
     this.router.navigate(['/repositories', this.repository?.id, 'collection', collection.name]);
+    this.sidenavOpen = false;
+  }
+
+  toggleSidenav(): void {
+    this.sidenavOpen = !this.sidenavOpen;
+  }
+
+  closeSidenav(): void {
+    this.sidenavOpen = false;
   }
 
   onCollectionHover(collectionName: string) {
