@@ -10,7 +10,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
+	"github.com/zhaojunlucky/mkdocs-cms/env"
 )
+
+const metricsPath = "/metrics"
+const apiMetricsPath = "/api/metrics"
 
 type MetricsService struct {
 	BaseService
@@ -31,27 +35,42 @@ func (m *MetricsService) initializeMetrics() {
 
 	m.requestDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "mkdocs_cms_http_requests_seconds",
-			Help:    "Duration of HTTP server requests in seconds.",
-			Buckets: []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10},
+			Namespace: "go_gin",
+			Subsystem: "http_server",
+			Name:      "requests_seconds",
+			Help:      "Duration of HTTP server requests in seconds.",
+			Buckets:   []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10},
 		},
 		[]string{"method", "route", "status"},
 	)
 
 	m.requestTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "mkdocs_cms_http_requests_total",
-			Help: "Total number of HTTP server requests.",
+			Namespace: "go_gin",
+			Subsystem: "http_server",
+			Name:      "requests_total",
+			Help:      "Total number of HTTP server requests.",
 		},
 		[]string{"method", "route", "status"},
 	)
 
 	m.inFlight = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "mkdocs_cms_http_active_requests",
-			Help: "Current number of in-flight HTTP server requests.",
+			Namespace: "go_gin",
+			Subsystem: "http_server",
+			Name:      "active_requests",
+			Help:      "Current number of in-flight HTTP server requests.",
 		},
 		[]string{"method", "route"},
+	)
+
+	appInfo := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: "go_gin",
+			Name:      "app_info",
+			Help:      "Static information about the application instance.",
+		},
+		[]string{"env"},
 	)
 
 	m.registry.MustRegister(
@@ -61,25 +80,59 @@ func (m *MetricsService) initializeMetrics() {
 		m.requestDuration,
 		m.requestTotal,
 		m.inFlight,
+		appInfo,
 	)
+	appInfo.WithLabelValues(m.envLabel()).Set(1)
 }
 
 func (m *MetricsService) Handler() http.Handler {
 	return promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{})
 }
 
-func (m *MetricsService) IsMetricsPath(path string) bool {
-	return path == "/metrics" || path == "/api/metrics"
+func (m *MetricsService) Middleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.Request != nil && c.Request.URL != nil && isMetricsPath(c.Request.URL.Path) {
+			c.Next()
+			return
+		}
+
+		method := c.Request.Method
+		route := initialMetricsRouteLabel(c)
+		m.inFlight.WithLabelValues(method, route).Inc()
+		start := time.Now()
+
+		defer func() {
+			m.inFlight.WithLabelValues(method, route).Dec()
+
+			status := strconv.Itoa(c.Writer.Status())
+			finalRoute := finalMetricsRouteLabel(c, route)
+			m.requestTotal.WithLabelValues(method, finalRoute, status).Inc()
+			m.requestDuration.WithLabelValues(method, finalRoute, status).Observe(time.Since(start).Seconds())
+		}()
+
+		c.Next()
+	}
 }
 
-func (m *MetricsService) InitialRouteLabel(c *gin.Context) string {
+func (m *MetricsService) envLabel() string {
+	if env.IsProduction {
+		return "production"
+	}
+	return "development"
+}
+
+func isMetricsPath(path string) bool {
+	return path == metricsPath || path == apiMetricsPath
+}
+
+func initialMetricsRouteLabel(c *gin.Context) string {
 	if route := c.FullPath(); route != "" {
 		return route
 	}
 	return "UNKNOWN"
 }
 
-func (m *MetricsService) FinalRouteLabel(c *gin.Context, fallback string) string {
+func finalMetricsRouteLabel(c *gin.Context, fallback string) string {
 	if route := c.FullPath(); route != "" {
 		return route
 	}
@@ -87,24 +140,4 @@ func (m *MetricsService) FinalRouteLabel(c *gin.Context, fallback string) string
 		return "NOT_FOUND"
 	}
 	return fallback
-}
-
-func (m *MetricsService) IncInFlight(method, route string) {
-	m.inFlight.WithLabelValues(method, route).Inc()
-}
-
-func (m *MetricsService) DecInFlight(method, route string) {
-	m.inFlight.WithLabelValues(method, route).Dec()
-}
-
-func (m *MetricsService) ObserveRequest(method, route string, statusCode int, duration time.Duration) {
-	status := strconv.Itoa(statusCode)
-	m.requestTotal.WithLabelValues(method, route, status).Inc()
-	m.requestDuration.WithLabelValues(method, route, status).Observe(duration.Seconds())
-}
-
-func (m *MetricsService) ObserveGinRequest(c *gin.Context, startedAt time.Time, method, route string) {
-	finalRoute := m.FinalRouteLabel(c, route)
-	m.DecInFlight(method, route)
-	m.ObserveRequest(method, finalRoute, c.Writer.Status(), time.Since(startedAt))
 }
