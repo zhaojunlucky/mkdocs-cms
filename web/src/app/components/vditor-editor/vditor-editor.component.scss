@@ -1,10 +1,10 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
 .vditor-container {
   width: 100%;
-  
-  :host {
-    display: block;
-    width: 100%;
-  }
   
   // Ensure vditor styles are properly applied
   ::ng-deep .vditor {
@@ -38,7 +38,7 @@
       min-height: 40px;
       padding: 2px 4px;
       overflow-x: auto;
-      overflow-y: hidden;
+      overflow-y: visible;
       -webkit-overflow-scrolling: touch;
       white-space: nowrap;
 
