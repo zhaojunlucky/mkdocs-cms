@@ -71,3 +71,22 @@ pre {
 
 /* Vditor styles - imported last to prevent overrides */
 @import 'vditor/dist/index.css';
+
+/* Force Vditor north tooltips to render below (south) to avoid clipping by overflow ancestors */
+.vditor-tooltipped__n::after,
+.vditor-tooltipped__ne::after,
+.vditor-tooltipped__nw::after {
+  bottom: auto !important;
+  top: 100% !important;
+  margin-top: 5px !important;
+  margin-bottom: 0 !important;
+}
+.vditor-tooltipped__n::before,
+.vditor-tooltipped__ne::before,
+.vditor-tooltipped__nw::before {
+  top: auto !important;
+  bottom: -5px !important;
+  margin-right: -5px !important;
+  border-top-color: transparent !important;
+  border-bottom-color: #3b3e43 !important;
+}
