@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 
@@ -28,6 +28,7 @@ import {PageTitleService} from '../../services/page.title.service';
     MatProgressSpinnerModule
   ],
   templateUrl: './edit-repository.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./edit-repository.component.scss']
 })
 export class EditRepositoryComponent implements OnInit {

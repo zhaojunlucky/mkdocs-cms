@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 
 import { HttpClient } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
@@ -54,6 +54,7 @@ interface GithubAppInfo {
   ],
   templateUrl: './repository-import.component.html',
   styleUrls: ['./repository-import.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   providers: [AuthService]
 })
 export class RepositoryImportComponent implements OnInit {

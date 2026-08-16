@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 
 import {ActivatedRoute, NavigationEnd, Router, RouterLink, RouterOutlet} from '@angular/router';
 import { MatTabsModule } from '@angular/material/tabs';
@@ -32,6 +32,7 @@ import {filter, Subscription} from 'rxjs';
     MatListModule
   ],
   templateUrl: './repository-detail.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./repository-detail.component.scss']
 })
 export class RepositoryDetailComponent implements OnInit, AfterViewInit, OnDestroy {

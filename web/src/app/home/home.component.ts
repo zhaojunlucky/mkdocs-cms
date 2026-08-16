@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { RepositoryService, Repository, SyncResponse, AsyncTask } from '../services/repository.service';
@@ -21,6 +21,7 @@ import {PageTitleService} from '../services/page.title.service';
   standalone: true,
   imports: [CommonModule, RouterModule, ComponentsModule, MatButtonModule, MatIconModule, MatMenuModule, MatCardModule, MatChipsModule, MatProgressSpinnerModule],
   templateUrl: './home.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./home.component.scss']
 })
 export class HomeComponent implements OnInit {

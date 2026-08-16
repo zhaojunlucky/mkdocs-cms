@@ -1,4 +1,4 @@
-import {Component, HostListener, NgZone, OnInit} from '@angular/core';
+import {Component, HostListener, NgZone, OnInit, ChangeDetectionStrategy} from '@angular/core';
 
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -42,6 +42,7 @@ import {ArrayResponse} from '../../shared/core/response';
     MatTooltip
   ],
   templateUrl: './create-file.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./create-file.component.scss']
 })
 export class CreateFileComponent implements OnInit, CanComponentDeactivate {

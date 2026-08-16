@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { AsyncTask, RepositoryService, Task } from '../../services/repository.service';
 import { interval, Subscription } from 'rxjs';
 import { switchMap, takeWhile } from 'rxjs/operators';
@@ -22,6 +22,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
     MatProgressSpinnerModule,
     MatProgressBarModule
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./task-status.component.scss']
 })
 export class TaskStatusComponent implements OnInit, OnDestroy {
