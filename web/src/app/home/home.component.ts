@@ -118,7 +118,11 @@ export class HomeComponent implements OnInit {
           // Task is done, stop polling and reload repositories
           subscription.unsubscribe();
           repo.syncing = false;
-          this.activeTasks.delete(repo.id.toString());
+          if (task.status === 'completed') {
+            this.activeTasks.delete(repo.id.toString());
+          } else {
+            this.activeTasks.set(repo.id.toString(), task);
+          }
           this.loadRepositories();
         } else {
           this.activeTasks.set(repo.id.toString(), task);

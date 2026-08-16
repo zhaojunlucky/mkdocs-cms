@@ -1,5 +1,6 @@
 :host {
   display: block;
+  flex: 0 0 auto;
 }
 
 footer {
@@ -7,15 +8,15 @@ footer {
 }
 
 .docs-footer {
-  // padding: 12px;
-  font-size: 12px;
+  font: var(--mat-sys-body-small);
 }
 
 .docs-footer-list {
   align-items: center;
   display: flex;
-  flex-flow: row wrap;
-  padding: 8px;
+  gap: 12px;
+  min-height: 28px;
+  padding: 2px 12px;
 }
 
 .docs-footer-logo {
@@ -24,37 +25,39 @@ footer {
   align-items: center;
 
   a {
-    display: inline-block;
-    line-height: 50px;
-    margin: 0 16px;
-    vertical-align: bottom;
-    font-size: 16px;
+    color: var(--mat-sys-on-surface);
+    font: var(--mat-sys-label-medium);
   }
 }
 
+.footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
 .footer-icon {
-  width: 50px;
-  height: 50px;
-  font-size: 50px;
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
 }
 
 .docs-footer-copyright {
   display: flex;
   flex: 1;
   justify-content: flex-end;
-  flex-direction: column;
-  min-width: 225px;
-  margin-top: 16px;
+  min-width: 0;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
 
   > div {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    gap: 12px;
     align-self: flex-end;
-    text-align: center;
-  }
-
-  @media (min-width: 885px) {
-    margin-top: 0;
+    min-width: 0;
+    white-space: nowrap;
   }
 }
 
@@ -70,6 +73,13 @@ a {
 
 @media screen and (max-width: 884px) {
   .docs-footer-list {
-    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .docs-footer-copyright > div {
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    white-space: normal;
   }
 }

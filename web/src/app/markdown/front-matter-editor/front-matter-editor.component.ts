@@ -11,7 +11,6 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import {MatChipsModule } from '@angular/material/chips';
 import { COMMA, ENTER } from '@angular/cdk/keycodes';
 import { CollectionFieldDefinition } from '../../services/repository.service';
-import { MatCard, MatCardContent, MatCardHeader, MatCardSubtitle, MatCardTitle } from '@angular/material/card';
 import { MatChipInputEvent } from '@angular/material/chips';
 
 @Component({
@@ -28,11 +27,6 @@ import { MatChipInputEvent } from '@angular/material/chips';
     MatDatepickerModule,
     MatNativeDateModule,
     MatSlideToggleModule,
-    MatCardContent,
-    MatCardSubtitle,
-    MatCardTitle,
-    MatCard,
-    MatCardHeader,
     MatChipsModule
 ]
 })

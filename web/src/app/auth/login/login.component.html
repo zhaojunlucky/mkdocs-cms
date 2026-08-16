@@ -1,7 +1,7 @@
 
 <div class="login-container">
   <mat-card class="login-card" appearance="outlined">
-    <mat-card-header class="login-header">
+    <mat-card-header>
       <div mat-card-avatar class="login-avatar">
         <mat-icon>description</mat-icon>
       </div>
@@ -18,25 +18,13 @@
       }
 
       @if (!loading) {
-        <div class="login-message">
-          <span class="login-kicker">Welcome back</span>
-          <p>Choose your Git provider to continue.</p>
-        </div>
-
-        <div class="login-buttons">
-          <button mat-flat-button color="primary" (click)="loginWithGithub()" class="login-button github-button">
-            <mat-icon>code</mat-icon>
+        <div class="login-actions">
+          <button mat-flat-button color="primary" (click)="loginWithGithub()" class="login-button">
+            <mat-icon>login</mat-icon>
             <span>Continue with GitHub</span>
           </button>
         </div>
       }
     </mat-card-content>
-
-    <mat-card-footer class="login-footer">
-      <div class="login-footer-content">
-        <mat-icon>shield</mat-icon>
-        <span>Authentication is handled securely by your provider.</span>
-      </div>
-    </mat-card-footer>
   </mat-card>
 </div>

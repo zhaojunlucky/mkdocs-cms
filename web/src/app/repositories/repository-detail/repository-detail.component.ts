@@ -1,6 +1,6 @@
-import { Component, OnInit, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
 
-import {ActivatedRoute, Router, RouterLink, RouterOutlet} from '@angular/router';
+import {ActivatedRoute, NavigationEnd, Router, RouterLink, RouterOutlet} from '@angular/router';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -14,6 +14,7 @@ import {RouteParameterService} from '../../services/routeparameter.service';
 import {MatChipsModule} from '@angular/material/chips';
 import {StrUtils} from '../../shared/utils/str.utils';
 import {PageTitleService} from '../../services/page.title.service';
+import {filter, Subscription} from 'rxjs';
 
 @Component({
   selector: 'app-repository-detail',
@@ -43,7 +44,9 @@ export class RepositoryDetailComponent implements OnInit, AfterViewInit, OnDestr
   showScrolltoBottom = false;
   hoveredCollection: string | null = null;
   sidenavOpen = false;
+  hideCollectionsSidebar = false;
   private windowScrollListener: any;
+  private routerEventsSub?: Subscription;
 
   constructor(
     private route: ActivatedRoute,
@@ -72,6 +75,10 @@ export class RepositoryDetailComponent implements OnInit, AfterViewInit, OnDestr
     this.routeParameterService.childId$.subscribe(childId => {
       this.selectedColName = childId;
     });
+    this.updateRouteChrome();
+    this.routerEventsSub = this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe(() => this.updateRouteChrome());
   }
 
   ngAfterViewInit(): void {
@@ -88,6 +95,7 @@ export class RepositoryDetailComponent implements OnInit, AfterViewInit, OnDestr
     if (this.windowScrollListener) {
       window.removeEventListener('scroll', this.windowScrollListener);
     }
+    this.routerEventsSub?.unsubscribe();
   }
 
   handleScroll(event: Event): void {
@@ -222,5 +230,14 @@ export class RepositoryDetailComponent implements OnInit, AfterViewInit, OnDestr
 
   onCollectionLeave() {
     this.hoveredCollection = null;
+  }
+
+  private updateRouteChrome(): void {
+    this.hideCollectionsSidebar = this.route.firstChild?.snapshot.data['hideCollectionsSidebar'] === true;
+    if (this.hideCollectionsSidebar) {
+      this.sidenavOpen = false;
+      this.showBackToTop = false;
+      this.showScrolltoBottom = false;
+    }
   }
 }

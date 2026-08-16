@@ -1,30 +1,23 @@
-<!-- Create File Component -->
 <div class="create-file-container">
-  <!-- Loading overlay that blocks user interaction -->
   @if (isLoading) {
     <div class="loading-overlay">
-      <div class="spinner-container surface-panel">
-        <mat-spinner diameter="50"></mat-spinner>
-        <div>
-          <h3>Preparing editor</h3>
-          <p>Loading collection settings and editor resources.</p>
-        </div>
+      <mat-spinner diameter="40"></mat-spinner>
+      <div>
+        <h3>Preparing editor</h3>
+        <p>Loading collection settings.</p>
       </div>
     </div>
   }
   @if (!error && !isLoading && (editor == null || !editorRendered)) {
     <div class="loading-overlay">
-      <div class="spinner-container surface-panel">
-        <mat-spinner diameter="50"></mat-spinner>
-        <div>
-          <h3>Rendering editor</h3>
-          <p>Finalizing the writing surface for your new file.</p>
-        </div>
+      <mat-spinner diameter="40"></mat-spinner>
+      <div>
+        <h3>Rendering editor</h3>
+        <p>Preparing the writing surface.</p>
       </div>
     </div>
   }
 
-  <!-- Floating error message that appears when there's a file error -->
   @if (fileError) {
     <div class="floating-error-container">
       <div class="floating-error">
@@ -38,11 +31,9 @@
   }
 
   @if (error) {
-    <mat-card class="error-message state-card" appearance="outlined">
+    <mat-card class="state-card" appearance="outlined">
       <mat-card-content class="state-card-content">
-        <div class="state-icon state-icon-error">
-          <mat-icon>error</mat-icon>
-        </div>
+        <mat-icon class="state-icon-error">error</mat-icon>
         <div class="state-copy">
           <h3>Could not open file creation</h3>
           <p>{{ error }}</p>
@@ -57,50 +48,64 @@
 
   @if (!isLoading && !error && repositoryId && collection) {
     <div class="create-file-shell">
-
-      <mat-card class="header-bar" appearance="outlined">
-        <mat-card-content>
-          <div class="breadcrumbs-container">
-            <div class="breadcrumbs">
-              <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" matTooltip="Home"><mat-icon>home</mat-icon></a>
+      <header class="editor-toolbar">
+        <div class="editor-nav">
+          <a class="back-link" [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" [queryParams]="{path: currentPath}" matTooltip="Back to collection">
+            <mat-icon>arrow_back</mat-icon>
+          </a>
+          <div class="editor-title">
+            <nav class="breadcrumbs" aria-label="Breadcrumb">
+              <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]">
+                {{ collectionName }}
+              </a>
               @for (segment of pathSegments; track segment) {
-                <span>
-                  <span class="breadcrumb-separator">/</span>
-                  <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" [queryParams]="{path: segment.path}">{{ segment.name }}</a>
-                </span>
+                <span class="breadcrumb-separator">/</span>
+                <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" [queryParams]="{path: segment.path}">
+                  {{ segment.name }}
+                </a>
               }
-            </div>
-            <!-- Action Buttons -->
-            <div class="action-buttons">
-              <button mat-flat-button color="primary" (click)="createFile()" [disabled]="isCreating || !fileName.trim()">
-                @if (isCreating) {
-                  <mat-spinner diameter="16" class="button-spinner"></mat-spinner>
-                }
-                @if (!isCreating) {
-                  <mat-icon>add</mat-icon>
-                }
-                {{ isCreating ? 'Creating...' : 'Create File' }}
-              </button>
-              <button mat-stroked-button (click)="cancel()" [disabled]="isCreating">Cancel</button>
-            </div>
+            </nav>
+            <h1>New file</h1>
           </div>
-        </mat-card-content>
-      </mat-card>
+        </div>
 
-      <!-- File Editor -->
-      <div class="file-editor surface-panel">
-        <div class="file-editor-content">
-          <mat-card class="surface-panel" appearance="outlined">
-            <mat-card-content>
-              <span class="section-kicker">Document</span>
+        <div class="editor-actions">
+          <span class="save-state">Draft</span>
+          <button mat-button (click)="cancel()" [disabled]="isCreating">Cancel</button>
+          <button mat-flat-button color="primary" (click)="createFile()" [disabled]="isCreating || !fileName.trim()">
+            @if (isCreating) {
+              <mat-spinner diameter="16" class="button-spinner"></mat-spinner>
+            }
+            @if (!isCreating) {
+              <mat-icon>add</mat-icon>
+            }
+            {{ isCreating ? 'Creating...' : 'Create File' }}
+          </button>
+        </div>
+      </header>
+
+      <div class="editor-workspace">
+        @if (fileError) {
+          <div class="editor-warning">
+            <mat-icon>error</mat-icon>
+            <span>{{ fileError }}</span>
+          </div>
+        }
+
+        <div class="editor-layout">
+          <aside class="metadata-pane">
+            <section class="document-panel">
+              <header>
+                <h2>Document</h2>
+                <p>Name and location for this markdown file.</p>
+              </header>
               <mat-form-field appearance="outline" class="full-width">
-                <mat-label>File Name</mat-label>
-                <input matInput [(ngModel)]="fileName" placeholder="Enter file name (e.g. my-document.md)" [disabled]="isCreating">
-                <mat-hint>Include the file extension (e.g., .md for Markdown files)</mat-hint>
+                <mat-label>File name</mat-label>
+                <input matInput [(ngModel)]="fileName" placeholder="my-document.md" [disabled]="isCreating">
+                <mat-hint>.md will be added if omitted</mat-hint>
               </mat-form-field>
-            </mat-card-content>
-          </mat-card>
-          <!-- Front Matter Editor -->
+            </section>
+
           @if (collection && collection.fields) {
             <app-front-matter-editor
               [frontMatter]="frontMatter"
@@ -110,15 +115,11 @@
               [disabled]="isCreating">
             </app-front-matter-editor>
           }
-          <!-- Markdown Editor -->
-          <mat-card class="markdown-editor-wrapper" appearance="outlined">
-            <mat-card-header>
-              <mat-card-title>Content</mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-              <app-vditor-editor [(ngModel)]="markdownContent" [options]="editorOptions" (ready)="onEditorReady($event)"></app-vditor-editor>
-            </mat-card-content>
-          </mat-card>
+          </aside>
+
+          <main class="markdown-editor-pane">
+            <app-vditor-editor [(ngModel)]="markdownContent" [options]="editorOptions" (ready)="onEditorReady($event)"></app-vditor-editor>
+          </main>
         </div>
       </div>
     </div>

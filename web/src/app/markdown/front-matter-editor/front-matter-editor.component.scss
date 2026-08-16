@@ -1,6 +1,25 @@
-.front-matter-card {
-  margin-bottom: 16px;
+:host {
+  display: block;
   width: 100%;
+}
+
+.front-matter-panel {
+  width: 100%;
+}
+
+.front-matter-header {
+  margin-bottom: 16px;
+
+  h2 {
+    margin: 0;
+    font: var(--mat-sys-title-medium);
+  }
+
+  p {
+    margin: 4px 0 0;
+    color: var(--mat-sys-on-surface-variant);
+    font: var(--mat-sys-body-small);
+  }
 }
 
 .disabled-form {
@@ -11,7 +30,7 @@
 .front-matter-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   width: 100%;
 }
 
@@ -19,24 +38,11 @@
   width: 100%;
 }
 
-mat-card {
-  width: 100%;
-  margin-bottom: 16px;
-}
-
-.draft-toggle-container {
+.boolean-field {
+  min-height: 40px;
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 0;
-
-  .draft-hint {
-    font-size: 12px;
-    color: var(--mat-sys-on-surface-variant);
-    margin-top: 4px;
-    margin-left: 2px;
-  }
+  align-items: center;
+  padding: 4px 0;
 }
 
 ::ng-deep {
@@ -48,11 +54,11 @@ mat-card {
     width: 100%;
   }
 
-  .mat-mdc-card-header {
-    padding: 16px 16px 0 16px;
+  .front-matter-panel .mat-mdc-text-field-wrapper {
+    background: var(--mat-sys-surface);
   }
 
-  .mat-mdc-card-content {
-    padding: 16px;
+  .front-matter-panel .mat-mdc-form-field-subscript-wrapper {
+    min-height: 18px;
   }
 }

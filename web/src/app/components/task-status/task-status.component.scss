@@ -1,71 +1,136 @@
+:host {
+  display: block;
+}
+
 .task-status-container {
-  margin: 16px 0;
+  margin: 12px 0 0;
+  border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 4px;
   overflow: hidden;
-}
+  background: var(--mat-sys-surface-container-lowest);
 
-.loading, .error {
-  padding: 16px;
-  text-align: center;
-}
-
-.loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-
-  p {
-    margin: 0;
+  &.status-running,
+  &.status-pending {
+    border-left: 4px solid var(--mat-sys-primary);
   }
-}
-
-.task-loading-spinner {
-  --mdc-circular-progress-active-indicator-color: var(--mat-sys-primary);
-}
-
-.error {
-  background-color: var(--mat-sys-error-container);
-  color: var(--mat-sys-on-error-container);
-}
-
-.task-details {
-  border-left: 4px solid var(--mat-sys-outline-variant);
 
   &.status-completed {
-    border-left-color: var(--mat-sys-primary);
+    border-left: 4px solid var(--mat-sys-tertiary);
   }
 
   &.status-failed {
-    border-left-color: var(--mat-sys-error);
-  }
-
-  &.status-running {
-    border-left-color: var(--mat-sys-primary);
-  }
-
-  &.status-pending {
-    border-left-color: var(--mat-sys-tertiary);
+    border-left: 4px solid var(--mat-sys-error);
   }
 }
 
+.task-summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 6px 10px;
 
+  mat-icon {
+    color: var(--mat-sys-primary);
+  }
 
-.progress-container {
+  &.task-error mat-icon,
+  .status-failed {
+    color: var(--mat-sys-error);
+  }
+}
+
+.task-summary-copy {
+  min-width: 0;
+}
+
+.task-message,
+.task-submessage {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-message {
+  font: var(--mat-sys-body-medium);
+}
+
+.task-submessage {
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
+}
+
+mat-progress-bar {
+  height: 3px;
+}
+
+.task-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+  margin: 0;
+  padding: 10px;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface);
+}
+
+.task-detail-grid div {
+  min-width: 0;
+}
+
+dt {
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-medium);
+}
+
+dd {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+  font: var(--mat-sys-body-medium);
+}
+
+.task-id {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 8px 0;
+  gap: 4px;
+
+  button {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+  }
+
+  mat-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+  }
 }
 
-.progress-text {
-  font-size: 12px;
-  min-width: 30px;
+.status-chip {
+  min-height: 24px;
+  --mdc-chip-container-height: 24px;
+  --mdc-chip-label-text-size: 12px;
+  --mdc-chip-label-text-weight: 500;
 }
 
-.task-actions {
-  padding: 8px 16px;
-  border-top: 1px solid var(--mat-sys-outline-variant);
-  text-align: right;
+.status-completed {
+  --mdc-chip-label-text-color: var(--mat-sys-tertiary);
+}
+
+.status-running,
+.status-pending {
+  --mdc-chip-label-text-color: var(--mat-sys-primary);
+}
+
+.status-failed {
+  --mdc-chip-label-text-color: var(--mat-sys-error);
+}
+
+@media (max-width: 767px) {
+  .task-detail-grid {
+    grid-template-columns: 1fr;
+  }
 }

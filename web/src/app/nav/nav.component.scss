@@ -3,9 +3,21 @@
   background: var(--mat-sys-primary-container);
   color: var(--mat-sys-primary);
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
+  width: 100%;
+  min-height: 52px;
   padding: 8px 16px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.docs-navbar-brand {
+  flex: 0 0 auto;
+  max-width: min(260px, 70vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .docs-navbar-logo {
@@ -15,6 +27,7 @@
 }
 
 .spacer {
+  min-width: 8px;
   flex: 1 1 auto;
 }
 

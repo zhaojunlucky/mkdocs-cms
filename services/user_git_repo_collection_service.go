@@ -138,7 +138,7 @@ func (s *UserGitRepoCollectionService) readCollectionsFromConfig(repo models.Use
 
 	config, err := s.readRepoConfig(repo)
 	if err != nil {
-		return collections, nil
+		return nil, err
 	}
 	// Convert to UserGitRepoCollection models
 	for _, col := range config.Collections {

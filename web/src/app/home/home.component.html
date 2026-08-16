@@ -65,16 +65,16 @@
       <div class="repositories-list">
         @for (repo of repositories; track repo) {
           <mat-card class="repository-card" appearance="outlined">
-            <mat-card-header>
-              <div class="repo-title-group">
-                <mat-chip class="repo-name-chip">{{ repo.name }}</mat-chip>
-                <span class="repo-branch-chip">
-                  <mat-icon>account_tree</mat-icon>
-                  {{ repo.branch || 'default' }}
-                </span>
-              </div>
+            <mat-card-content>
+              <div class="repo-card-header">
+                <div class="repo-heading">
+                  <h3>{{ repo.name }}</h3>
+                  <div class="repo-branch">
+                    <mat-icon>account_tree</mat-icon>
+                    <span>{{ repo.branch || 'default' }}</span>
+                  </div>
+                </div>
 
-              <div class="repo-menu">
                 <button mat-icon-button [matMenuTriggerFor]="repoMenu" aria-label="Repository menu">
                   <mat-icon>more_vert</mat-icon>
                 </button>
@@ -93,28 +93,26 @@
                   </button>
                 </mat-menu>
               </div>
-            </mat-card-header>
 
-            <mat-card-content>
               <div class="repo-details">
                 <div class="repo-status-row">
-                  <p class="repo-status" [ngClass]="getStatusClass(repo)">
-                    <span class="status-label">Status</span>
-                    <span class="status-value">{{ repo.syncing ? 'Syncing...' : (repo.status | titlecase) }}</span>
+                  <span class="meta-label">Status</span>
+                  <mat-chip class="repo-status" [ngClass]="getStatusClass(repo)">
+                    {{ repo.syncing ? 'Syncing...' : (repo.status | titlecase) }}
                     @if (repo.error_msg) {
                       <span class="error-tooltip">{{ repo.error_msg }}</span>
                     }
-                  </p>
+                  </mat-chip>
                 </div>
 
                 <div class="repo-meta-grid">
                   <div class="meta-item">
                     <span class="meta-label">Last synced</span>
-                    <span class="meta-value">{{ repo.last_sync_at ? (repo.last_sync_at | date:'yyyy-MM-dd HH:mm:ssZ') : 'Never' }}</span>
+                    <span class="meta-value">{{ repo.last_sync_at ? (repo.last_sync_at | date:'MMM d, y, h:mm a') : 'Never' }}</span>
                   </div>
                   <div class="meta-item">
                     <span class="meta-label">Added</span>
-                    <span class="meta-value">{{ repo.created_at | date }}</span>
+                    <span class="meta-value">{{ repo.created_at | date:'MMM d, y' }}</span>
                   </div>
                 </div>
 
@@ -134,7 +132,7 @@
               }
             </mat-card-content>
 
-            <mat-card-actions class="repo-actions">
+            <mat-card-actions class="repo-actions" align="end">
               <a mat-flat-button color="primary" [routerLink]="['/repositories', repo.id]" class="view-btn">
                 <span>View Collections</span>
               </a>
