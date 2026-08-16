@@ -1,83 +1,283 @@
-.repository-import-container {
-  width: 100vw;
-  max-width: 100%;
-  margin: 64px 0 0 0;
-  padding: 16px;
-  box-sizing: border-box;
-  border-radius: 8px;
+:host {
+  display: block;
+  height: 100%;
+  min-height: 0;
 }
 
-.import-header {
-  margin-bottom: 24px;
+.repository-import-container,
+.import-workspace {
+  height: 100%;
+  min-height: 0;
+}
+
+.repository-import-container {
+  display: flex;
+  flex-direction: column;
+  background: var(--mat-sys-surface);
+}
+
+.import-toolbar,
+.import-nav,
+.import-summary,
+.repository-pane-header,
+.selection-controls,
+.loading-state,
+.error-banner,
+.repo-name,
+.state-card mat-card-content {
+  display: flex;
+  align-items: center;
+}
+
+.import-toolbar {
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 72px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.import-nav {
+  gap: 12px;
+  min-width: 0;
 
   h1 {
-    margin: 0 0 8px 0;
-  }
-
-  .description {
-    color: var(--mat-sys-on-surface-variant);
     margin: 0;
+    font: var(--mat-sys-title-large);
   }
 }
 
-.loading-indicator, .error-message, .success-message, .no-installations, .no-repositories {
-  text-align: center;
-  padding: 24px;
-  margin: 16px 0;
-  border-radius: 4px;
+p {
+  margin: 4px 0 0;
+  color: var(--mat-sys-on-surface-variant);
 }
 
-.error-message {
-  background-color: var(--mat-sys-error-container);
-  color: var(--mat-sys-on-error-container);
-}
-
-.success-message {
-  background-color: color-mix(in srgb, var(--mat-sys-primary) 10%, var(--mat-sys-surface));
+.back-link {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   color: var(--mat-sys-on-surface);
+  text-decoration: none;
+
+  &:hover {
+    background: var(--mat-sys-surface-container);
+  }
 }
 
-.installation-section, .repository-section {
-  margin-bottom: 24px;
+.import-summary,
+.selection-controls {
+  gap: 8px;
+}
+
+.import-summary span {
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-medium);
+}
+
+.import-workspace {
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  flex: 1;
+}
+
+.installation-pane,
+.repository-pane {
+  min-height: 0;
+  overflow: auto;
+}
+
+.installation-pane {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface-container-lowest);
+}
+
+.pane-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
 
   h2 {
-    margin-top: 0;
-    margin-bottom: 16px;
+    margin: 0;
+    font: var(--mat-sys-title-medium);
   }
+}
+
+.repository-pane-header {
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .installation-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  margin-bottom: 30px;
+  flex: 1;
+  padding: 8px;
 }
 
-
-.repository-header {
+.installation-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--mat-sys-on-surface);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 
-  .selection-controls {
-    display: flex;
-    gap: 10px;
+  &:hover,
+  &.selected {
+    background: var(--mat-sys-surface-container);
   }
 
+  img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+  }
+}
+
+.install-app-button {
+  margin: 12px;
 }
 
 .repository-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 30px;
+  margin: 16px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 4px;
+  overflow: hidden;
 }
 
+.repository-header-row,
+.repository-row {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 96px;
+  gap: 12px;
+  align-items: center;
+  padding: 0 12px;
+}
 
-.import-actions {
-  display: flex;
+.repository-header-row {
+  min-height: 36px;
+  background: var(--mat-sys-surface-container-low);
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-medium);
+
+  span:first-child {
+    grid-column: 2;
+  }
+}
+
+.repository-row {
+  min-height: 64px;
+  padding-block: 8px;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  cursor: pointer;
+
+  &:hover,
+  &.selected {
+    background: var(--mat-sys-surface-container-low);
+  }
+}
+
+.repo-copy,
+.repo-name,
+.repo-name span,
+.installation-row span {
+  min-width: 0;
+}
+
+.repo-copy p,
+.repo-name span,
+.installation-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repo-name {
+  gap: 8px;
+
+  mat-icon {
+    width: 18px;
+    height: 18px;
+    color: var(--mat-sys-primary);
+    font-size: 18px;
+  }
+}
+
+.repo-visibility {
+  justify-self: start;
+  --mdc-chip-container-height: 24px;
+  --mdc-chip-label-text-size: 12px;
+}
+
+.repo-visibility.private {
+  --mdc-chip-label-text-color: var(--mat-sys-tertiary);
+}
+
+.loading-state,
+.empty-pane {
   justify-content: center;
-  margin-top: 20px;
+  gap: 12px;
+  min-height: 220px;
+  padding: 24px;
+  text-align: center;
+}
 
+.empty-pane {
+  display: flex;
+  flex-direction: column;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.main-empty,
+.pane-loading {
+  margin: 16px;
+  border: 1px dashed var(--mat-sys-outline-variant);
+  border-radius: 4px;
+}
+
+.error-banner {
+  gap: 8px;
+  margin: 16px 16px 0;
+  padding: 10px 12px;
+  border-radius: 4px;
+  color: var(--mat-sys-on-error-container);
+  background: var(--mat-sys-error-container);
+}
+
+@media (max-width: 767px) {
+  .import-toolbar,
+  .repository-pane-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .import-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .installation-pane {
+    max-height: 260px;
+    border-right: 0;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+  }
+
+  .repository-header-row {
+    display: none;
+  }
+
+  .repository-row {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+
+  .repo-visibility {
+    grid-column: 2;
+  }
 }

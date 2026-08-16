@@ -1,4 +1,4 @@
-import {Component, HostListener, NgZone, OnInit} from '@angular/core';
+import {Component, HostListener, NgZone, OnInit, ChangeDetectionStrategy} from '@angular/core';
 
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -42,6 +42,7 @@ import {ArrayResponse} from '../../shared/core/response';
     MatTooltip
   ],
   templateUrl: './create-file.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./create-file.component.scss']
 })
 export class CreateFileComponent implements OnInit, CanComponentDeactivate {
@@ -318,18 +319,13 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
   }
 
   calculateEditorHeight(): number {
-    const isMobile = window.innerWidth <= 767;
-    const navHeight = 56;
-    const footerHeight = isMobile ? 110 : 84;
-    const headerHeight = (document.querySelector('.header-bar') as HTMLElement | null)?.offsetHeight ?? (isMobile ? 128 : 92);
+    const editorPane = document.querySelector('.markdown-editor-pane') as HTMLElement | null;
     const toolbarHeight = (document.querySelector('.vditor-toolbar') as HTMLElement | null)?.offsetHeight ?? 44;
-    // Extra accounts for markdown card chrome (header title, card padding)
-    const verticalSpacing = isMobile ? 24 : 72;
+    const availableHeight = editorPane?.clientHeight
+      ? editorPane.clientHeight - toolbarHeight - 2
+      : window.innerHeight - 180;
 
-    // Editor content height = viewport - navbar - footer - header - vditor toolbar
-    const availableHeight = window.innerHeight - navHeight - footerHeight - headerHeight - toolbarHeight - verticalSpacing;
-
-    return Math.max(240, availableHeight);
+    return Math.max(280, availableHeight);
   }
 
   updateEditorHeight(): void {

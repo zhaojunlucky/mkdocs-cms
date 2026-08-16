@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 
 import { HttpClient } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
@@ -12,9 +12,9 @@ import {PageTitleService} from '../../services/page.title.service';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatListModule } from '@angular/material/list';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 
 interface GithubAccount {
   login: string;
@@ -48,16 +48,19 @@ interface GithubAppInfo {
     MatCardModule,
     MatButtonModule,
     MatIconModule,
-    MatListModule,
     MatChipsModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatCheckboxModule
   ],
   templateUrl: './repository-import.component.html',
   styleUrls: ['./repository-import.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   providers: [AuthService]
 })
 export class RepositoryImportComponent implements OnInit {
   loading = true;
+  repositoriesLoading = false;
+  importing = false;
   error = '';
   installations: GithubInstallation[] = [];
   repositories: GithubRepository[] = [];
@@ -107,12 +110,8 @@ export class RepositoryImportComponent implements OnInit {
           this.installations = installations.entries;
           this.loading = false;
 
-          // If no installations found, user needs to install the GitHub App
-          if (this.installations.length === 0) {
-            this.error = 'You need to install the GitHub App to your account first.';
-          }
           // Auto-select the first installation if there's only one
-          else if (this.installations.length === 1) {
+          if (this.installations.length === 1) {
             this.selectedInstallation = this.installations[0].id;
             this.loadRepositories(this.selectedInstallation);
           }
@@ -132,7 +131,7 @@ export class RepositoryImportComponent implements OnInit {
   }
 
   loadRepositories(installationId: number): void {
-    this.loading = true;
+    this.repositoriesLoading = true;
     this.error = '';
 
     this.http.get<ArrayResponse<GithubRepository>>(
@@ -142,16 +141,12 @@ export class RepositoryImportComponent implements OnInit {
           ...repo,
           selected: false
         }));
-        this.loading = false;
-
-        if (this.repositories.length === 0) {
-          this.error = 'No repositories found for this installation or all repositories have already been imported.';
-        }
+        this.repositoriesLoading = false;
       },
       error: (err) => {
         console.error('Error loading repositories:', err);
         this.error = `Failed to load repositories. ${StrUtils.stringifyHTTPErr(err)}`;
-        this.loading = false;
+        this.repositoriesLoading = false;
       }
     });
   }
@@ -160,12 +155,24 @@ export class RepositoryImportComponent implements OnInit {
     repo.selected = !repo.selected;
   }
 
+  setRepositorySelected(repo: GithubRepository, selected: boolean): void {
+    repo.selected = selected;
+  }
+
   selectAll(selected: boolean): void {
     this.repositories.forEach(repo => repo.selected = selected);
   }
 
   hasSelectedRepositories(): boolean {
-    return this.repositories.some(repo => repo.selected);
+    return this.selectedCount() > 0;
+  }
+
+  selectedCount(): number {
+    return this.repositories.filter(repo => repo.selected).length;
+  }
+
+  selectedAccount(): GithubInstallation | undefined {
+    return this.installations.find(installation => installation.id === this.selectedInstallation);
   }
 
   importRepositories(): void {
@@ -183,14 +190,14 @@ export class RepositoryImportComponent implements OnInit {
       return;
     }
 
-    this.loading = true;
+    this.importing = true;
     this.error = '';
 
     this.http.post(
       `${environment.apiServer}/v1/github/installations/${this.selectedInstallation}/import`,
       { repositories: selectedRepos }
     ).pipe(
-      finalize(() => this.loading = false)
+      finalize(() => this.importing = false)
     ).subscribe({
       next: () => {
         this.importSuccess = true;

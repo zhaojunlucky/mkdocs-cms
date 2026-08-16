@@ -1,29 +1,23 @@
 <div class="edit-file-container">
-  <!-- Loading overlay that blocks user interaction -->
   @if (isLoading) {
     <div class="loading-overlay">
-      <div class="spinner-container surface-panel">
-        <mat-spinner diameter="50"></mat-spinner>
-        <div>
-          <h3>Loading file</h3>
-          <p>Fetching file contents, front matter, and editor configuration.</p>
-        </div>
+      <mat-spinner diameter="40"></mat-spinner>
+      <div>
+        <h3>Loading file</h3>
+        <p>Fetching file contents and metadata.</p>
       </div>
     </div>
   }
   @if (!error && !isLoading && (editor == null || !editorRendered)) {
     <div class="loading-overlay">
-      <div class="spinner-container surface-panel">
-        <mat-spinner diameter="50"></mat-spinner>
-        <div>
-          <h3>Rendering editor</h3>
-          <p>Preparing the editor so you can resume writing.</p>
-        </div>
+      <mat-spinner diameter="40"></mat-spinner>
+      <div>
+        <h3>Rendering editor</h3>
+        <p>Preparing the writing surface.</p>
       </div>
     </div>
   }
 
-  <!-- Floating error message that appears when there's a file error -->
   @if (fileError) {
     <div class="floating-error-container">
       <div class="floating-error">
@@ -37,11 +31,9 @@
   }
 
   @if (error) {
-    <mat-card class="error-message state-card" appearance="outlined">
+    <mat-card class="state-card" appearance="outlined">
       <mat-card-content class="state-card-content">
-        <div class="state-icon state-icon-error">
-          <mat-icon>error</mat-icon>
-        </div>
+        <mat-icon class="state-icon-error">error</mat-icon>
         <div class="state-copy">
           <h3>Could not open file editor</h3>
           <p>{{ error }}</p>
@@ -56,77 +48,66 @@
 
   @if (!isLoading && !error) {
     <div class="edit-file-shell">
-
-      <mat-card class="header-bar" appearance="outlined">
-        <mat-card-content>
-          <div class="breadcrumbs-container">
-            <div class="breadcrumbs">
-              <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" matTooltip="Home"><mat-icon>home</mat-icon></a>
+      <header class="editor-toolbar">
+        <div class="editor-nav">
+          <a class="back-link" [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" matTooltip="Back to collection">
+            <mat-icon>arrow_back</mat-icon>
+          </a>
+          <div class="editor-title">
+            <nav class="breadcrumbs" aria-label="Breadcrumb">
+              <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]">
+                {{ collectionName }}
+              </a>
               @for (segment of pathSegments; track segment) {
-                <span>
-                  <span class="breadcrumb-separator">/</span>
-                  <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" [queryParams]="{path: segment.path}">{{ segment.name }}</a>
-                </span>
+                <span class="breadcrumb-separator">/</span>
+                <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" [queryParams]="{path: segment.path}">
+                  {{ segment.name }}
+                </a>
               }
-              @if (filePath) {
-                <span>
-                  <span class="breadcrumb-separator">/</span>
-                  <span class="active">{{ fileName }}</span>
-                </span>
-              }
-            </div>
-            <div class="action-buttons">
-              <button mat-flat-button color="primary" (click)="saveFile()" [disabled]="savingFile || !changed">
-                @if (savingFile) {
-                  <mat-spinner diameter="16" class="button-spinner"></mat-spinner>
-                }
-                @if (!savingFile) {
-                  <mat-icon>save</mat-icon>
-                }
-                {{ savingFile ? 'Saving...' : 'Save' }}
-              </button>
-              <button mat-stroked-button (click)="cancelEditing()" [disabled]="savingFile">Cancel</button>
-            </div>
+            </nav>
+            <h1>{{ fileName }}</h1>
           </div>
-        </mat-card-content>
-      </mat-card>
+        </div>
 
-      <!-- File Editor -->
-      <div class="file-editor surface-panel">
-        <!-- File Error Message -->
+        <div class="editor-actions">
+          <span class="save-state" [class.is-dirty]="changed">{{ changed ? 'Unsaved' : 'Saved' }}</span>
+          <button mat-button (click)="cancelEditing()" [disabled]="savingFile">Cancel</button>
+          <button mat-flat-button color="primary" (click)="saveFile()" [disabled]="savingFile || !changed">
+            @if (savingFile) {
+              <mat-spinner diameter="16" class="button-spinner"></mat-spinner>
+            }
+            @if (!savingFile) {
+              <mat-icon>save</mat-icon>
+            }
+            {{ savingFile ? 'Saving...' : 'Save' }}
+          </button>
+        </div>
+      </header>
+
+      <div class="editor-workspace">
         @if (fileError) {
-          <mat-card class="file-error-message state-card" appearance="outlined">
-            <mat-card-content class="state-card-content compact-state">
-              <div class="state-icon state-icon-error compact-icon">
-                <mat-icon>error</mat-icon>
-              </div>
-              <div class="state-copy">
-                <h3>Editor warning</h3>
-                <p>{{ fileError }}</p>
-              </div>
-            </mat-card-content>
-          </mat-card>
+          <div class="editor-warning">
+            <mat-icon>error</mat-icon>
+            <span>{{ fileError }}</span>
+          </div>
         }
-        <div class="file-editor-content">
-          <!-- Front Matter Editor -->
+
+        <div class="editor-layout" [class.has-metadata]="collection && collection.fields && collection.fields.length > 0">
           @if (collection && collection.fields) {
-            <app-front-matter-editor
-              [frontMatter]="frontMatter"
-              [fields]="collection.fields"
-              (frontMatterChange)="onFrontMatterChange($event)"
-              (frontMatterInit)="onFrontMatterInit($event)"
-              [disabled]="savingFile">
-            </app-front-matter-editor>
+            <aside class="metadata-pane">
+              <app-front-matter-editor
+                [frontMatter]="frontMatter"
+                [fields]="collection.fields"
+                (frontMatterChange)="onFrontMatterChange($event)"
+                (frontMatterInit)="onFrontMatterInit($event)"
+                [disabled]="savingFile">
+              </app-front-matter-editor>
+            </aside>
           }
-          <!-- Markdown Editor -->
-          <mat-card class="markdown-editor-wrapper" appearance="outlined">
-            <mat-card-header>
-              <mat-card-title>Content</mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-              <app-vditor-editor [(ngModel)]="markdownContent" [options]="editorOptions" (ready)="onEditorReady($event)"></app-vditor-editor>
-            </mat-card-content>
-          </mat-card>
+
+          <main class="markdown-editor-pane">
+            <app-vditor-editor [(ngModel)]="markdownContent" [options]="editorOptions" (ready)="onEditorReady($event)"></app-vditor-editor>
+          </main>
         </div>
       </div>
     </div>

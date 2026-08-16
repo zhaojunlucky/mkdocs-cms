@@ -1,24 +1,18 @@
-
 <div class="repository-detail-container">
-  <!-- Loading overlay that blocks user interaction -->
   @if (isLoading) {
     <div class="loading-overlay">
-      <div class="spinner-container surface-panel">
-        <mat-spinner diameter="50"></mat-spinner>
-        <div>
-          <h3>Loading repository</h3>
-          <p>Fetching repository details and available collections.</p>
-        </div>
+      <mat-spinner diameter="40"></mat-spinner>
+      <div>
+        <h3>Loading repository</h3>
+        <p>Fetching repository details and collections.</p>
       </div>
     </div>
   }
 
   @if (error) {
-    <mat-card class="error-message state-card" appearance="outlined">
+    <mat-card class="state-card" appearance="outlined">
       <mat-card-content class="state-card-content">
-        <div class="state-icon state-icon-error">
-          <mat-icon>error</mat-icon>
-        </div>
+        <mat-icon class="state-icon-error">error</mat-icon>
         <div class="state-copy">
           <h3>Could not load repository</h3>
           <p>{{ error }}</p>
@@ -32,27 +26,31 @@
   }
 
   @if (!isLoading && !error && repository) {
-    <div class="content-layout" [class.sidenav-open]="sidenavOpen">
-      <!-- Mobile menu button -->
-      <button mat-icon-button class="sidenav-toggle-btn" (click)="toggleSidenav()" aria-label="Toggle collections">
-        <mat-icon>{{ sidenavOpen ? 'close' : 'menu' }}</mat-icon>
-      </button>
-      <!-- Backdrop for mobile overlay -->
-      @if (sidenavOpen) {
+    <div class="workspace-layout" [class.sidenav-open]="sidenavOpen" [class.focus-editor]="hideCollectionsSidebar">
+      @if (!hideCollectionsSidebar) {
+        <button mat-icon-button class="sidenav-toggle-btn" (click)="toggleSidenav()" aria-label="Toggle collections">
+          <mat-icon>{{ sidenavOpen ? 'close' : 'menu' }}</mat-icon>
+        </button>
+      }
+
+      @if (!hideCollectionsSidebar && sidenavOpen) {
         <div class="sidenav-backdrop" (click)="closeSidenav()"></div>
       }
-      <!-- Sidenav for collections -->
-      <mat-card class="sidenav surface-panel" appearance="outlined" [class.sidenav-visible]="sidenavOpen">
-        <mat-card-header>
-          <mat-card-title>Collections</mat-card-title>
-        </mat-card-header>
-        <mat-card-content class="sidenav-content">
+
+      @if (!hideCollectionsSidebar) {
+        <aside class="collections-sidebar" [class.sidenav-visible]="sidenavOpen">
+          <div class="sidebar-header">
+            <h2>Collections</h2>
+            <p>{{ repository.name }}</p>
+          </div>
+
           @if (collections.length === 0) {
             <div class="empty-state-sidenav">
               <mat-icon>folder_open</mat-icon>
               <p>No collections found</p>
             </div>
           }
+
           <mat-nav-list class="collection-list">
             @for (collection of collections; track collection) {
               <mat-list-item
@@ -66,29 +64,23 @@
               </mat-list-item>
             }
           </mat-nav-list>
-        </mat-card-content>
-      </mat-card>
-      <!-- Main content area -->
-      <div class="main-content" (scroll)="handleScroll($event)">
-        <!-- Show info message if no collection is selected -->
-        @if (!selectedColName) {
-          <mat-card class="info-message-large surface-panel" appearance="outlined">
-            <mat-card-content>
-              <div class="empty-state-large">
-                <div class="empty-state-icon">
-                  <mat-icon>info</mat-icon>
-                </div>
-                <div class="state-copy">
-                  <h3>Select a collection</h3>
-                  <p>Choose a collection from the sidebar to browse files, create content, or open an editor.</p>
-                </div>
-              </div>
-            </mat-card-content>
-          </mat-card>
+        </aside>
+      }
+
+      <main class="main-content" (scroll)="handleScroll($event)">
+        @if (!hideCollectionsSidebar && !selectedColName) {
+          <section class="empty-main">
+            <mat-icon>info</mat-icon>
+            <div>
+              <h3>Select a collection</h3>
+              <p>Choose a collection from the sidebar to browse posts and files.</p>
+            </div>
+          </section>
         }
+
         <router-outlet></router-outlet>
-        <!-- Back to top button -->
-        @if (showBackToTop) {
+
+        @if (!hideCollectionsSidebar && showBackToTop) {
           <button
             mat-fab
             color="primary"
@@ -98,8 +90,8 @@
             <mat-icon>arrow_upward</mat-icon>
           </button>
         }
-        <!-- Scroll to bottom button -->
-        @if (showScrolltoBottom) {
+
+        @if (!hideCollectionsSidebar && showScrolltoBottom) {
           <button
             mat-fab
             color="accent"
@@ -109,7 +101,7 @@
             <mat-icon>arrow_downward</mat-icon>
           </button>
         }
-      </div>
+      </main>
     </div>
   }
 </div>

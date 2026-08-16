@@ -1,4 +1,4 @@
-import { Component, OnInit, Pipe, PipeTransform } from '@angular/core';
+import { Component, OnInit, Pipe, PipeTransform, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -54,6 +54,7 @@ export class FileSizePipe implements PipeTransform {
     MatChipsModule
   ],
   templateUrl: './collection.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./collection.component.scss']
 })
 export class CollectionComponent implements OnInit {

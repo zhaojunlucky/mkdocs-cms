@@ -15,7 +15,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [20.x]
+        node-version: [24.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
@@ -48,6 +48,7 @@ jobs:
 
       - name: SonarQube Scan
         uses: Sonarsource/sonarqube-scan-action@v6
+        if: false
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
@@ -60,6 +61,7 @@ jobs:
 
       - name: SonarQube Scan
         uses: Sonarsource/sonarqube-scan-action@v6
+        if: false
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}

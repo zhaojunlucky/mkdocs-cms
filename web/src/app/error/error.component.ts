@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import {ActivatedRoute, RouterLink} from '@angular/router';
 
 import {MatCardModule} from '@angular/material/card';
@@ -10,6 +10,7 @@ import {PageTitleService} from '../services/page.title.service';
     MatCardModule
 ],
   templateUrl: './error.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './error.component.scss'
 })
 export class ErrorComponent implements OnInit {

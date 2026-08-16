@@ -1,24 +1,18 @@
-<!-- Collection Component -->
 <div class="collection-container">
-  <!-- Loading overlay that blocks user interaction -->
   @if (isLoading) {
     <div class="loading-overlay">
-      <div class="spinner-container surface-panel">
-        <mat-spinner diameter="50"></mat-spinner>
-        <div>
-          <h3>Loading collection</h3>
-          <p>Fetching folders, files, and metadata for this path.</p>
-        </div>
+      <mat-spinner diameter="40"></mat-spinner>
+      <div>
+        <h3>Loading collection</h3>
+        <p>Fetching folders, files, and metadata.</p>
       </div>
     </div>
   }
 
   @if (error) {
-    <mat-card class="error-message state-card" appearance="outlined">
+    <mat-card class="state-card" appearance="outlined">
       <mat-card-content class="state-card-content">
-        <div class="state-icon state-icon-error">
-          <mat-icon>error</mat-icon>
-        </div>
+        <mat-icon class="state-icon-error">error</mat-icon>
         <div class="state-copy">
           <h3>Could not load collection</h3>
           <p>{{ error }}</p>
@@ -33,53 +27,46 @@
 
   @if (!isLoading && !error && collectionName) {
     <div class="collection-shell">
-      <!-- Collection Header -->
+      <header class="collection-toolbar">
+        <nav class="breadcrumbs" aria-label="Breadcrumb">
+          <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" matTooltip="Collection root">
+            <mat-icon>home</mat-icon>
+          </a>
+          @for (segment of pathSegments; track segment) {
+            <span class="breadcrumb-separator">/</span>
+            <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" [queryParams]="{path: segment.path}">
+              {{ segment.name }}
+            </a>
+          }
+        </nav>
 
-      <mat-card class="collection-header-bar" appearance="outlined">
-        <mat-card-content>
-        <div class="breadcrumbs-container">
-          <div class="breadcrumbs">
-            <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" matTooltip="Home"><mat-icon>home</mat-icon></a>
-            @for (segment of pathSegments; track segment) {
-              <span>
-                <span class="breadcrumb-separator">/</span>
-                <a [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" [queryParams]="{path: segment.path}">{{ segment.name }}</a>
-              </span>
-            }
-          </div>
-          <div class="search-box">
-            <mat-form-field appearance="outline" class="search-field">
-              <input matInput [(ngModel)]="searchTerm" placeholder="Search files..." (input)="filterFiles()">
-              @if (searchTerm) {
-                <button matSuffix mat-icon-button aria-label="Clear" (click)="clearSearch()">
-                  <mat-icon>close</mat-icon>
-                </button>
-              }
-            </mat-form-field>
-          </div>
+        <mat-form-field appearance="outline" class="search-field">
+          <input matInput [(ngModel)]="searchTerm" placeholder="Search files..." (input)="filterFiles()">
+          @if (searchTerm) {
+            <button matSuffix mat-icon-button aria-label="Clear" (click)="clearSearch()">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
+        </mat-form-field>
+
+        <div class="file-actions">
+          <button mat-icon-button color="primary" (click)="openCreateFileDialog()" matTooltip="Create file">
+            <mat-icon>note_add</mat-icon>
+          </button>
+          <button mat-icon-button (click)="openCreateFolderDialog()" matTooltip="Create folder">
+            <mat-icon>create_new_folder</mat-icon>
+          </button>
         </div>
-        </mat-card-content>
-      </mat-card>
+      </header>
 
-      <!-- File Browser -->
-      <mat-card class="file-browser surface-panel" appearance="outlined">
-        <mat-card-content>
+      <section class="file-browser">
         <div class="file-browser-header">
           <div>
-            <span class="section-kicker">Directory</span>
             <h2>Files</h2>
-          </div>
-          <div class="file-actions">
-            <button mat-icon-button color="primary" (click)="openCreateFileDialog()" matTooltip="Create File">
-              <mat-icon>note_add</mat-icon>
-              
-            </button>
-            <button mat-icon-button (click)="openCreateFolderDialog()" matTooltip="Create Folder">
-              <mat-icon>create_new_folder</mat-icon>
-            </button>
+            <p>{{ currentPath || collectionName }}</p>
           </div>
         </div>
-        <!-- Create Folder Dialog -->
+
         @if (isCreatingFolder) {
           <div class="dialog-overlay">
             <mat-card class="dialog" appearance="outlined">
@@ -89,20 +76,20 @@
               <mat-card-content>
                 <mat-form-field class="dialog-content">
                   <mat-label>New Folder</mat-label>
-                  <input matInput [(ngModel)]="newFolderName" placeholder="Folder Name" class="dialog-input">
+                  <input matInput [(ngModel)]="newFolderName" placeholder="Folder Name">
                   @if (folderError) {
-                    <mat-error  class="error-text">{{ folderError }}</mat-error >
+                    <mat-error class="error-text">{{ folderError }}</mat-error>
                   }
                 </mat-form-field>
               </mat-card-content>
               <mat-card-actions class="dialog-actions">
-                <button mat-flat-button color="primary" (click)="createFolder()" [disabled]="!newFolderName.trim()" class="dialog-btn primary">Create</button>
-                <button mat-flat-button color="warn" (click)="cancelCreateFolder()" [disabled]="isLoading" class="dialog-btn">Cancel</button>
+                <button mat-button (click)="cancelCreateFolder()" [disabled]="isLoading">Cancel</button>
+                <button mat-flat-button color="primary" (click)="createFolder()" [disabled]="!newFolderName.trim()">Create</button>
               </mat-card-actions>
             </mat-card>
           </div>
         }
-        <!-- Rename Dialog -->
+
         @if (isRenaming) {
           <div class="dialog-overlay">
             <mat-card class="dialog" appearance="outlined">
@@ -110,104 +97,104 @@
                 <mat-card-title>Rename File</mat-card-title>
               </mat-card-header>
               <mat-card-content>
-                <mat-form-field class="example-full-width">
+                <mat-form-field class="dialog-content">
                   <mat-label>New Name without extension</mat-label>
-                  <input matInput [(ngModel)]="newName" placeholder="New Name" class="dialog-input">
+                  <input matInput [(ngModel)]="newName" placeholder="New Name">
                   @if (renameError) {
                     <mat-error class="error-text">{{ renameError }}</mat-error>
                   }
                 </mat-form-field>
               </mat-card-content>
               <mat-card-actions class="dialog-actions">
-                <button mat-flat-button color="primary" (click)="renameFile()" [disabled]="!newName.trim() || newName+selectedFile?.extension == selectedFile?.name  " class="dialog-btn primary">Rename</button>
-                <button mat-flat-button color="warn" (click)="cancelRename()" [disabled]="isLoading" class="dialog-btn">Cancel</button>
+                <button mat-button (click)="cancelRename()" [disabled]="isLoading">Cancel</button>
+                <button mat-flat-button color="primary" (click)="renameFile()" [disabled]="!newName.trim() || newName+selectedFile?.extension == selectedFile?.name">Rename</button>
               </mat-card-actions>
             </mat-card>
           </div>
         }
-        <!-- File List -->
-        <div class="file-list">
-          <!-- Empty State -->
-          @if (filteredFiles.length === 0) {
-            <div class="empty-state state-card">
-              <div class="empty-state-icon">
-                <mat-icon>{{ searchTerm ? 'search_off' : 'folder_open' }}</mat-icon>
-              </div>
-              <div class="state-copy">
-                <h3>{{ searchTerm ? 'No matching files' : 'This folder is empty' }}</h3>
-                @if (searchTerm) {
-                  <p>No files match your search "{{ searchTerm }}".</p>
-                }
-                @if (!searchTerm) {
-                  <p>No files in this collection{{ currentPath ? ' path' : '' }}.</p>
-                }
-              </div>
-              <div class="empty-actions">
-                <button mat-flat-button color="primary" (click)="openCreateFileDialog()" class="action-btn create-file-btn">
-                  <mat-icon>note_add</mat-icon>
-                  <span>Create File</span>
-                </button>
-                <button mat-stroked-button (click)="openCreateFolderDialog()" class="action-btn create-folder-btn">
-                  <mat-icon>create_new_folder</mat-icon>
-                  <span>Create Folder</span>
-                </button>
-              </div>
-            </div>
-          }
-          <!-- Files and Folders -->
-          @if (filteredFiles.length > 0) {
-            <div class="file-items" [class.overlay-active]="isRenaming || isCreatingFolder">
-              @for (file of filteredFiles; track file) {
-                <div class="file-item"
-                     [class.is-directory]="file.is_dir"
-                     [class.is-hovered]="hoveredFile === file"
-                     (mouseenter)="onFileHover(file)"
-                     (mouseleave)="onFileLeave()">
-                  <div class="file-item-content" (click)="file.is_dir ? navigateToFolder(file) : selectFile(file)">
-                    @if (file.is_dir) {
-                      <mat-icon class="folder-icon">folder</mat-icon>
-                    }
-                    @if (!file.is_dir) {
-                      <mat-icon class="file-icon">article</mat-icon>
-                    }
-                    <span class="file-name">{{ file.name }}</span>
-                    @if (!file.is_dir && file.is_draft) {
-                      <mat-chip-set>
-                        <mat-chip class="draft-indicator">DRAFT</mat-chip>
-                      </mat-chip-set>
-                    }
-                    <span class="file-meta">
-                      @if (!file.is_dir) {
-                        <span class="file-size">{{ file.size | fileSize }}</span>
-                      }
-                      <span class="file-date">{{ file.mod_time | date:'short' }}</span>
-                    </span>
-                  </div>
-                  <!-- File Actions Menu (only for non-directories) -->
-                  @if (!file.is_dir) {
-                    <div class="file-item-actions" (click)="$event.stopPropagation()">
-                      <button mat-icon-button [matMenuTriggerFor]="fileMenu" aria-label="File actions">
-                        <mat-icon>more_vert</mat-icon>
-                      </button>
-                      <mat-menu #fileMenu="matMenu">
-                        <button mat-menu-item (click)="openRenameDialog(file)">
-                          <mat-icon>edit</mat-icon>
-                          <span>Rename</span>
-                        </button>
-                        <button mat-menu-item (click)="deleteFile(file)">
-                          <mat-icon>delete</mat-icon>
-                          <span>Delete</span>
-                        </button>
-                      </mat-menu>
-                    </div>
-                  }
-                </div>
+
+        @if (filteredFiles.length === 0) {
+          <div class="empty-state">
+            <mat-icon>{{ searchTerm ? 'search_off' : 'folder_open' }}</mat-icon>
+            <div class="state-copy">
+              <h3>{{ searchTerm ? 'No matching files' : 'This folder is empty' }}</h3>
+              @if (searchTerm) {
+                <p>No files match your search "{{ searchTerm }}".</p>
+              }
+              @if (!searchTerm) {
+                <p>No files in this collection{{ currentPath ? ' path' : '' }}.</p>
               }
             </div>
-          }
-        </div>
-        </mat-card-content>
-      </mat-card>
+            <div class="empty-actions">
+              <button mat-flat-button color="primary" (click)="openCreateFileDialog()">
+                <mat-icon>note_add</mat-icon>
+                <span>Create File</span>
+              </button>
+              <button mat-stroked-button (click)="openCreateFolderDialog()">
+                <mat-icon>create_new_folder</mat-icon>
+                <span>Create Folder</span>
+              </button>
+            </div>
+          </div>
+        }
+
+        @if (filteredFiles.length > 0) {
+          <div class="file-list" [class.overlay-active]="isRenaming || isCreatingFolder">
+            <div class="file-row file-header-row" aria-hidden="true">
+              <span>Name</span>
+              <span>Status</span>
+              <span>Size</span>
+              <span>Modified</span>
+              <span>Actions</span>
+            </div>
+            @for (file of filteredFiles; track file) {
+              <div class="file-row"
+                   [class.is-directory]="file.is_dir"
+                   (mouseenter)="onFileHover(file)"
+                   (mouseleave)="onFileLeave()">
+                <button class="file-main" type="button" (click)="file.is_dir ? navigateToFolder(file) : selectFile(file)">
+                  @if (file.is_dir) {
+                    <mat-icon class="folder-icon">folder</mat-icon>
+                  }
+                  @if (!file.is_dir) {
+                    <mat-icon class="file-icon">article</mat-icon>
+                  }
+                  <span class="file-name">{{ file.name }}</span>
+                </button>
+
+                <span class="file-status">
+                  @if (!file.is_dir && file.is_draft) {
+                    <mat-chip class="draft-indicator">Draft</mat-chip>
+                  }
+                </span>
+
+                <span class="file-size">
+                  @if (!file.is_dir) {
+                    {{ file.size | fileSize }}
+                  }
+                </span>
+                <span class="file-date">{{ file.mod_time | date:'mediumDate' }}</span>
+
+                @if (!file.is_dir) {
+                  <button mat-icon-button [matMenuTriggerFor]="fileMenu" aria-label="File actions">
+                    <mat-icon>more_vert</mat-icon>
+                  </button>
+                  <mat-menu #fileMenu="matMenu">
+                    <button mat-menu-item (click)="openRenameDialog(file)">
+                      <mat-icon>edit</mat-icon>
+                      <span>Rename</span>
+                    </button>
+                    <button mat-menu-item (click)="deleteFile(file)">
+                      <mat-icon>delete</mat-icon>
+                      <span>Delete</span>
+                    </button>
+                  </mat-menu>
+                }
+              </div>
+            }
+          </div>
+        }
+      </section>
     </div>
   }
 </div>

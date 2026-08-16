@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import {NavComponent} from '../nav/nav.component';
 import {PageTitleService} from '../services/page.title.service';
 
@@ -8,6 +8,7 @@ import {PageTitleService} from '../services/page.title.service';
     NavComponent
   ],
   templateUrl: './not-found.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './not-found.component.scss'
 })
 export class NotFoundComponent {

@@ -1,149 +1,175 @@
-
 <div class="repository-import-container">
-  <mat-card class="import-header">
-    <mat-card-content>
-      <button mat-button color="primary" routerLink="/home">
+  <header class="import-toolbar">
+    <div class="import-nav">
+      <a class="back-link" routerLink="/home" aria-label="Back to repositories">
         <mat-icon>arrow_back</mat-icon>
-        Back to Repositories
+      </a>
+      <div>
+        <h1>Add Repository</h1>
+        <p>Select GitHub repositories to import.</p>
+      </div>
+    </div>
+
+    <div class="import-summary">
+      @if (selectedCount() > 0) {
+        <span>{{ selectedCount() }} selected</span>
+      }
+      <button
+        mat-flat-button
+        color="primary"
+        (click)="importRepositories()"
+        [disabled]="importing || !hasSelectedRepositories()">
+        @if (importing) {
+          <mat-spinner diameter="16"></mat-spinner>
+        } @else {
+          <mat-icon>download</mat-icon>
+        }
+        <span>{{ importing ? 'Importing...' : 'Import Selected' }}</span>
       </button>
-      <h1>Import GitHub Repositories</h1>
-      <p class="description">Select repositories to import from your GitHub account.</p>
-    </mat-card-content>
-  </mat-card>
+    </div>
+  </header>
 
   @if (loading) {
-    <div class="loading-indicator">
+    <div class="loading-state">
       <mat-spinner diameter="40"></mat-spinner>
-      <p>Loading...</p>
+      <div>
+        <h3>Loading GitHub accounts</h3>
+        <p>Fetching installations available to your account.</p>
+      </div>
     </div>
   }
 
-  @if (error) {
-    <mat-card class="error-message">
-      <mat-card-content>
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
-          <mat-icon color="warn">error</mat-icon>
-          <p>{{ error }}</p>
-        </div>
-        @if (installations.length === 0 && githubAppInfo) {
-          <button
-            mat-raised-button
-            color="primary"
-            (click)="navigateToGitHubAppInstallation()">
-            <mat-icon>launch</mat-icon>
-            Install GitHub App
-          </button>
-        }
-      </mat-card-content>
-    </mat-card>
-  }
-
   @if (importSuccess) {
-    <mat-card class="success-message">
+    <mat-card class="state-card success-message" appearance="outlined">
       <mat-card-content>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <mat-icon color="primary">check_circle</mat-icon>
-          <p>Repositories imported successfully! Redirecting to home page...</p>
-        </div>
+        <mat-icon>check_circle</mat-icon>
+        <p>Repositories imported successfully. Redirecting to home page...</p>
       </mat-card-content>
     </mat-card>
   }
 
   @if (!loading && !importSuccess) {
-    <div>
-      <!-- Installation Selection -->
-      @if (installations.length > 0) {
-        <mat-card class="installation-section">
-          <mat-card-header>
-            <mat-card-title>Select GitHub Installation</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <mat-selection-list class="installation-list" [multiple]="false">
-              @for (installation of installations; track installation) {
-                <mat-list-option
-                  [value]="installation.id"
-                  [selected]="selectedInstallation === installation.id"
-                  (click)="onInstallationChange(installation.id)">
-                  <img matListItemAvatar [src]="installation.account.avatar_url" alt="GitHub Avatar">
-                  <span matListItemTitle>{{ installation.account.login }}</span>
-                </mat-list-option>
-              }
-            </mat-selection-list>
-          </mat-card-content>
-        </mat-card>
-      }
-      <!-- No Installations Message -->
-      @if (installations.length === 0 && !loading) {
-        <mat-card class="no-installations">
-          <mat-card-content>
-            <div style="text-align: center; padding: 40px;">
-              <mat-icon style="font-size: 48px; height: 48px; width: 48px; color: #ccc;">github</mat-icon>
-              <p>No GitHub installations found. Please install the GitHub App to your account first.</p>
+    <div class="import-workspace">
+      <aside class="installation-pane">
+        <div class="pane-header">
+          <h2>GitHub Accounts</h2>
+          <p>{{ installations.length }} installation{{ installations.length === 1 ? '' : 's' }}</p>
+        </div>
+
+        @if (installations.length > 0) {
+          <div class="installation-list">
+            @for (installation of installations; track installation.id) {
               <button
-                mat-raised-button
-                color="primary"
-                (click)="navigateToGitHubAppInstallation()">
-                <mat-icon>launch</mat-icon>
-                Install GitHub App
+                type="button"
+                class="installation-row"
+                [class.selected]="selectedInstallation === installation.id"
+                (click)="onInstallationChange(installation.id)">
+                <img [src]="installation.account.avatar_url" alt="">
+                <span>{{ installation.account.login }}</span>
               </button>
-            </div>
-          </mat-card-content>
-        </mat-card>
-      }
-      <!-- Repository Selection -->
-      @if (repositories.length > 0) {
-        <mat-card class="repository-section">
-          <mat-card-header class="repository-header">
-            <mat-card-title>Select Repositories to Import</mat-card-title>
+            }
+          </div>
+        } @else {
+          <div class="empty-pane">
+            <mat-icon>account_circle</mat-icon>
+            <h3>No GitHub accounts</h3>
+            <p>Install the GitHub App to make repositories available.</p>
+          </div>
+        }
+
+        <button mat-stroked-button class="install-app-button" (click)="navigateToGitHubAppInstallation()">
+          <mat-icon>launch</mat-icon>
+          <span>Install GitHub App</span>
+        </button>
+      </aside>
+
+      <main class="repository-pane">
+        <div class="pane-header repository-pane-header">
+          <div>
+            <h2>Repositories</h2>
+            @if (selectedAccount()) {
+              <p>{{ selectedAccount()?.account?.login }}</p>
+            } @else {
+              <p>Select a GitHub account to browse repositories.</p>
+            }
+          </div>
+
+          @if (repositories.length > 0) {
             <div class="selection-controls">
-              <button mat-button color="primary" (click)="selectAll(true)">Select All</button>
-              <button mat-button (click)="selectAll(false)">Deselect All</button>
+              <button mat-button color="primary" (click)="selectAll(true)">Select all</button>
+              <button mat-button (click)="selectAll(false)">Clear</button>
             </div>
-          </mat-card-header>
-          <mat-card-content>
-            <mat-selection-list class="repository-list">
-              @for (repo of repositories; track repo) {
-                <mat-list-option
-                  [value]="repo"
-                  [selected]="repo.selected"
-                  (click)="toggleSelectRepository(repo)">
-                  <mat-icon matListItemIcon>{{ repo.private ? 'lock' : 'public' }}</mat-icon>
-                  <div matListItemTitle>{{ repo.full_name }}</div>
-                  <div matListItemLine>
-                    @if (repo.description) {
-                      {{ repo.description }}
-                    }
-                    @if (!repo.description) {
-                      <em>No description</em>
-                    }
+          }
+        </div>
+
+        @if (error) {
+          <div class="error-banner">
+            <mat-icon>error</mat-icon>
+            <span>{{ error }}</span>
+          </div>
+        }
+
+        @if (repositoriesLoading) {
+          <div class="loading-state pane-loading">
+            <mat-spinner diameter="32"></mat-spinner>
+            <div>
+              <h3>Loading repositories</h3>
+              <p>Fetching repositories for the selected installation.</p>
+            </div>
+          </div>
+        }
+
+        @if (!repositoriesLoading && !selectedInstallation) {
+          <div class="empty-pane main-empty">
+            <mat-icon>folder_open</mat-icon>
+            <h3>Select an account</h3>
+            <p>Choose a GitHub installation from the left pane.</p>
+          </div>
+        }
+
+        @if (!repositoriesLoading && selectedInstallation && repositories.length === 0) {
+          <div class="empty-pane main-empty">
+            <mat-icon>folder_open</mat-icon>
+            <h3>No repositories available</h3>
+            <p>No repositories were found, or all authorized repositories are already imported.</p>
+            <a mat-button color="primary" href="https://github.com/settings/installations/{{selectedInstallation}}" target="_blank">
+              <mat-icon>launch</mat-icon>
+              <span>Manage GitHub Access</span>
+            </a>
+          </div>
+        }
+
+        @if (!repositoriesLoading && repositories.length > 0) {
+          <div class="repository-list">
+            <div class="repository-header-row">
+              <span>Repository</span>
+              <span>Visibility</span>
+            </div>
+
+            @for (repo of repositories; track repo.id) {
+              <div class="repository-row" [class.selected]="repo.selected" (click)="toggleSelectRepository(repo)">
+                <mat-checkbox
+                  [checked]="repo.selected"
+                  (click)="$event.stopPropagation()"
+                  (change)="setRepositorySelected(repo, $event.checked)">
+                </mat-checkbox>
+
+                <div class="repo-copy">
+                  <div class="repo-name">
+                    <mat-icon>{{ repo.private ? 'lock' : 'public' }}</mat-icon>
+                    <span>{{ repo.full_name }}</span>
                   </div>
-                  <mat-chip class="repo-visibility" [class.private]="repo.private">
-                    {{ repo.private ? 'Private' : 'Public' }}
-                  </mat-chip>
-                </mat-list-option>
-              }
-            </mat-selection-list>
-          </mat-card-content>
-          <mat-card-actions class="import-actions">
-            <button mat-raised-button color="primary" (click)="importRepositories()" [disabled]="!hasSelectedRepositories()">
-              <mat-icon>download</mat-icon>
-              Import Selected Repositories
-            </button>
-          </mat-card-actions>
-        </mat-card>
-      }
-      <!-- No Repositories Message -->
-      @if (repositories.length === 0 && selectedInstallation && !loading) {
-        <mat-card class="no-repositories">
-          <mat-card-content>
-            <div style="text-align: center; padding: 40px;">
-              <mat-icon style="font-size: 48px; height: 48px; width: 48px; color: #ccc;">folder_open</mat-icon>
-              <p>No repositories found for this installation or all repositories have already been imported.</p>
-              <p>Go to <a href="https://github.com/settings/installations/{{selectedInstallation}}" target="_blank">GitHub Settings</a> to authorize more repositories for Markdown CMS App.</p>
-            </div>
-          </mat-card-content>
-        </mat-card>
-    }
-  </div>
-}
+                  <p>{{ repo.description || 'No description' }}</p>
+                </div>
+
+                <mat-chip class="repo-visibility" [class.private]="repo.private">
+                  {{ repo.private ? 'Private' : 'Public' }}
+                </mat-chip>
+              </div>
+            }
+          </div>
+        }
+      </main>
+    </div>
+  }
 </div>

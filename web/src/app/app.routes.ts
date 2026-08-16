@@ -20,8 +20,8 @@ export const routes: Routes = [
   { path: 'repositories/:id', component: RepositoryDetailComponent, canActivate: [authGuard] ,
     children: [
       { path: 'collection/:collectionName', component: CollectionComponent, canActivate: [authGuard] },
-      { path: 'collection/:collectionName/edit', component: EditFileComponent, canActivate: [authGuard], canDeactivate: [CanDeactivateFormGuard]  },
-      { path: 'collection/:collectionName/create', component: CreateFileComponent, canActivate: [authGuard], canDeactivate: [CanDeactivateFormGuard] },
+      { path: 'collection/:collectionName/edit', component: EditFileComponent, canActivate: [authGuard], canDeactivate: [CanDeactivateFormGuard], data: { hideCollectionsSidebar: true } },
+      { path: 'collection/:collectionName/create', component: CreateFileComponent, canActivate: [authGuard], canDeactivate: [CanDeactivateFormGuard], data: { hideCollectionsSidebar: true } },
     ]
   },
   { path: 'repositories/:id/edit', component: EditRepositoryComponent, canActivate: [authGuard] },

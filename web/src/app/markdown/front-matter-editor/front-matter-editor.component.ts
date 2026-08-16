@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
 
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,7 +11,6 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import {MatChipsModule } from '@angular/material/chips';
 import { COMMA, ENTER } from '@angular/cdk/keycodes';
 import { CollectionFieldDefinition } from '../../services/repository.service';
-import { MatCard, MatCardContent, MatCardHeader, MatCardSubtitle, MatCardTitle } from '@angular/material/card';
 import { MatChipInputEvent } from '@angular/material/chips';
 
 @Component({
@@ -19,6 +18,7 @@ import { MatChipInputEvent } from '@angular/material/chips';
   templateUrl: './front-matter-editor.component.html',
   styleUrls: ['./front-matter-editor.component.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     ReactiveFormsModule,
     MatButtonModule,
@@ -28,11 +28,6 @@ import { MatChipInputEvent } from '@angular/material/chips';
     MatDatepickerModule,
     MatNativeDateModule,
     MatSlideToggleModule,
-    MatCardContent,
-    MatCardSubtitle,
-    MatCardTitle,
-    MatCard,
-    MatCardHeader,
     MatChipsModule
 ]
 })

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
@@ -17,6 +17,7 @@ import { AuthService } from '../auth/auth.service';
     RouterModule
 ],
   templateUrl: './nav.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./nav.component.scss']
 })
 export class NavComponent {

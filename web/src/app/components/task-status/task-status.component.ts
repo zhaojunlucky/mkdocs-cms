@@ -1,12 +1,10 @@
-import { Component, Input, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { AsyncTask, RepositoryService, Task } from '../../services/repository.service';
 import { interval, Subscription } from 'rxjs';
 import { switchMap, takeWhile } from 'rxjs/operators';
 import { NgClass, TitleCasePipe } from '@angular/common';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
+import { MatButtonModule, MatIconButton } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatListModule } from '@angular/material/list';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -17,14 +15,14 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
   imports: [
     NgClass,
     TitleCasePipe,
-    MatCardModule,
     MatButtonModule,
+    MatIconButton,
     MatIconModule,
-    MatListModule,
     MatChipsModule,
     MatProgressSpinnerModule,
     MatProgressBarModule
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./task-status.component.scss']
 })
 export class TaskStatusComponent implements OnInit, OnDestroy {
@@ -36,6 +34,7 @@ export class TaskStatusComponent implements OnInit, OnDestroy {
   asyncTask: AsyncTask | null = null;
   loading = true;
   error = '';
+  detailsExpanded = false;
   private subscription: Subscription | null = null;
 
   constructor(private repositoryService: RepositoryService) {}
@@ -49,7 +48,7 @@ export class TaskStatusComponent implements OnInit, OnDestroy {
     } else if (this.task) {
       if ('type' in this.task && 'resource_id' in this.task) {
         // This is already an AsyncTask
-        this.asyncTask = this.task as AsyncTask;
+        this.setTask(this.task as AsyncTask);
         this.taskId = this.task.id;
         this.loading = false;
         if (this.autoRefresh && (this.task.status === 'pending' || this.task.status === 'running')) {
@@ -85,7 +84,7 @@ export class TaskStatusComponent implements OnInit, OnDestroy {
 
     this.repositoryService.getTask(this.taskId).subscribe({
       next: (task) => {
-        this.asyncTask = task;
+        this.setTask(task);
         this.loading = false;
       },
       error: (err) => {
@@ -109,7 +108,7 @@ export class TaskStatusComponent implements OnInit, OnDestroy {
       takeWhile((task: AsyncTask) => task.status === 'pending' || task.status === 'running', true)
     ).subscribe({
       next: (task: AsyncTask) => {
-        this.asyncTask = task;
+        this.setTask(task);
         this.loading = false;
 
         // Stop polling if task is complete
@@ -166,6 +165,49 @@ export class TaskStatusComponent implements OnInit, OnDestroy {
       case 'running': return 'refresh';
       case 'pending': return 'schedule';
       default: return 'help';
+    }
+  }
+
+  getSummaryMessage(): string {
+    if (!this.asyncTask) return '';
+
+    if (this.asyncTask.type === 'sync') {
+      switch (this.asyncTask.status) {
+        case 'completed': return 'Sync completed';
+        case 'failed': return 'Sync failed';
+        case 'running': return 'Syncing repository...';
+        case 'pending': return 'Sync queued';
+      }
+    }
+
+    switch (this.asyncTask.status) {
+      case 'completed': return `${this.asyncTask.type} completed`;
+      case 'failed': return `${this.asyncTask.type} failed`;
+      case 'running': return `${this.asyncTask.type} running`;
+      case 'pending': return `${this.asyncTask.type} pending`;
+      default: return `${this.asyncTask.type} status`;
+    }
+  }
+
+  getShortTaskId(): string {
+    if (!this.asyncTask?.id) return 'N/A';
+    if (this.asyncTask.id.length <= 16) return this.asyncTask.id;
+    return `${this.asyncTask.id.slice(0, 8)}...${this.asyncTask.id.slice(-4)}`;
+  }
+
+  toggleDetails(): void {
+    this.detailsExpanded = !this.detailsExpanded;
+  }
+
+  copyTaskId(): void {
+    if (!this.asyncTask?.id || !navigator.clipboard) return;
+    navigator.clipboard.writeText(this.asyncTask.id);
+  }
+
+  private setTask(task: AsyncTask): void {
+    this.asyncTask = task;
+    if (task.status === 'failed') {
+      this.detailsExpanded = true;
     }
   }
 
