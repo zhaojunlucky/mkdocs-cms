@@ -15,11 +15,13 @@ import {MatTooltip} from '@angular/material/tooltip';
 import {ArrayResponse} from '../../shared/core/response';
 import {StrUtils} from '../../shared/utils/str.utils';
 import {CanComponentDeactivate} from '../../shared/guard/can-deactivate-form.guard';
-import {Observable, of} from 'rxjs';
+import {map, Observable} from 'rxjs';
 import {PageTitleService} from '../../services/page.title.service';
 import {VditorUploadService} from '../../services/vditor.upload.service';
 import {HttpHeaders} from '@angular/common/http';
 import {MatSnackBar} from '@angular/material/snack-bar';
+import {MatDialog, MatDialogModule} from '@angular/material/dialog';
+import {ConfirmDialogComponent} from '../../shared/dialogs/confirm-dialog.component';
 
 interface PathSegment {
   name: string;
@@ -39,7 +41,8 @@ interface PathSegment {
     VditorEditorComponent,
     MatIcon,
     MatIconButton,
-    MatTooltip
+    MatTooltip,
+    MatDialogModule
   ],
   templateUrl: './edit-file.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -149,7 +152,8 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
     private zone: NgZone,
     private pageTitleService: PageTitleService,
     private vditorUploadService: VditorUploadService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private dialog: MatDialog
 
   ) {
     this.editorOptions = {...this.editorOptions, ...this.vditorUploadService.getVditorOptions()};
@@ -199,8 +203,16 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
 
         console.log('Notification created successfully');
       } else {
-        console.log('Notification permission not granted, showing alert');
-        alert("Please enable notification permission!!! You have unsaved changes, please save to avoid losing your work!!!");
+        console.log('Notification permission not granted, showing dialog');
+        this.dialog.open(ConfirmDialogComponent, {
+          data: {
+            title: 'Unsaved changes',
+            message: 'Please enable notification permission. You have unsaved changes, please save to avoid losing your work.',
+            confirmLabel: 'OK',
+            cancelLabel: null,
+            icon: 'warning'
+          }
+        });
       }
     }
   }
@@ -466,7 +478,14 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
     if (!this.changed) {
       return true;
     }
-    const confirmation = window.confirm('You have unsaved changes. Do you really want to leave?');
-    return of(confirmation); // Return Observable<boolean>
+    return this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Discard changes?',
+        message: 'You have unsaved changes. Do you really want to leave?',
+        confirmLabel: 'Leave',
+        destructive: true,
+        icon: 'warning'
+      }
+    }).afterClosed().pipe(map(Boolean));
   }
 }

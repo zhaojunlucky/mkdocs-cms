@@ -706,6 +706,123 @@ func (s *UserGitRepoCollectionService) RenameFile(repo *models.UserGitRepo, coll
 	return nil
 }
 
+func (s *UserGitRepoCollectionService) DeleteFolder(repo *models.UserGitRepo, collectionName string, folderPath string) error {
+	collection, err := s.GetCollectionByName(repo, collectionName)
+	if err != nil {
+		return err
+	}
+
+	cleanFolderPath, err := cleanFolderPath(folderPath)
+	if err != nil {
+		return err
+	}
+
+	fullPath := filepath.Join(collection.Path, cleanFolderPath)
+	fileInfo, err := os.Stat(fullPath)
+	if os.IsNotExist(err) {
+		return core.NewHTTPErrorStr(http.StatusNotFound, "folder does not exist")
+	}
+	if err != nil {
+		return err
+	}
+	if !fileInfo.IsDir() {
+		return core.NewHTTPErrorStr(http.StatusBadRequest, "path is not a folder")
+	}
+
+	if err := os.RemoveAll(fullPath); err != nil {
+		return err
+	}
+
+	commitMsg := fmt.Sprintf("Delete folder %s from collection %s", cleanFolderPath, collectionName)
+	if err := s.CommitWithGithubApp(*repo, commitMsg); err != nil {
+		return fmt.Errorf("failed to commit changes: %v", err)
+	}
+
+	_ = s.userFileDraftStatusService.DeleteFolder(repo.UserID, repo.ID, collectionName, cleanFolderPath)
+
+	return nil
+}
+
+func (s *UserGitRepoCollectionService) RenameFolder(repo *models.UserGitRepo, collectionName string, oldPath string, newPath string) error {
+	collection, err := s.GetCollectionByName(repo, collectionName)
+	if err != nil {
+		return err
+	}
+
+	cleanOldPath, err := cleanFolderPath(oldPath)
+	if err != nil {
+		return err
+	}
+	cleanNewPath, err := cleanFolderPath(newPath)
+	if err != nil {
+		return err
+	}
+	if cleanOldPath == cleanNewPath {
+		return core.NewHTTPErrorStr(http.StatusBadRequest, "new folder path is unchanged")
+	}
+	if strings.HasPrefix(cleanNewPath+"/", cleanOldPath+"/") {
+		return core.NewHTTPErrorStr(http.StatusBadRequest, "cannot move a folder into itself")
+	}
+
+	oldFullPath := filepath.Join(collection.Path, cleanOldPath)
+	newFullPath := filepath.Join(collection.Path, cleanNewPath)
+
+	fileInfo, err := os.Stat(oldFullPath)
+	if os.IsNotExist(err) {
+		return core.NewHTTPErrorStr(http.StatusNotFound, "folder does not exist")
+	}
+	if err != nil {
+		return err
+	}
+	if !fileInfo.IsDir() {
+		return core.NewHTTPErrorStr(http.StatusBadRequest, "path is not a folder")
+	}
+
+	if _, err := os.Stat(newFullPath); err == nil {
+		return core.NewHTTPErrorStr(http.StatusBadRequest, "destination folder already exists")
+	}
+
+	parentDir := filepath.Dir(newFullPath)
+	if err := os.MkdirAll(parentDir, 0755); err != nil {
+		return err
+	}
+
+	if err := os.Rename(oldFullPath, newFullPath); err != nil {
+		return err
+	}
+
+	commitMsg := fmt.Sprintf("Rename folder from %s to %s in collection %s", cleanOldPath, cleanNewPath, collectionName)
+	if err := s.CommitWithGithubApp(*repo, commitMsg); err != nil {
+		return fmt.Errorf("failed to commit changes: %v", err)
+	}
+
+	_ = s.userFileDraftStatusService.RenameFolder(repo.UserID, repo.ID, collectionName, cleanOldPath, cleanNewPath)
+
+	return nil
+}
+
+func (s *UserGitRepoCollectionService) FolderPathExists(repo *models.UserGitRepo, collectionName string, folderPath string) (bool, bool, error) {
+	collection, err := s.GetCollectionByName(repo, collectionName)
+	if err != nil {
+		return false, false, err
+	}
+
+	cleanFolderPath, err := cleanFolderPath(folderPath)
+	if err != nil {
+		return false, false, err
+	}
+
+	fileInfo, err := os.Stat(filepath.Join(collection.Path, cleanFolderPath))
+	if os.IsNotExist(err) {
+		return false, false, nil
+	}
+	if err != nil {
+		return false, false, err
+	}
+
+	return true, fileInfo.IsDir(), nil
+}
+
 func (s *UserGitRepoCollectionService) CreateFolder(repo *models.UserGitRepo, name string, path string, folder string) error {
 	// Get the collection
 	collection, err := s.GetCollectionByName(repo, name)
@@ -754,6 +871,18 @@ func (s *UserGitRepoCollectionService) CreateFolder(repo *models.UserGitRepo, na
 	}
 
 	return nil
+}
+
+func cleanFolderPath(path string) (string, error) {
+	if strings.Contains(path, "\\") {
+		return "", core.NewHTTPErrorStr(http.StatusBadRequest, "invalid folder path")
+	}
+
+	cleanPath := filepath.Clean(path)
+	if cleanPath == "." || cleanPath == ".." || filepath.IsAbs(cleanPath) || strings.HasPrefix(cleanPath, "../") {
+		return "", core.NewHTTPErrorStr(http.StatusBadRequest, "invalid folder path")
+	}
+	return cleanPath, nil
 }
 
 func (s *UserGitRepoCollectionService) VerifyRepoOwnership(userID string, repoID uint) (*models.UserGitRepo, error) {

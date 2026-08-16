@@ -51,7 +51,7 @@ export class FrontMatterEditorComponent implements OnInit {
   initForm(): void {
     this.frontMatterForm = this.fb.group({
     });
-    this.fields = this.fields.filter(f=>f.name !== 'body')
+    this.fields = this.orderFields(this.fields.filter(f => f.name !== 'body'));
 
     this.fields.forEach(field => {
       this.frontMatterForm.addControl(field.name, this.fb.control('', field.required?[Validators.required]:[]));
@@ -80,6 +80,19 @@ export class FrontMatterEditorComponent implements OnInit {
     this.frontMatterForm.valueChanges.subscribe(() => {
       this.updateFrontMatter();
     });
+  }
+
+  private orderFields(fields: CollectionFieldDefinition[]): CollectionFieldDefinition[] {
+    const orderedFields = [...fields];
+    const draftIndex = orderedFields.findIndex(field => field.name === 'draft');
+    const tagsIndex = orderedFields.findIndex(field => field.name === 'tags');
+
+    if (draftIndex > tagsIndex && tagsIndex >= 0) {
+      const [draftField] = orderedFields.splice(draftIndex, 1);
+      orderedFields.splice(tagsIndex, 0, draftField);
+    }
+
+    return orderedFields;
   }
 
   addTag(event: MatChipInputEvent, name: string): void {

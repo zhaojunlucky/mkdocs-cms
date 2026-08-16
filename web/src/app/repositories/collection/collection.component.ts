@@ -7,16 +7,22 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { RepositoryService, Repository, Collection } from '../../services/repository.service';
 import { CollectionService, FileInfo } from '../../services/collection.service';
-import {Observable} from 'rxjs';
+import {Observable, of} from 'rxjs';
+import {catchError, map} from 'rxjs/operators';
 import {MatIconModule} from '@angular/material/icon';
 import {MatTooltip} from '@angular/material/tooltip';
 import {MatCardModule} from '@angular/material/card';
 import {MatFormField, MatInput, MatInputModule} from '@angular/material/input';
 import {MatChipsModule} from '@angular/material/chips';
+import {MatDialog, MatDialogModule} from '@angular/material/dialog';
 import {ArrayResponse} from '../../shared/core/response';
 import {StrUtils} from '../../shared/utils/str.utils';
 import {PageTitleService} from '../../services/page.title.service';
 import {SearchParser} from '../../shared/core/search.parser';
+import {ConfirmDialogComponent} from '../../shared/dialogs/confirm-dialog.component';
+import {TextInputDialogComponent} from '../../shared/dialogs/text-input-dialog.component';
+import {FileNameDialogComponent} from '../../shared/dialogs/file-name-dialog.component';
+import {FileNameParts, FileNameUtils} from '../../shared/utils/file-name.utils';
 
 @Pipe({
   name: 'fileSize',
@@ -51,7 +57,8 @@ export class FileSizePipe implements PipeTransform {
     MatCardModule,
     MatInputModule,
     MatFormField,
-    MatChipsModule
+    MatChipsModule,
+    MatDialogModule
   ],
   templateUrl: './collection.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -67,22 +74,11 @@ export class CollectionComponent implements OnInit {
   searchTerm: string = '';
   pathSegments: { name: string; path: string }[] = [];
 
-  selectedFile: FileInfo | null = null;
   hoveredFile: FileInfo | null = null;
 
   // Front matter and markdown content
   frontMatter: Record<string, any> = {};
   markdownContent = '';
-
-  // Folder operations
-  isCreatingFolder = false;
-  newFolderName = '';
-  folderError = '';
-
-  // Rename operations
-  isRenaming = false;
-  newName = '';
-  renameError = '';
 
   // Global loading state for spinner overlay
   isLoading = true;
@@ -92,7 +88,8 @@ export class CollectionComponent implements OnInit {
     private router: Router,
     private repositoryService: RepositoryService,
     private collectionService: CollectionService,
-    private pageTitleService: PageTitleService
+    private pageTitleService: PageTitleService,
+    private dialog: MatDialog
 
   ) { }
 
@@ -177,41 +174,39 @@ export class CollectionComponent implements OnInit {
 
   // Folder operations
   openCreateFolderDialog(): void {
-    this.isCreatingFolder = true;
-    this.newFolderName = '';
-    this.folderError = '';
+    this.dialog.open(TextInputDialogComponent, {
+      data: {
+        title: 'Create Folder',
+        label: 'Folder name',
+        placeholder: 'Folder Name',
+        confirmLabel: 'Create'
+      },
+      width: '420px'
+    }).afterClosed().subscribe((folderName: string | null | undefined) => {
+      if (folderName) {
+        this.createFolder(folderName);
+      }
+    });
   }
 
-  cancelCreateFolder(): void {
-    this.isCreatingFolder = false;
-    this.newFolderName = '';
-    this.folderError = '';
-  }
-
-  createFolder(): void {
+  createFolder(folderName: string): void {
     if (!this.repositoryId || !this.collectionName) return;
-    if (!this.newFolderName.trim()) {
-      this.folderError = 'Please enter a folder name';
-      return;
-    }
 
     this.isLoading = true;
-    this.folderError = '';
 
     this.collectionService.createFolder(
       this.repositoryId.toString(),
       this.collectionName,
       this.currentPath,
-      this.newFolderName.trim()
+      folderName
     ).subscribe({
       next: () => {
         this.isLoading = false;
-        this.isCreatingFolder = false;
         this.loadFiles(); // Refresh file list
       },
       error: (error) => {
         console.error('Error creating folder:', error);
-        this.folderError = `Failed to create folder. ${StrUtils.stringifyHTTPErr(error)}`;
+        this.error = `Failed to create folder. ${StrUtils.stringifyHTTPErr(error)}`;
         this.isLoading = false;
       }
     });
@@ -219,36 +214,60 @@ export class CollectionComponent implements OnInit {
 
   // Rename operations
   openRenameDialog(file: FileInfo): void {
-    this.selectedFile = file;
-    this.isRenaming = true;
+    const nameParts = FileNameUtils.splitFileName(file.name);
 
-    // @ts-ignore
-    this.newName = file.name.substring(0, file.name.length - file.extension?.length);
-    this.renameError = '';
+    const dialogRef = this.dialog.open(FileNameDialogComponent, {
+      data: {
+        title: 'Rename File',
+        prefix: nameParts.prefix,
+        suffix: nameParts.suffix,
+        extension: nameParts.extension,
+        confirmLabel: 'Rename'
+      },
+      width: '520px'
+    });
+
+    this.collectionService.getFileContent(this.repositoryId, this.collectionName, file.path).subscribe({
+      next: (content) => {
+        dialogRef.componentInstance.data.markdownContent = content;
+      },
+      error: (error) => {
+        console.error('Error loading file content for rename:', error);
+      }
+    });
+
+    dialogRef.afterClosed().subscribe((suffix: string | null | undefined) => {
+      if (!suffix) return;
+
+      const newFileName = FileNameUtils.buildFileName(nameParts.prefix, suffix, nameParts.extension);
+      if (newFileName !== file.name) {
+        this.renameFile(file, nameParts, suffix);
+      }
+    });
   }
 
-  cancelRename(): void {
-    this.isRenaming = false;
-    this.selectedFile = null;
-    this.newName = '';
-    this.renameError = '';
-  }
-
-  renameFile(): void {
-    if (!this.repositoryId ||!this.selectedFile) return;
-    if (!this.newName.trim()) {
-      this.renameError = 'Please enter a name';
+  renameFile(file: FileInfo, nameParts: FileNameParts, suffix: string): void {
+    if (!this.repositoryId) return;
+    const newFileName = FileNameUtils.buildFileName(nameParts.prefix, suffix, nameParts.extension);
+    if (this.files.some(existingFile => existingFile.path !== file.path && existingFile.name === newFileName)) {
+      this.dialog.open(ConfirmDialogComponent, {
+        data: {
+          title: 'File already exists',
+          message: `${newFileName} already exists in this folder.`,
+          confirmLabel: 'OK',
+          cancelLabel: null,
+          icon: 'error'
+        }
+      });
       return;
     }
 
     this.isLoading = true;
-    this.renameError = '';
 
     // Get the directory path from the current file path
-    const currentPath = this.selectedFile.path;
+    const currentPath = file.path;
     const lastSlashIndex = currentPath.lastIndexOf('/');
     const dirPath = lastSlashIndex !== -1 ? currentPath.substring(0, lastSlashIndex) : '';
-    const newFileName = this.newName.trim() + this.selectedFile.extension;
 
     // Build the new path
     const newPath = dirPath ? `${dirPath}/${newFileName}` : newFileName;
@@ -256,19 +275,133 @@ export class CollectionComponent implements OnInit {
     this.collectionService.renameFile(
       this.repositoryId.toString(),
       this.collectionName,
-      this.selectedFile.path,
+      file.path,
       newPath
     ).subscribe({
       next: () => {
         this.isLoading = false;
-        this.isRenaming = false;
         this.loadFiles(); // Refresh file list
       },
       error: (error) => {
         console.error('Error renaming:', error);
-        this.renameError = `Failed to rename. ${StrUtils.stringifyHTTPErr(error)}`;
+        this.error = `Failed to rename. ${StrUtils.stringifyHTTPErr(error)}`;
         this.isLoading = false;
       }
+    });
+  }
+
+  openRenameFolderDialog(folder: FileInfo): void {
+    if (!folder.is_dir) return;
+
+    const parentPath = this.getParentPath(folder.path);
+    this.dialog.open(TextInputDialogComponent, {
+      data: {
+        title: 'Rename Folder',
+        label: 'Folder name',
+        value: folder.name,
+        placeholder: 'Folder Name',
+        confirmLabel: 'Continue',
+        validator: (value: string) => {
+          const newFolderName = value.trim();
+          if (!this.isValidFolderName(newFolderName)) {
+            return 'Folder name cannot contain slashes, path traversal, or reserved names.';
+          }
+          if (newFolderName === folder.name) {
+            return 'Enter a different folder name.';
+          }
+          if (this.files.some(file => file.path !== folder.path && file.name === newFolderName)) {
+            return `An item named "${newFolderName}" already exists in this location.`;
+          }
+          return null;
+        },
+        asyncValidator: (value: string) => {
+          const newFolderName = value.trim();
+          const newPath = parentPath ? `${parentPath}/${newFolderName}` : newFolderName;
+          return this.collectionService.folderExists(this.repositoryId.toString(), this.collectionName, newPath).pipe(
+            map(response => {
+              if (!response.exists) return null;
+              return response.isDir
+                ? `A folder named "${newFolderName}" already exists in this location.`
+                : `A file named "${newFolderName}" already exists in this location.`;
+            }),
+            catchError(() => of('Could not check folder availability.'))
+          );
+        }
+      },
+      width: '420px'
+    }).afterClosed().subscribe((folderName: string | null | undefined) => {
+      if (!folderName) return;
+
+      const newFolderName = folderName.trim();
+      if (!this.isValidFolderName(newFolderName)) {
+        this.showMessage('Invalid folder name', 'Folder name cannot contain slashes, path traversal, or reserved names.', 'error');
+        return;
+      }
+      if (newFolderName === folder.name) {
+        return;
+      }
+      if (this.files.some(file => file.path !== folder.path && file.name === newFolderName)) {
+        this.showMessage('Folder already exists', `${newFolderName} already exists in this folder.`, 'error');
+        return;
+      }
+
+      const newPath = parentPath ? `${parentPath}/${newFolderName}` : newFolderName;
+      this.confirmRenameFolder(folder.path, newPath, () => this.renameFolder(folder.path, newPath));
+    });
+  }
+
+  renameFolder(oldPath: string, newPath: string): void {
+    if (!this.repositoryId || !this.collectionName) return;
+
+    this.isLoading = true;
+    this.collectionService.renameFolder(
+      this.repositoryId.toString(),
+      this.collectionName,
+      oldPath,
+      newPath
+    ).subscribe({
+      next: () => {
+        this.isLoading = false;
+        this.loadFiles();
+      },
+      error: (error) => {
+        console.error('Error renaming folder:', error);
+        this.error = `Failed to rename folder. ${StrUtils.stringifyHTTPErr(error)}`;
+        this.isLoading = false;
+      }
+    });
+  }
+
+  deleteFolder(folder: FileInfo): void {
+    if (!this.repositoryId || !this.collectionName || !folder.is_dir) return;
+
+    this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Delete folder?',
+        message: `This deletes "${folder.name}" and all files inside it. Relative links from other markdown files may point to deleted content.`,
+        confirmLabel: 'Delete Folder',
+        destructive: true,
+        icon: 'delete'
+      }
+    }).afterClosed().subscribe((confirmed: boolean) => {
+      if (!confirmed) return;
+
+      this.isLoading = true;
+      this.collectionService.deleteFolder(
+        this.repositoryId.toString(),
+        this.collectionName,
+        folder.path
+      ).subscribe({
+        next: () => {
+          this.isLoading = false;
+          this.loadFiles();
+        },
+        error: (error) => {
+          console.error('Error deleting folder:', error);
+          this.error = `Failed to delete folder. ${StrUtils.stringifyHTTPErr(error)}`;
+          this.isLoading = false;
+        }
+      });
     });
   }
 
@@ -278,11 +411,29 @@ export class CollectionComponent implements OnInit {
 
     const isFolder = file.is_dir;
     if (isFolder) {
-      alert("Folders cannot be deleted.");
+      this.dialog.open(ConfirmDialogComponent, {
+        data: {
+          title: 'Cannot delete folder',
+          message: 'Folders cannot be deleted from this view.',
+          confirmLabel: 'OK',
+          cancelLabel: null,
+          icon: 'info'
+        }
+      });
       return;
     }
 
-    if (confirm(`Are you sure you want to delete the file "${file.name}"?`)) {
+    this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Delete file',
+        message: `Are you sure you want to delete the file "${file.name}"?`,
+        confirmLabel: 'Delete',
+        destructive: true,
+        icon: 'delete'
+      }
+    }).afterClosed().subscribe((confirmed: boolean) => {
+      if (!confirmed) return;
+
       this.isLoading = true;
 
       this.collectionService.deleteFile(
@@ -300,7 +451,48 @@ export class CollectionComponent implements OnInit {
           this.isLoading = false;
         }
       });
-    }
+    });
+  }
+
+  private confirmRenameFolder(oldPath: string, newPath: string, next: () => void): void {
+    this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Rename folder?',
+        message: `Renaming "${oldPath}" to "${newPath}" may break relative links and image paths in markdown files inside or outside this folder.`,
+        confirmLabel: 'Rename Folder',
+        icon: 'warning'
+      }
+    }).afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed) {
+        next();
+      }
+    });
+  }
+
+  private getParentPath(path: string): string {
+    const lastSlashIndex = path.lastIndexOf('/');
+    return lastSlashIndex === -1 ? '' : path.substring(0, lastSlashIndex);
+  }
+
+  private isValidFolderName(folderName: string): boolean {
+    return !!folderName
+      && folderName !== '.'
+      && folderName !== '..'
+      && !folderName.includes('/')
+      && !folderName.includes('\\')
+      && !folderName.includes('..');
+  }
+
+  private showMessage(title: string, message: string, icon: string): void {
+    this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title,
+        message,
+        confirmLabel: 'OK',
+        cancelLabel: null,
+        icon
+      }
+    });
   }
 
   // Navigate to create file page
