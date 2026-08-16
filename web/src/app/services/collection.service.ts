@@ -33,6 +33,11 @@ export interface CollectionConfig {
   fields?: CollectionField[];
 }
 
+export interface FolderExistsResponse {
+  exists: boolean;
+  isDir: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -53,12 +58,12 @@ export class CollectionService {
 
   // Get files in a specific path within a collection
   getCollectionFilesInPath(repoId: string | number, collectionName: string, path: string): Observable<ArrayResponse<FileInfo>> {
-    return this.http.get<ArrayResponse<FileInfo>>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files?path=${path}`);
+    return this.http.get<ArrayResponse<FileInfo>>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files?path=${encodeURIComponent(path)}`);
   }
 
   // Get file content
   getFileContent(repoId: string | number, collectionName: string, path: string): Observable<string> {
-    return this.http.get(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files/content?path=${path}`, {
+    return this.http.get(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files/content?path=${encodeURIComponent(path)}`, {
       responseType: 'text'
     });
   }
@@ -75,7 +80,7 @@ export class CollectionService {
 
   // Delete file
   deleteFile(repoId: string | number, collectionName: string, path: string): Observable<any> {
-    return this.http.delete<any>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files?path=${path}`);
+    return this.http.delete<any>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files?path=${encodeURIComponent(path)}`);
   }
 
   // Rename file
@@ -84,6 +89,21 @@ export class CollectionService {
       oldPath: oldPath,
       newPath: newPath
     });
+  }
+
+  renameFolder(repoId: string | number, collectionName: string, oldPath: string, newPath: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files/folder/rename`, {
+      oldPath: oldPath,
+      newPath: newPath
+    });
+  }
+
+  deleteFolder(repoId: string | number, collectionName: string, path: string): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files/folder?path=${encodeURIComponent(path)}`);
+  }
+
+  folderExists(repoId: string | number, collectionName: string, path: string): Observable<FolderExistsResponse> {
+    return this.http.get<FolderExistsResponse>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files/folder/exists?path=${encodeURIComponent(path)}`);
   }
 
   // Upload file

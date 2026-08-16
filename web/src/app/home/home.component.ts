@@ -15,11 +15,13 @@ import { Router } from '@angular/router';
 import {MatChipsModule} from '@angular/material/chips';
 import {StrUtils} from '../shared/utils/str.utils';
 import {PageTitleService} from '../services/page.title.service';
+import {MatDialog, MatDialogModule} from '@angular/material/dialog';
+import {ConfirmDialogComponent} from '../shared/dialogs/confirm-dialog.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule, ComponentsModule, MatButtonModule, MatIconModule, MatMenuModule, MatCardModule, MatChipsModule, MatProgressSpinnerModule],
+  imports: [CommonModule, RouterModule, ComponentsModule, MatButtonModule, MatIconModule, MatMenuModule, MatCardModule, MatChipsModule, MatProgressSpinnerModule, MatDialogModule],
   templateUrl: './home.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./home.component.scss']
@@ -34,7 +36,8 @@ export class HomeComponent implements OnInit {
     private repositoryService: RepositoryService,
     private authService: AuthService,
     private router: Router,
-    private pageTitleService: PageTitleService
+    private pageTitleService: PageTitleService,
+    private dialog: MatDialog
 
   ) {}
 
@@ -145,7 +148,17 @@ export class HomeComponent implements OnInit {
 
   deleteRepository(repo: Repository): void {
     repo.showMenu = false; // Close the menu
-    if (confirm(`Are you sure you want to delete repository "${repo.name}"?`)) {
+    this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Delete repository',
+        message: `Are you sure you want to delete repository "${repo.name}"?`,
+        confirmLabel: 'Delete',
+        destructive: true,
+        icon: 'delete'
+      }
+    }).afterClosed().subscribe((confirmed: boolean) => {
+      if (!confirmed) return;
+
       this.repositoryService.deleteRepository(repo.id).subscribe({
         next: () => {
           this.repositories = this.repositories.filter(r => r.id !== repo.id);
@@ -155,7 +168,7 @@ export class HomeComponent implements OnInit {
           // Optionally show an error message
         }
       });
-    }
+    });
   }
 
   getStatusClass(repo: Repository): string {

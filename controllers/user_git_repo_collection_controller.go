@@ -30,6 +30,9 @@ func (ctrl *UserGitRepoCollectionController) Init(ctx *core.APPContext, router *
 		// Collection file routes
 		collections.GET("/repo/:repoId/:collectionName/files", ctrl.GetCollectionFilesInPath)
 		collections.POST("/repo/:repoId/:collectionName/files/folder", ctrl.CreateFolder)
+		collections.GET("/repo/:repoId/:collectionName/files/folder/exists", ctrl.FolderExists)
+		collections.DELETE("/repo/:repoId/:collectionName/files/folder", ctrl.DeleteFolder)
+		collections.PUT("/repo/:repoId/:collectionName/files/folder/rename", ctrl.RenameFolder)
 		collections.GET("/repo/:repoId/:collectionName/files/content", ctrl.GetFileContent)
 		collections.PUT("/repo/:repoId/:collectionName/files/content", ctrl.UpdateFileContent)
 		collections.DELETE("/repo/:repoId/:collectionName/files", ctrl.DeleteFile)
@@ -364,6 +367,11 @@ type CreateFolderRequest struct {
 	Folder string `json:"folder" binding:"required"`
 }
 
+type FolderExistsResponse struct {
+	Exists bool `json:"exists"`
+	IsDir  bool `json:"isDir"`
+}
+
 // RenameFile renames a file in a collection
 func (ctrl *UserGitRepoCollectionController) RenameFile(c *gin.Context) {
 	reqParam := core.NewRequestParam()
@@ -408,6 +416,130 @@ func (ctrl *UserGitRepoCollectionController) RenameFile(c *gin.Context) {
 
 	log.Infof("File %s renamed to %s successfully", req.OldPath, req.NewPath)
 	c.Status(http.StatusOK)
+}
+
+func (ctrl *UserGitRepoCollectionController) RenameFolder(c *gin.Context) {
+	reqParam := core.NewRequestParam()
+	userId := reqParam.AddContextParam("userId", false, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile(`\d+`))
+	collectionName := reqParam.AddUrlParam("collectionName", false, nil)
+	var req RenameFileRequest
+
+	if err := reqParam.HandleWithBody(c, &req); err != nil {
+		core.HandleError(c, err)
+		return
+	}
+
+	repoID, err := repoIDParam.UInt64()
+	if err != nil {
+		log.Errorf("Failed to parse repository ID: %v", err)
+		core.ResponseErrStr(c, http.StatusBadRequest, "Invalid repository ID")
+		return
+	}
+
+	repo, err := ctrl.service.VerifyRepoOwnership(userId.String(), uint(repoID))
+	if err != nil {
+		log.Errorf("Failed to verify repository ownership: %v", err)
+		core.HandleError(c, err)
+		return
+	}
+
+	lock := ctrl.userGitRepoLockService.Acquire(c.Param("repoId"))
+	lock.Lock()
+	defer lock.Unlock()
+
+	err = ctrl.service.RenameFolder(repo, collectionName.String(), req.OldPath, req.NewPath)
+	if err != nil {
+		log.Errorf("Failed to rename folder: %v", err)
+		core.HandleError(c, err)
+		return
+	}
+
+	log.Infof("Folder %s renamed to %s successfully", req.OldPath, req.NewPath)
+	c.Status(http.StatusOK)
+}
+
+func (ctrl *UserGitRepoCollectionController) DeleteFolder(c *gin.Context) {
+	reqParam := core.NewRequestParam()
+	userId := reqParam.AddContextParam("userId", false, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile(`\d+`))
+	collectionName := reqParam.AddUrlParam("collectionName", true, nil)
+	pathParam := reqParam.AddQueryParam("path", false, nil)
+
+	if err := reqParam.Handle(c); err != nil {
+		core.HandleError(c, err)
+		return
+	}
+
+	repoID, err := repoIDParam.UInt64()
+	if err != nil {
+		log.Errorf("Failed to parse repository ID: %v", err)
+		core.ResponseErrStr(c, http.StatusBadRequest, "Invalid repository ID")
+		return
+	}
+
+	repo, err := ctrl.service.VerifyRepoOwnership(userId.String(), uint(repoID))
+	if err != nil {
+		log.Errorf("Failed to verify repository ownership: %v", err)
+		core.HandleError(c, err)
+		return
+	}
+
+	lock := ctrl.userGitRepoLockService.Acquire(c.Param("repoId"))
+	lock.Lock()
+	defer lock.Unlock()
+
+	folderPath := pathParam.String()
+	if err := ctrl.service.DeleteFolder(repo, collectionName.String(), folderPath); err != nil {
+		log.Errorf("Failed to delete folder: %v", err)
+		core.HandleError(c, err)
+		return
+	}
+
+	log.Infof("Folder %s deleted successfully", folderPath)
+	c.Status(http.StatusNoContent)
+}
+
+func (ctrl *UserGitRepoCollectionController) FolderExists(c *gin.Context) {
+	reqParam := core.NewRequestParam()
+	userId := reqParam.AddContextParam("userId", false, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile(`\d+`))
+	collectionName := reqParam.AddUrlParam("collectionName", true, nil)
+	pathParam := reqParam.AddQueryParam("path", false, nil)
+
+	if err := reqParam.Handle(c); err != nil {
+		core.HandleError(c, err)
+		return
+	}
+
+	repoID, err := repoIDParam.UInt64()
+	if err != nil {
+		log.Errorf("Failed to parse repository ID: %v", err)
+		core.ResponseErrStr(c, http.StatusBadRequest, "Invalid repository ID")
+		return
+	}
+
+	repo, err := ctrl.service.VerifyRepoOwnership(userId.String(), uint(repoID))
+	if err != nil {
+		log.Errorf("Failed to verify repository ownership: %v", err)
+		core.HandleError(c, err)
+		return
+	}
+
+	exists, isDir, err := ctrl.service.FolderPathExists(repo, collectionName.String(), pathParam.String())
+	if err != nil {
+		log.Errorf("Failed to check folder path existence: %v", err)
+		core.HandleError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, FolderExistsResponse{
+		Exists: exists,
+		IsDir:  isDir,
+	})
 }
 
 func (ctrl *UserGitRepoCollectionController) CreateFolder(c *gin.Context) {

@@ -5,6 +5,8 @@ import { HttpClient } from '@angular/common/http';
 import { catchError, map, tap } from 'rxjs/operators';
 import {environment} from '../../environments/environment';
 import {StrUtils} from '../shared/utils/str.utils';
+import {MatDialog} from '@angular/material/dialog';
+import {ConfirmDialogComponent} from '../shared/dialogs/confirm-dialog.component';
 
 export interface User {
   id: string;
@@ -26,7 +28,8 @@ export class AuthService {
   constructor(
     private http: HttpClient,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private dialog: MatDialog
   ) {
     this.refreshUserAuth()
   }
@@ -132,7 +135,7 @@ export class AuthService {
     if (token ) {
       const userIdHash = await StrUtils.sha256(user.id);
       if (userIdHash !== token) {
-        alert("Authentication failed, invalid token. Please try again.");
+        this.showMessage('Authentication failed', 'Authentication failed, invalid token. Please try again.');
         throw new Error('Authentication failed');
       }
 
@@ -153,9 +156,22 @@ export class AuthService {
       },
       error: (error) => {
         console.error('Error logging out:', error);
-        alert(StrUtils.stringifyHTTPErr(error));
+        this.showMessage('Logout failed', StrUtils.stringifyHTTPErr(error), true);
       }
     });
 
+  }
+
+  private showMessage(title: string, message: string, destructive = false): void {
+    this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title,
+        message,
+        confirmLabel: 'OK',
+        cancelLabel: null,
+        destructive,
+        icon: destructive ? 'error' : 'info'
+      }
+    });
   }
 }

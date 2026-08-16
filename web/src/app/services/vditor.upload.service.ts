@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import {environment} from '../../environments/environment';
 import {StrUtils} from '../shared/utils/str.utils';
+import {MatDialog} from '@angular/material/dialog';
+import {ConfirmDialogComponent} from '../shared/dialogs/confirm-dialog.component';
 
 @Injectable({
   providedIn: 'root'
@@ -28,21 +30,34 @@ export class VditorUploadService {
           }
         });
       } catch (error) {
-        // @ts-ignore
-        alert('Upload failed: ' + StrUtils.stringifyHTTPErr(error));
+        const message = error instanceof Error ? error.message : String(error);
+        this.showUploadError('Upload failed: ' + message);
         return '';
       }
     },
     error: (msg: any) => {
-      alert(StrUtils.stringifyHTTPErr(JSON.parse(msg)));
+      this.showUploadError(StrUtils.stringifyHTTPErr(JSON.parse(msg)));
     },
   }
 
-  constructor() { }
+  constructor(private dialog: MatDialog) { }
 
   getVditorOptions() {
     return {
       upload: this.uploadConfig
     }
+  }
+
+  private showUploadError(message: string): void {
+    this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Upload failed',
+        message,
+        confirmLabel: 'OK',
+        cancelLabel: null,
+        destructive: true,
+        icon: 'error'
+      }
+    });
   }
 }

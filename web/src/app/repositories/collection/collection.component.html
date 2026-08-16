@@ -67,52 +67,6 @@
           </div>
         </div>
 
-        @if (isCreatingFolder) {
-          <div class="dialog-overlay">
-            <mat-card class="dialog" appearance="outlined">
-              <mat-card-header>
-                <mat-card-title>Create New Folder</mat-card-title>
-              </mat-card-header>
-              <mat-card-content>
-                <mat-form-field class="dialog-content">
-                  <mat-label>New Folder</mat-label>
-                  <input matInput [(ngModel)]="newFolderName" placeholder="Folder Name">
-                  @if (folderError) {
-                    <mat-error class="error-text">{{ folderError }}</mat-error>
-                  }
-                </mat-form-field>
-              </mat-card-content>
-              <mat-card-actions class="dialog-actions">
-                <button mat-button (click)="cancelCreateFolder()" [disabled]="isLoading">Cancel</button>
-                <button mat-flat-button color="primary" (click)="createFolder()" [disabled]="!newFolderName.trim()">Create</button>
-              </mat-card-actions>
-            </mat-card>
-          </div>
-        }
-
-        @if (isRenaming) {
-          <div class="dialog-overlay">
-            <mat-card class="dialog" appearance="outlined">
-              <mat-card-header>
-                <mat-card-title>Rename File</mat-card-title>
-              </mat-card-header>
-              <mat-card-content>
-                <mat-form-field class="dialog-content">
-                  <mat-label>New Name without extension</mat-label>
-                  <input matInput [(ngModel)]="newName" placeholder="New Name">
-                  @if (renameError) {
-                    <mat-error class="error-text">{{ renameError }}</mat-error>
-                  }
-                </mat-form-field>
-              </mat-card-content>
-              <mat-card-actions class="dialog-actions">
-                <button mat-button (click)="cancelRename()" [disabled]="isLoading">Cancel</button>
-                <button mat-flat-button color="primary" (click)="renameFile()" [disabled]="!newName.trim() || newName+selectedFile?.extension == selectedFile?.name">Rename</button>
-              </mat-card-actions>
-            </mat-card>
-          </div>
-        }
-
         @if (filteredFiles.length === 0) {
           <div class="empty-state">
             <mat-icon>{{ searchTerm ? 'search_off' : 'folder_open' }}</mat-icon>
@@ -139,7 +93,7 @@
         }
 
         @if (filteredFiles.length > 0) {
-          <div class="file-list" [class.overlay-active]="isRenaming || isCreatingFolder">
+          <div class="file-list">
             <div class="file-row file-header-row" aria-hidden="true">
               <span>Name</span>
               <span>Status</span>
@@ -175,11 +129,20 @@
                 </span>
                 <span class="file-date">{{ file.mod_time | date:'mediumDate' }}</span>
 
-                @if (!file.is_dir) {
-                  <button mat-icon-button [matMenuTriggerFor]="fileMenu" aria-label="File actions">
-                    <mat-icon>more_vert</mat-icon>
-                  </button>
-                  <mat-menu #fileMenu="matMenu">
+                <button mat-icon-button [matMenuTriggerFor]="pathMenu" aria-label="Actions">
+                  <mat-icon>more_vert</mat-icon>
+                </button>
+                <mat-menu #pathMenu="matMenu">
+                  @if (file.is_dir) {
+                    <button mat-menu-item (click)="openRenameFolderDialog(file)">
+                      <mat-icon>drive_file_rename_outline</mat-icon>
+                      <span>Rename Folder</span>
+                    </button>
+                    <button mat-menu-item (click)="deleteFolder(file)">
+                      <mat-icon>delete</mat-icon>
+                      <span>Delete Folder</span>
+                    </button>
+                  } @else {
                     <button mat-menu-item (click)="openRenameDialog(file)">
                       <mat-icon>edit</mat-icon>
                       <span>Rename</span>
@@ -188,8 +151,8 @@
                       <mat-icon>delete</mat-icon>
                       <span>Delete</span>
                     </button>
-                  </mat-menu>
-                }
+                  }
+                </mat-menu>
               </div>
             }
           </div>

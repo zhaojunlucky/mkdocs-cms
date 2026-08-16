@@ -72,7 +72,7 @@
         <div class="editor-actions">
           <span class="save-state">Draft</span>
           <button mat-button (click)="cancel()" [disabled]="isCreating">Cancel</button>
-          <button mat-flat-button color="primary" (click)="createFile()" [disabled]="isCreating || !fileName.trim()">
+          <button mat-flat-button color="primary" (click)="createFile()" [disabled]="isCreating">
             @if (isCreating) {
               <mat-spinner diameter="16" class="button-spinner"></mat-spinner>
             }
@@ -101,8 +101,10 @@
               </header>
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>File name</mat-label>
-                <input matInput [(ngModel)]="fileName" placeholder="my-document.md" [disabled]="isCreating">
-                <mat-hint>.md will be added if omitted</mat-hint>
+                <input matInput [value]="fileNamePreview" readonly>
+                <button matSuffix mat-icon-button type="button" (click)="openFileNameEditor()" [disabled]="isCreating" matTooltip="Edit file name">
+                  <mat-icon>edit</mat-icon>
+                </button>
               </mat-form-field>
             </section>
 

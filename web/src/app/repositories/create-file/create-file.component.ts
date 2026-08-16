@@ -16,13 +16,17 @@ import {MatTooltip} from '@angular/material/tooltip';
 import {MatIconButton} from '@angular/material/button';
 import {StrUtils} from '../../shared/utils/str.utils';
 import {CanComponentDeactivate} from '../../shared/guard/can-deactivate-form.guard';
-import {Observable, of} from 'rxjs';
+import {map, Observable} from 'rxjs';
 import * as yaml from 'js-yaml';
 import {PageTitleService} from '../../services/page.title.service';
 import {VditorUploadService} from '../../services/vditor.upload.service';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {HttpHeaders} from '@angular/common/http';
 import {ArrayResponse} from '../../shared/core/response';
+import {MatDialog, MatDialogModule} from '@angular/material/dialog';
+import {ConfirmDialogComponent} from '../../shared/dialogs/confirm-dialog.component';
+import {FileNameDialogComponent} from '../../shared/dialogs/file-name-dialog.component';
+import {FileNameUtils} from '../../shared/utils/file-name.utils';
 
 @Component({
   selector: 'app-create-file',
@@ -39,7 +43,8 @@ import {ArrayResponse} from '../../shared/core/response';
     MatInputModule,
     MatIcon,
     MatIconButton,
-    MatTooltip
+    MatTooltip,
+    MatDialogModule
   ],
   templateUrl: './create-file.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -54,7 +59,8 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
   pathSegments: { name: string; path: string }[] = [];
 
   // File creation properties
-  fileName: string = '';
+  fileNamePrefix = '';
+  fileNameSuffixOverride: string | null = null;
   fileError: string = '';
   isCreating: boolean = false;
 
@@ -149,7 +155,8 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
     private zone: NgZone,
     private pageTitleService: PageTitleService,
     private vditorUploadService: VditorUploadService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private dialog: MatDialog
   ) {
     this.editorOptions = {...this.editorOptions, ...this.vditorUploadService.getVditorOptions()};
   }
@@ -183,8 +190,16 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
 
         console.log('Notification created successfully');
       } else {
-        console.log('Notification permission not granted, showing alert');
-        alert("Please enable notification permission!!! You have unsaved changes, please save to avoid losing your work!!!");
+        console.log('Notification permission not granted, showing dialog');
+        this.dialog.open(ConfirmDialogComponent, {
+          data: {
+            title: 'Unsaved changes',
+            message: 'Please enable notification permission. You have unsaved changes, please save to avoid losing your work.',
+            confirmLabel: 'OK',
+            cancelLabel: null,
+            icon: 'warning'
+          }
+        });
       }
     }
   }
@@ -251,13 +266,7 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
           let bodyField = this.collection.fields?.find(f=>f.name === 'body')
           this.markdownContent = bodyField?.default || '';
           this.updatePathSegments();
-          this.isLoading = false;
-          if (foundCollection?.file_name_generator?.type === 'sequence') {
-            // load files
-            this.loadFiles();
-          } else {
-            this.fileName = this.generateFileName();
-          }
+          this.loadFiles();
         } else {
           this.error = 'Collection not found';
           this.isLoading = false;
@@ -306,6 +315,18 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
     this.changed = true;
   }
 
+  get fileNameSuffix(): string {
+    return this.fileNameSuffixOverride ?? this.autoFileNameSuffix;
+  }
+
+  get fileNamePreview(): string {
+    return FileNameUtils.buildFileName(this.fileNamePrefix, this.fileNameSuffix || '{title}');
+  }
+
+  private get autoFileNameSuffix(): string {
+    return FileNameUtils.slugifyTitle(FileNameUtils.extractFirstH1(this.markdownContent));
+  }
+
   onFrontMatterInit(frontMatter: Record<string, any>): void {
     this.frontMatter = frontMatter;
   }
@@ -348,16 +369,42 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
 
   createFile(): void {
     if (!this.repositoryId || !this.collection) return;
-    if (!this.fileName.trim()) {
-      this.fileError = 'Please enter a file name';
-      this.showErrorMessage('Please enter a file name');
-      return;
-    }
 
-    // Add .md extension if not present
-    let finalFileName = this.fileName.trim();
-    if (!finalFileName.endsWith('.md')) {
-      finalFileName += '.md';
+    this.openFileNameDialog('Create File', (suffix) => {
+      this.fileNameSuffixOverride = suffix;
+      this.saveFile(FileNameUtils.buildFileName(this.fileNamePrefix, suffix));
+    });
+  }
+
+  openFileNameEditor(): void {
+    this.openFileNameDialog('Use Name', (suffix) => {
+      this.fileNameSuffixOverride = suffix;
+      this.changed = true;
+    });
+  }
+
+  private openFileNameDialog(confirmLabel: string, next: (suffix: string) => void): void {
+    this.dialog.open(FileNameDialogComponent, {
+      data: {
+        title: confirmLabel === 'Create File' ? 'Create File' : 'File Name',
+        prefix: this.fileNamePrefix,
+        suffix: this.fileNameSuffix,
+        markdownContent: this.markdownContent,
+        confirmLabel
+      },
+      width: '520px'
+    }).afterClosed().subscribe((suffix: string | null | undefined) => {
+      if (suffix) {
+        next(suffix);
+      }
+    });
+  }
+
+  private saveFile(finalFileName: string): void {
+    if (!this.collection) return;
+    if (this.files.some(file => !file.is_dir && file.name === finalFileName)) {
+      this.showErrorMessage(`${finalFileName} already exists in this folder.`);
+      return;
     }
 
     this.isCreating = true;
@@ -420,8 +467,15 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
     if (!this.changed) {
       return true;
     }
-    const confirmation = window.confirm('You have unsaved changes. Do you really want to leave?');
-    return of(confirmation); // Return Observable<boolean>
+    return this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Discard changes?',
+        message: 'You have unsaved changes. Do you really want to leave?',
+        confirmLabel: 'Leave',
+        destructive: true,
+        icon: 'warning'
+      }
+    }).afterClosed().pipe(map(Boolean));
   }
 
   private showErrorMessage(message: string): void {
@@ -432,7 +486,7 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
     });
   }
 
-  private generateFileName() {
+  private generateFileNamePrefix() {
     if (this.collection?.file_name_generator) {
       switch (this.collection?.file_name_generator.type) {
         case 'date':
@@ -470,7 +524,7 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
       next: (files) => {
         this.files = files.entries;
         this.isLoading = false;
-        this.fileName = this.generateFileName();
+        this.fileNamePrefix = this.generateFileNamePrefix();
       },
       error: (error) => {
         console.error('Error loading files:', error);
