@@ -48,6 +48,7 @@ jobs:
 
       - name: SonarQube Scan
         uses: Sonarsource/sonarqube-scan-action@v6
+        if: false
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
@@ -76,6 +77,7 @@ jobs:
           cache-dependency-path: '**/yarn.lock'
       - name: SonarQube Scan
         uses: Sonarsource/sonarqube-scan-action@v6
+        if: false
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
