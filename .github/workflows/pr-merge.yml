@@ -96,5 +96,6 @@ jobs:
           HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
         working-directory: gh-action-script
         run: |
+          corepack enable
           yarn install
           node src/release/release.mjs
