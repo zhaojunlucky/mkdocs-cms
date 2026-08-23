@@ -1,57 +1,163 @@
 <section class="front-matter-panel">
-  <header class="front-matter-header">
-    <h2>Metadata</h2>
-    <p>Front matter for this markdown file.</p>
-  </header>
-
   <form [formGroup]="frontMatterForm" class="front-matter-form" [class.disabled-form]="disabled">
-    @for (field of fields; track field) {
-      <div>
-        @switch (field.type) {
-          @case ('date') {
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>{{ field.label }}</mat-label>
-              <input matInput [matDatepicker]="picker" [formControlName]="field.name">
-              <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-              <mat-datepicker #picker></mat-datepicker>
-            </mat-form-field>
-          }
-          @case ('string') {
-            <mat-form-field appearance="outline" class="full-width">
-              @if (!field.list) {
-                <ng-container matLabel>{{ field.label }}</ng-container>
-                <input matInput [formControlName]="field.name">
+    @if (metadataFields.length > 0) {
+      <section class="field-group">
+        <header class="front-matter-header">
+          <h2>Metadata</h2>
+          <p>Front matter for this markdown file.</p>
+        </header>
+
+        @for (field of metadataFields; track field.name) {
+          <div class="field-block">
+            @switch (field.type) {
+              @case ('date') {
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>{{ field.label }}</mat-label>
+                  <input matInput [matDatepicker]="picker" [formControlName]="field.name">
+                  <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                  <mat-datepicker #picker></mat-datepicker>
+                </mat-form-field>
               }
-              @if (field.list) {
-                <ng-container matLabel>Tags</ng-container>
-                <mat-chip-grid #chipGrid>
-                  @for (tag of listValues[field.name]; track tag) {
-                    <mat-chip-row
-                      (removed)="removeTag(tag, field.name)">
-                      {{tag}}
-                      <button matChipRemove>
-                        <mat-icon>cancel</mat-icon>
-                      </button>
-                    </mat-chip-row>
+              @case ('string') {
+                <mat-form-field appearance="outline" class="full-width">
+                  @if (!field.list) {
+                    <ng-container matLabel>{{ field.label }}</ng-container>
+                    <input matInput [formControlName]="field.name">
                   }
-                  <input matInput placeholder="New tag..."
-                    [matChipInputFor]="chipGrid"
-                    [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
-                    (matChipInputTokenEnd)="addTag($event, field.name)">
-                </mat-chip-grid>
-                <ng-container matHint>Press Enter or comma to add tags</ng-container>
+                  @if (field.list) {
+                    <ng-container matLabel>Tags</ng-container>
+                    <mat-chip-grid #chipGrid>
+                      @for (tag of listValues[field.name]; track tag) {
+                        <mat-chip-row
+                          (removed)="removeTag(tag, field.name)">
+                          {{tag}}
+                          <button matChipRemove>
+                            <mat-icon>cancel</mat-icon>
+                          </button>
+                        </mat-chip-row>
+                      }
+                      <input matInput placeholder="New tag..."
+                        [matChipInputFor]="chipGrid"
+                        [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+                        (matChipInputTokenEnd)="addTag($event, field.name)">
+                    </mat-chip-grid>
+                    <ng-container matHint>Press Enter or comma to add tags</ng-container>
+                  }
+                </mat-form-field>
               }
-            </mat-form-field>
-          }
-          @case ('boolean') {
-            <div class="boolean-field full-width">
-              <mat-slide-toggle [formControlName]="field.name" color="primary">
-                {{ field.label }}
-              </mat-slide-toggle>
-            </div>
-          }
+              @case ('text') {
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>{{ field.label }}</mat-label>
+                  <textarea matInput rows="4" [formControlName]="field.name"></textarea>
+                </mat-form-field>
+              }
+              @case ('number') {
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>{{ field.label }}</mat-label>
+                  <input matInput type="number" [formControlName]="field.name">
+                </mat-form-field>
+              }
+              @case ('boolean') {
+                <div class="boolean-field full-width">
+                  <mat-slide-toggle [formControlName]="field.name" color="primary">
+                    {{ field.label }}
+                  </mat-slide-toggle>
+                </div>
+              }
+            }
+          </div>
         }
-      </div>
+      </section>
+    }
+
+    @if (seoFields.length > 0) {
+      <section class="field-group">
+        <header class="front-matter-header">
+          <h2>SEO</h2>
+          <p>Search metadata for this markdown page.</p>
+        </header>
+
+        @for (field of seoFields; track field.name) {
+          <div class="field-block">
+            @switch (field.type) {
+              @case ('text') {
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>{{ field.label }}</mat-label>
+                  <textarea matInput rows="4" [formControlName]="field.name" (input)="markManualEdit(field.name)"></textarea>
+                  @if (field.name === 'description') {
+                    <mat-hint align="end">{{ descriptionLength(field.name) }} / {{ field.recommended_max || 160 }}</mat-hint>
+                  }
+                </mat-form-field>
+              }
+              @default {
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>{{ field.label }}</mat-label>
+                  <input matInput [formControlName]="field.name" (input)="markManualEdit(field.name)">
+                </mat-form-field>
+              }
+            }
+
+            @if (field.auto_from) {
+              <button mat-button type="button" class="auto-button" (click)="autoFill(field)">
+                <mat-icon>auto_fix_high</mat-icon>
+                <span>{{ field.name === 'title' ? 'Use H1' : 'Generate from content' }}</span>
+              </button>
+            }
+
+            @for (warning of fieldWarnings(field); track warning) {
+              <p class="seo-warning">
+                <mat-icon>info</mat-icon>
+                <span>{{ warning }}</span>
+              </p>
+            }
+          </div>
+        }
+
+        <section class="seo-preview">
+          <h3>Search preview</h3>
+          <p class="preview-title">{{ searchPreviewTitle }}</p>
+          @if (canonicalUrl) {
+            <p class="preview-url">{{ canonicalUrl }}</p>
+          }
+          <p class="preview-description">{{ searchPreviewDescription }}</p>
+        </section>
+
+        @if (pageIssues().length > 0) {
+          <section class="seo-issues">
+            <h3>Page issues</h3>
+            @for (issue of pageIssues(); track issue.type + issue.message) {
+              <p class="seo-warning" [class.is-error]="issue.severity === 'error'">
+                <mat-icon>{{ issue.severity === 'error' ? 'error' : 'info' }}</mat-icon>
+                <span>{{ issue.message }}</span>
+              </p>
+            }
+          </section>
+        }
+
+        @if (siteHealthIssues.length > 0) {
+          <section class="seo-issues">
+            <h3>Site health</h3>
+            @for (issue of siteHealthIssues; track issue.type + issue.message) {
+              <p class="seo-warning" [class.is-error]="issue.severity === 'error'">
+                <mat-icon>{{ issue.severity === 'error' ? 'error' : 'info' }}</mat-icon>
+                <span>{{ issue.message }}</span>
+              </p>
+            }
+          </section>
+        }
+
+        @if (relatedPages.length > 0) {
+          <section class="related-pages">
+            <h3>Related pages</h3>
+            @for (page of relatedPages; track page.sourcePath) {
+              <button mat-button type="button" class="related-page" (click)="insertRelatedLink(page)">
+                <mat-icon>add_link</mat-icon>
+                <span>{{ page.title || page.h1 || page.sourcePath }}</span>
+              </button>
+            }
+          </section>
+        }
+      </section>
     }
   </form>
 </section>

@@ -23,13 +23,17 @@ export interface Repository {
 }
 
 export interface CollectionFieldDefinition {
-  type: string;
+  type: 'string' | 'text' | 'date' | 'boolean' | 'number';
   name: string;
   label: string;
   required?: boolean;
   format?: string;
   list?: boolean;
   default?: any;
+  seo?: boolean;
+  auto_from?: 'h1' | 'excerpt' | 'content';
+  recommended_min?: number;
+  recommended_max?: number;
 }
 
 export interface FileNameGenerator {
@@ -43,11 +47,49 @@ export interface Collection {
   label: string;
   description?: string;
   path: string;
+  source_path?: string;
   repo_id: number;
   created_at: string;
   updated_at: string;
   fields?: CollectionFieldDefinition[];
   file_name_generator?: FileNameGenerator
+}
+
+export interface SeoIssue {
+  severity: 'info' | 'warning' | 'error';
+  type: string;
+  message: string;
+  path?: string;
+}
+
+export interface SeoSiteInfo {
+  siteName: string;
+  siteUrl: string;
+  siteDescription: string;
+  siteAuthor: string;
+  useDirectoryUrls: boolean;
+  docsDir: string;
+  blogDir: string;
+  postDir: string;
+  postUrlFormat: string;
+}
+
+export interface SeoPage {
+  sourcePath: string;
+  urlPath: string;
+  canonicalUrl: string;
+  title: string;
+  description: string;
+  h1: string;
+  h1Count: number;
+  tags?: string[];
+  draft?: boolean;
+}
+
+export interface SeoReport {
+  site: SeoSiteInfo;
+  pages: SeoPage[];
+  issues: SeoIssue[];
 }
 
 export interface AsyncTask {
@@ -106,6 +148,10 @@ export class RepositoryService {
   // Get collections for a repository
   getRepositoryCollections(repoId: number|string): Observable<ArrayResponse<Collection>> {
     return this.http.get<ArrayResponse<Collection>>(`${this.apiUrl}/v1/collections/repo/${repoId}`);
+  }
+
+  getRepositorySeo(repoId: number|string): Observable<SeoReport> {
+    return this.http.get<SeoReport>(`${this.apiUrl}/v1/repos/${repoId}/seo`);
   }
 
   // Update a repository

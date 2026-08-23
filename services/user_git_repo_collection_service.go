@@ -16,6 +16,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/zhaojunlucky/mkdocs-cms/core"
 	"github.com/zhaojunlucky/mkdocs-cms/core/md"
+	"github.com/zhaojunlucky/mkdocs-cms/core/seo"
 
 	"github.com/zhaojunlucky/mkdocs-cms/database"
 	"github.com/zhaojunlucky/mkdocs-cms/models"
@@ -39,18 +40,26 @@ func (s *UserGitRepoCollectionService) Init(ctx *core.APPContext) {
 
 // VedaConfig represents the structure of veda/config.yml
 type VedaConfig struct {
-	Collections []Collection `yaml:"collections"`
-	MDConfig    *md.MDConfig `yaml:"md_config"`
+	Collections         []Collection         `yaml:"collections"`
+	FrontMatterDefaults *FrontMatterDefaults `yaml:"frontmatter_defaults"`
+	MDConfig            *md.MDConfig         `yaml:"md_config"`
+}
+
+type FrontMatterDefaults struct {
+	Enabled *bool   `yaml:"enabled,omitempty"`
+	Fields  []Field `yaml:"fields,omitempty"`
 }
 
 // Collection represents a collection in veda/config.yml
 type Collection struct {
-	Name              string             `yaml:"name"`
-	Label             string             `yaml:"label"`
-	Path              string             `yaml:"path"`
-	Format            string             `yaml:"format"`
-	FileNameGenerator *FileNameGenerator `yaml:"file_name_generator"`
-	Fields            []Field            `yaml:"fields,omitempty"`
+	Name                         string             `yaml:"name"`
+	Label                        string             `yaml:"label"`
+	Path                         string             `yaml:"path"`
+	Format                       string             `yaml:"format"`
+	FileNameGenerator            *FileNameGenerator `yaml:"file_name_generator"`
+	InheritFrontMatterDefaults   *bool              `yaml:"inherit_frontmatter_defaults,omitempty"`
+	FrontMatterDefaultsOverrides map[string]Field   `yaml:"frontmatter_defaults,omitempty"`
+	Fields                       []Field            `yaml:"fields,omitempty"`
 }
 
 type FileNameGenerator struct {
@@ -60,13 +69,17 @@ type FileNameGenerator struct {
 
 // Field represents a field in a collection
 type Field struct {
-	Type     string `yaml:"type" json:"type"`
-	Name     string `yaml:"name" json:"name"`
-	Label    string `yaml:"label" json:"label"`
-	Required bool   `yaml:"required,omitempty" json:"required"`
-	Format   string `yaml:"format,omitempty" json:"format"`
-	List     bool   `yaml:"list,omitempty" json:"list"`
-	Default  string `yaml:"default,omitempty" json:"default"`
+	Type           string `yaml:"type" json:"type"`
+	Name           string `yaml:"name" json:"name"`
+	Label          string `yaml:"label" json:"label"`
+	Required       bool   `yaml:"required,omitempty" json:"required"`
+	Format         string `yaml:"format,omitempty" json:"format"`
+	List           bool   `yaml:"list,omitempty" json:"list"`
+	Default        string `yaml:"default,omitempty" json:"default"`
+	SEO            bool   `yaml:"seo,omitempty" json:"seo,omitempty"`
+	AutoFrom       string `yaml:"auto_from,omitempty" json:"auto_from,omitempty"`
+	RecommendedMin int    `yaml:"recommended_min,omitempty" json:"recommended_min,omitempty"`
+	RecommendedMax int    `yaml:"recommended_max,omitempty" json:"recommended_max,omitempty"`
 }
 
 // GetAllCollections returns all collections
@@ -105,6 +118,14 @@ func (s *UserGitRepoCollectionService) GetCollectionsByRepo(repo *models.UserGit
 	}
 
 	return collections, nil
+}
+
+func (s *UserGitRepoCollectionService) GetSEOReport(repo *models.UserGitRepo) (*seo.Report, error) {
+	report, err := seo.Scan(repo.LocalPath)
+	if err != nil {
+		return nil, core.NewHTTPErrorStr(http.StatusInternalServerError, err.Error())
+	}
+	return report, nil
 }
 
 func (s *UserGitRepoCollectionService) readRepoConfig(repo models.UserGitRepo) (*VedaConfig, error) {
@@ -146,15 +167,19 @@ func (s *UserGitRepoCollectionService) readCollectionsFromConfig(repo models.Use
 		fullPath := filepath.Join(repo.LocalPath, col.Path)
 
 		var modelFields []models.Field
-		for _, f := range col.Fields {
+		for _, f := range mergeCollectionFields(config, col) {
 			modelFields = append(modelFields, models.Field{
-				Type:     f.Type,
-				Name:     f.Name,
-				Label:    f.Label,
-				Required: f.Required,
-				Format:   f.Format,
-				List:     f.List,
-				Default:  f.Default,
+				Type:           f.Type,
+				Name:           f.Name,
+				Label:          f.Label,
+				Required:       f.Required,
+				Format:         f.Format,
+				List:           f.List,
+				Default:        f.Default,
+				SEO:            f.SEO,
+				AutoFrom:       f.AutoFrom,
+				RecommendedMin: f.RecommendedMin,
+				RecommendedMax: f.RecommendedMax,
 			})
 		}
 
@@ -162,6 +187,7 @@ func (s *UserGitRepoCollectionService) readCollectionsFromConfig(repo models.Use
 			Name:        col.Name,
 			Label:       col.Label,
 			Path:        fullPath,
+			SourcePath:  filepath.ToSlash(col.Path),
 			Format:      models.ContentFormat(col.Format),
 			Description: "", // No description in veda/config.yml
 			RepoID:      repo.ID,
@@ -178,6 +204,152 @@ func (s *UserGitRepoCollectionService) readCollectionsFromConfig(repo models.Use
 	}
 
 	return collections, nil
+}
+
+func mergeCollectionFields(config *VedaConfig, collection Collection) []Field {
+	fields := collection.Fields
+	if !shouldInheritFrontMatterDefaults(config, collection) {
+		return fields
+	}
+
+	mergedFields := make([]Field, 0, len(defaultFrontMatterFields())+len(fields))
+	seen := make(map[string]bool)
+	for _, field := range fields {
+		seen[field.Name] = true
+	}
+
+	for _, field := range effectiveFrontMatterDefaultFields(config, collection) {
+		if seen[field.Name] {
+			continue
+		}
+		mergedFields = append(mergedFields, field)
+		seen[field.Name] = true
+	}
+
+	mergedFields = append(mergedFields, fields...)
+	return mergedFields
+}
+
+func shouldInheritFrontMatterDefaults(config *VedaConfig, collection Collection) bool {
+	if !strings.EqualFold(collection.Format, "md") {
+		return false
+	}
+	if collection.InheritFrontMatterDefaults != nil {
+		return *collection.InheritFrontMatterDefaults
+	}
+	if config.FrontMatterDefaults != nil && config.FrontMatterDefaults.Enabled != nil {
+		return *config.FrontMatterDefaults.Enabled
+	}
+	return true
+}
+
+func effectiveFrontMatterDefaultFields(config *VedaConfig, collection Collection) []Field {
+	fields := defaultFrontMatterFields()
+	if config.FrontMatterDefaults != nil && len(config.FrontMatterDefaults.Fields) > 0 {
+		fields = config.FrontMatterDefaults.Fields
+	}
+
+	if len(collection.FrontMatterDefaultsOverrides) == 0 {
+		return fields
+	}
+
+	for i, field := range fields {
+		if override, ok := collection.FrontMatterDefaultsOverrides[field.Name]; ok {
+			fields[i] = mergeField(field, override)
+		}
+	}
+	return fields
+}
+
+func defaultFrontMatterFields() []Field {
+	return []Field{
+		{
+			Type:     "string",
+			Name:     "title",
+			Label:    "Title",
+			SEO:      true,
+			AutoFrom: "h1",
+		},
+		{
+			Type:           "text",
+			Name:           "description",
+			Label:          "Description",
+			SEO:            true,
+			AutoFrom:       "excerpt",
+			RecommendedMin: 80,
+			RecommendedMax: 160,
+		},
+		{
+			Type:  "string",
+			Name:  "author",
+			Label: "Author",
+			SEO:   true,
+		},
+		{
+			Type:  "date",
+			Name:  "date_updated",
+			Label: "Date updated",
+			SEO:   true,
+		},
+		{
+			Type:  "string",
+			Name:  "image",
+			Label: "Image",
+			SEO:   true,
+		},
+		{
+			Type:     "string",
+			Name:     "og_title",
+			Label:    "Social title",
+			SEO:      true,
+			AutoFrom: "h1",
+		},
+		{
+			Type:           "text",
+			Name:           "og_description",
+			Label:          "Social description",
+			SEO:            true,
+			AutoFrom:       "excerpt",
+			RecommendedMax: 200,
+		},
+	}
+}
+
+func mergeField(base Field, override Field) Field {
+	if override.Type != "" {
+		base.Type = override.Type
+	}
+	if override.Label != "" {
+		base.Label = override.Label
+	}
+	if override.Name != "" {
+		base.Name = override.Name
+	}
+	if override.Required {
+		base.Required = true
+	}
+	if override.Format != "" {
+		base.Format = override.Format
+	}
+	if override.List {
+		base.List = true
+	}
+	if override.Default != "" {
+		base.Default = override.Default
+	}
+	if override.SEO {
+		base.SEO = true
+	}
+	if override.AutoFrom != "" {
+		base.AutoFrom = override.AutoFrom
+	}
+	if override.RecommendedMin > 0 {
+		base.RecommendedMin = override.RecommendedMin
+	}
+	if override.RecommendedMax > 0 {
+		base.RecommendedMax = override.RecommendedMax
+	}
+	return base
 }
 
 // GetCollectionByID returns a specific collection by ID

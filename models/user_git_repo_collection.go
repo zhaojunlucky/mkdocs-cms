@@ -8,13 +8,17 @@ import (
 type ContentFormat string
 
 type Field struct {
-	Type     string `yaml:"type" json:"type"`
-	Name     string `yaml:"name" json:"name"`
-	Label    string `yaml:"label" json:"label"`
-	Required bool   `yaml:"required,omitempty" json:"required"`
-	Format   string `yaml:"format,omitempty" json:"format"`
-	List     bool   `yaml:"list,omitempty" json:"list"`
-	Default  string `yaml:"default,omitempty" json:"default"`
+	Type           string `yaml:"type" json:"type"`
+	Name           string `yaml:"name" json:"name"`
+	Label          string `yaml:"label" json:"label"`
+	Required       bool   `yaml:"required,omitempty" json:"required"`
+	Format         string `yaml:"format,omitempty" json:"format"`
+	List           bool   `yaml:"list,omitempty" json:"list"`
+	Default        string `yaml:"default,omitempty" json:"default"`
+	SEO            bool   `yaml:"seo,omitempty" json:"seo,omitempty"`
+	AutoFrom       string `yaml:"auto_from,omitempty" json:"auto_from,omitempty"`
+	RecommendedMin int    `yaml:"recommended_min,omitempty" json:"recommended_min,omitempty"`
+	RecommendedMax int    `yaml:"recommended_max,omitempty" json:"recommended_max,omitempty"`
 }
 
 type FileNameGenerator struct {
@@ -28,6 +32,7 @@ type UserGitRepoCollection struct {
 	Name              string             `json:"name" gorm:"not null"`
 	Label             string             `json:"label" gorm:"not null"`
 	Path              string             `json:"path" gorm:"not null"`
+	SourcePath        string             `json:"source_path"`
 	Format            ContentFormat      `json:"format" gorm:"type:string;not null;default:'md'"`
 	Description       string             `json:"description"`
 	RepoID            uint               `json:"repo_id" gorm:"not null"`
@@ -44,6 +49,7 @@ type UserGitRepoCollectionResponse struct {
 	Name              string              `json:"name"`
 	Label             string              `json:"label"`
 	Path              string              `json:"path"`
+	SourcePath        string              `json:"source_path,omitempty"`
 	Format            ContentFormat       `json:"format"`
 	Description       string              `json:"description,omitempty"`
 	RepoID            uint                `json:"repo_id"`
@@ -61,6 +67,7 @@ func (c *UserGitRepoCollection) ToResponse(includeRepo bool) UserGitRepoCollecti
 		Name:              c.Name,
 		Label:             c.Label,
 		Path:              c.Path,
+		SourcePath:        c.SourcePath,
 		Format:            c.Format,
 		Description:       c.Description,
 		RepoID:            c.RepoID,

@@ -98,6 +98,11 @@
               <app-front-matter-editor
                 [frontMatter]="frontMatter"
                 [fields]="collection.fields"
+                [markdownContent]="markdownContent"
+                [seoReport]="seoReport"
+                [collectionPath]="collection.source_path || ''"
+                [filePath]="filePath"
+                (insertMarkdown)="insertMarkdownSnippet($event)"
                 (frontMatterChange)="onFrontMatterChange($event)"
                 (frontMatterInit)="onFrontMatterInit($event)"
                 [disabled]="savingFile">

@@ -6,7 +6,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { RepositoryService, Collection } from '../../services/repository.service';
+import { RepositoryService, Collection, SeoReport } from '../../services/repository.service';
 import {CollectionService, FileInfo} from '../../services/collection.service';
 import { FrontMatterEditorComponent } from '../../markdown/front-matter-editor/front-matter-editor.component';
 import { VditorEditorComponent } from '../../components/vditor-editor/vditor-editor.component';
@@ -52,6 +52,7 @@ import {FileNameUtils} from '../../shared/utils/file-name.utils';
 })
 export class CreateFileComponent implements OnInit, CanComponentDeactivate {
   collection: Collection | null = null;
+  seoReport: SeoReport | null = null;
   error = '';
   repositoryId: string = '';
   collectionName: string = '';
@@ -266,6 +267,7 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
           let bodyField = this.collection.fields?.find(f=>f.name === 'body')
           this.markdownContent = bodyField?.default || '';
           this.updatePathSegments();
+          this.loadSeoReport();
           this.loadFiles();
         } else {
           this.error = 'Collection not found';
@@ -276,6 +278,18 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
         console.error('Error loading collections:', err);
         this.error = `Failed to load collection. ${StrUtils.stringifyHTTPErr(err)}`;
         this.isLoading = false;
+      }
+    });
+  }
+
+  loadSeoReport(): void {
+    this.repositoryService.getRepositorySeo(this.repositoryId).subscribe({
+      next: (report) => {
+        this.seoReport = report;
+      },
+      error: (err) => {
+        console.warn('Failed to load SEO report:', err);
+        this.seoReport = null;
       }
     });
   }
@@ -323,12 +337,24 @@ export class CreateFileComponent implements OnInit, CanComponentDeactivate {
     return FileNameUtils.buildFileName(this.fileNamePrefix, this.fileNameSuffix || '{title}');
   }
 
+  get filePathPreview(): string {
+    return this.currentPath ? `${this.currentPath}/${this.fileNamePreview}` : this.fileNamePreview;
+  }
+
   private get autoFileNameSuffix(): string {
     return FileNameUtils.slugifyTitle(FileNameUtils.extractFirstH1(this.markdownContent));
   }
 
   onFrontMatterInit(frontMatter: Record<string, any>): void {
     this.frontMatter = frontMatter;
+  }
+
+  insertMarkdownSnippet(snippet: string): void {
+    const separator = this.markdownContent.endsWith('\n') ? '\n' : '\n\n';
+    this.markdownContent = `${this.markdownContent}${separator}${snippet}\n`;
+    if (this.editor) {
+      this.editor.setValue(this.markdownContent);
+    }
   }
 
   onEditorReady(vditorComponent: any): void {
