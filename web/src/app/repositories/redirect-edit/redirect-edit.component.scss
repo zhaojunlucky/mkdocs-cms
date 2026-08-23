@@ -1,0 +1,28 @@
+.redirect-edit {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.state-card {
+  width: min(520px, 100%);
+}
+
+.state-card-content {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.state-card-content h3 {
+  margin: 0 0 4px;
+}
+
+.state-card-content p {
+  margin: 0;
+}
+
+.state-icon-error {
+  color: var(--mat-sys-error);
+}

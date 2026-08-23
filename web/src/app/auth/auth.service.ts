@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
-import {BehaviorSubject, Observable, of, shareReplay} from 'rxjs';
+import {BehaviorSubject, from, Observable, of, shareReplay} from 'rxjs';
 import { HttpClient } from '@angular/common/http';
-import { catchError, map, tap } from 'rxjs/operators';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import {environment} from '../../environments/environment';
 import {StrUtils} from '../shared/utils/str.utils';
 import {MatDialog} from '@angular/material/dialog';
@@ -24,6 +24,7 @@ export interface User {
 export class AuthService {
   private userSubject = new BehaviorSubject<User | null>(null);
   private apiUrl = environment.apiServer; // Base URL for our backend API
+  private readonly returnUrlStorageKey = 'mkdocs-cms.returnUrl';
 
   constructor(
     private http: HttpClient,
@@ -41,13 +42,7 @@ export class AuthService {
           next: (user: User) => {
             this.setUser(user, null);
             if (this.router.url.startsWith('/login')) {
-              let returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-              if (returnUrl) {
-                let routeParams = StrUtils.parseRedirectUrl(returnUrl);
-                this.router.navigate(routeParams['paths'], { queryParams: routeParams['queryParams'] });
-              } else {
-                this.router.navigate(['/home']);
-              }
+              this.navigateAfterLogin(this.route.snapshot.queryParamMap.get('returnUrl'));
             }
           },
           error: (err) => {
@@ -97,10 +92,7 @@ export class AuthService {
 
     // Get user info
     return this.getUserInfo().pipe(
-      tap(user => {
-        this.setUser(user, token);
-        this.router.navigate(['/home']);
-      }),
+      switchMap(user => from(this.setUser(user, token)).pipe(map(() => user))),
       catchError(error => {
         throw error;
       })
@@ -143,6 +135,23 @@ export class AuthService {
     sessionStorage.setItem('user', JSON.stringify(user));
     this.userSubject.next(user);
 
+  }
+
+  rememberReturnUrl(returnUrl: string | null | undefined): void {
+    if (returnUrl && !returnUrl.startsWith('/login') && !returnUrl.startsWith('/error')) {
+      sessionStorage.setItem(this.returnUrlStorageKey, returnUrl);
+    }
+  }
+
+  navigateAfterLogin(returnUrl?: string | null): void {
+    const target = returnUrl || sessionStorage.getItem(this.returnUrlStorageKey);
+    sessionStorage.removeItem(this.returnUrlStorageKey);
+    if (target) {
+      let routeParams = StrUtils.parseRedirectUrl(target);
+      this.router.navigate(routeParams['paths'], { queryParams: routeParams['queryParams'] });
+      return;
+    }
+    this.router.navigate(['/home']);
   }
 
   logout(): void {

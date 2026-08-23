@@ -434,6 +434,8 @@ func (s *UserGitRepoService) checkVedaConfig(repo *models.UserGitRepo) error {
 	// Check if the config file exists
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		return fmt.Errorf("veda/config.yml not found. Please create this file with proper configuration")
+	} else if err != nil {
+		return err
 	}
 
 	// Read the config file
