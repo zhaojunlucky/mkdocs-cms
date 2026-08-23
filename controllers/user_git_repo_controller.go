@@ -33,6 +33,7 @@ func (c *UserGitRepoController) Init(ctx *core.APPContext, router *gin.RouterGro
 		repos.DELETE("/:id", c.DeleteRepo)
 		repos.POST("/:id/sync", c.SyncRepo)
 		repos.GET("/:id/branches", c.GetRepoBranches)
+		repos.GET("/:id/seo", c.GetRepoSEO)
 	}
 
 	// User repositories route
@@ -98,6 +99,41 @@ func (c *UserGitRepoController) GetRepo(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, repo.ToResponse(true))
+}
+
+func (c *UserGitRepoController) GetRepoSEO(ctx *gin.Context) {
+	reqParam := core.NewRequestParam()
+	userId := reqParam.AddContextParam("userId", true, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+	repoIDParam := reqParam.AddUrlParam("id", true, regexp.MustCompile(`\d+`))
+
+	if err := reqParam.Handle(ctx); err != nil {
+		core.HandleError(ctx, err)
+		return
+	}
+
+	repoID, err := repoIDParam.UInt64()
+	if err != nil {
+		log.Errorf("Failed to parse repository ID: %v", err)
+		core.ResponseErrStr(ctx, http.StatusBadRequest, "Invalid repository ID")
+		return
+	}
+
+	repo, err := c.userGitRepoCollectionService.VerifyRepoOwnership(userId.String(), uint(repoID))
+	if err != nil {
+		log.Errorf("Failed to verify repository ownership: %v", err)
+		core.HandleError(ctx, err)
+		return
+	}
+
+	report, err := c.userGitRepoCollectionService.GetSEOReport(repo)
+	if err != nil {
+		log.Errorf("Failed to get SEO report: %v", err)
+		core.HandleError(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, report)
 }
 
 // UpdateRepo updates an existing git repository

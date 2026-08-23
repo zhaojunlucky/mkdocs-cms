@@ -6,7 +6,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule, MatIconButton} from '@angular/material/button';
 import {VditorEditorComponent} from '../../components/vditor-editor/vditor-editor.component';
-import {Collection, RepositoryService} from '../../services/repository.service';
+import {Collection, RepositoryService, SeoReport} from '../../services/repository.service';
 import {CollectionService} from '../../services/collection.service';
 import * as yaml from 'js-yaml';
 import {FrontMatterEditorComponent} from '../../markdown/front-matter-editor/front-matter-editor.component';
@@ -55,6 +55,7 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
   fileName: string = '';
 
   collection: Collection | null | undefined = null;
+  seoReport: SeoReport | null = null;
 
   isLoading: boolean = true;
   error: string = '';
@@ -278,7 +279,6 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
       return;
     }
     this.loadCollection();
-    this.loadFileContent();
   }
 
   loadCollection(): void {
@@ -286,6 +286,7 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
       next: (collections: ArrayResponse<Collection>) => {
         this.collection = collections.entries.find(c => c.name === this.collectionName);
         if (this.collection) {
+          this.loadSeoReport();
           this.loadFileContent()
         } else {
           this.error = `Failed to load collection: ${this.collectionName}`;
@@ -295,6 +296,18 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
       error: (err: any) => {
         this.error = `Failed to load collection: ${err.message || 'Unknown error'}`;
         this.isLoading = false;
+      }
+    });
+  }
+
+  loadSeoReport(): void {
+    this.repositoryService.getRepositorySeo(this.repositoryId).subscribe({
+      next: (report) => {
+        this.seoReport = report;
+      },
+      error: (err: any) => {
+        console.warn('Failed to load SEO report:', err);
+        this.seoReport = null;
       }
     });
   }
@@ -366,6 +379,14 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
 
   onFrontMatterInit(frontMatter: Record<string, any>): void {
     this.frontMatter = frontMatter;
+  }
+
+  insertMarkdownSnippet(snippet: string): void {
+    const separator = this.markdownContent.endsWith('\n') ? '\n' : '\n\n';
+    this.markdownContent = `${this.markdownContent}${separator}${snippet}\n`;
+    if (this.editor) {
+      this.editor.setValue(this.markdownContent);
+    }
   }
 
   onEditorReady(vditorComponent: any): void {
