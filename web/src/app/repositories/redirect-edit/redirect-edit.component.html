@@ -1,0 +1,25 @@
+<div class="redirect-edit">
+  @if (isLoading) {
+    <mat-card class="state-card" appearance="outlined">
+      <mat-card-content class="state-card-content">
+        <mat-spinner diameter="32"></mat-spinner>
+        <div>
+          <h3>Opening editor</h3>
+          <p>Resolving the configured collection path.</p>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  @if (error) {
+    <mat-card class="state-card" appearance="outlined">
+      <mat-card-content class="state-card-content">
+        <mat-icon class="state-icon-error">error</mat-icon>
+        <div>
+          <h3>Could not open editor</h3>
+          <p>{{ error }}</p>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+</div>

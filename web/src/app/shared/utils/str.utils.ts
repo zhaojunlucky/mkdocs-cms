@@ -44,20 +44,19 @@ export class StrUtils {
       }
     }
 
-    let url = decodeURIComponent(encodedUrl)
-
+    let url = encodedUrl
     let qIndex = url.indexOf('?')
     let queryParams = {}
-    if (qIndex > 0) {
+    if (qIndex >= 0) {
       let q = url.substring(qIndex + 1)
-      let args = q.split("&")
-      for (let arg of args) {
-        let parts = arg.split("=");
+      const searchParams = new URLSearchParams(q)
+      searchParams.forEach((value, key) => {
         // @ts-ignore
-        queryParams[parts[0]] = parts.length > 1 ? parts[1] : ''
-      }
+        queryParams[key] = value
+      });
+      url = url.substring(0, qIndex)
     }
-    url = url.substring(0, qIndex).replace(/^\/+|\/+$/g, '');
+    url = decodeURIComponent(url).replace(/^\/+|\/+$/g, '');
     let paths = url.split("/").filter(s=>s.length>0);
     if (paths.length == 0) {
       paths = ['/']

@@ -135,6 +135,8 @@ func (s *UserGitRepoCollectionService) readRepoConfig(repo models.UserGitRepo) (
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		log.Errorf("veda/config.yml not found in repository %s", repo.Name)
 		return nil, fmt.Errorf("veda/config.yml not found in repository %s", repo.Name)
+	} else if err != nil {
+		return nil, err
 	}
 
 	// Read the config file
@@ -396,6 +398,121 @@ func (s *UserGitRepoCollectionService) GetCollectionByName(repo *models.UserGitR
 	return models.UserGitRepoCollection{}, core.NewHTTPErrorStr(http.StatusNotFound, "collection not found")
 }
 
+type ResolvedEditPath struct {
+	CollectionName string
+	Path           string
+}
+
+func (s *UserGitRepoCollectionService) ResolveConfiguredEditPath(repo *models.UserGitRepo, rawPath string) (*ResolvedEditPath, error) {
+	cleanPath, err := cleanCollectionFilePath(rawPath)
+	if err != nil {
+		return nil, core.NewHTTPErrorStr(http.StatusBadRequest, "invalid path")
+	}
+
+	collections, err := s.GetCollectionsByRepo(repo)
+	if err != nil {
+		return nil, err
+	}
+
+	var bestCollection *models.UserGitRepoCollection
+	bestPath := ""
+	bestRootLength := -1
+	for _, collection := range collections {
+		if isDocsRootCollection(collection) && isExistingFile(filepath.Join(collection.Path, cleanPath)) && bestRootLength < 0 {
+			collectionCopy := collection
+			bestCollection = &collectionCopy
+			bestPath = cleanPath
+			bestRootLength = 0
+		}
+
+		for _, root := range collectionEditRootCandidates(collection.SourcePath) {
+			prefix := strings.TrimRight(root, "/") + "/"
+			if !strings.HasPrefix(cleanPath, prefix) || len(root) <= bestRootLength {
+				continue
+			}
+
+			relativePath, err := cleanCollectionFilePath(strings.TrimPrefix(cleanPath, prefix))
+			if err != nil {
+				return nil, core.NewHTTPErrorStr(http.StatusBadRequest, "invalid path")
+			}
+			if !isExistingFile(filepath.Join(collection.Path, relativePath)) {
+				continue
+			}
+
+			collectionCopy := collection
+			bestCollection = &collectionCopy
+			bestPath = relativePath
+			bestRootLength = len(root)
+		}
+	}
+
+	if bestCollection == nil {
+		return nil, core.NewHTTPErrorStr(http.StatusNotFound, "configured collection file not found")
+	}
+
+	return &ResolvedEditPath{
+		CollectionName: bestCollection.Name,
+		Path:           bestPath,
+	}, nil
+}
+
+func cleanCollectionFilePath(path string) (string, error) {
+	normalized := strings.TrimSpace(strings.ReplaceAll(path, "\\", "/"))
+	normalized = strings.Trim(normalized, "/")
+	if normalized == "" {
+		return "", errors.New("empty path")
+	}
+
+	for _, part := range strings.Split(normalized, "/") {
+		if part == ".." {
+			return "", errors.New("invalid path")
+		}
+	}
+
+	cleanPath := filepath.Clean(normalized)
+	if cleanPath == "." || filepath.IsAbs(cleanPath) || strings.HasPrefix(cleanPath, "../") {
+		return "", errors.New("invalid path")
+	}
+
+	return filepath.ToSlash(cleanPath), nil
+}
+
+func collectionEditRootCandidates(sourcePath string) []string {
+	cleanSourcePath, err := cleanCollectionFilePath(sourcePath)
+	if err != nil {
+		return nil
+	}
+
+	candidates := []string{cleanSourcePath}
+	if strings.HasPrefix(cleanSourcePath, "docs/") {
+		candidates = append(candidates, strings.TrimPrefix(cleanSourcePath, "docs/"))
+	}
+
+	seen := make(map[string]bool, len(candidates))
+	unique := make([]string, 0, len(candidates))
+	for _, candidate := range candidates {
+		if candidate == "" || seen[candidate] {
+			continue
+		}
+		seen[candidate] = true
+		unique = append(unique, candidate)
+	}
+	sort.Slice(unique, func(i, j int) bool {
+		return len(unique[i]) > len(unique[j])
+	})
+	return unique
+}
+
+func isExistingFile(path string) bool {
+	fileInfo, err := os.Stat(path)
+	return err == nil && !fileInfo.IsDir()
+}
+
+func isDocsRootCollection(collection models.UserGitRepoCollection) bool {
+	sourcePath, err := cleanCollectionFilePath(collection.SourcePath)
+	return err == nil && sourcePath == "docs"
+}
+
 // GetCollectionByPath returns a collection by its path within a repository
 func (s *UserGitRepoCollectionService) GetCollectionByPath(repoID uint, path string) (models.UserGitRepoCollection, error) {
 	collections, err := s.GetCollectionsByRepoID(repoID)
@@ -576,10 +693,9 @@ func (s *UserGitRepoCollectionService) GetFileContent(repo *models.UserGitRepo, 
 		return nil, "", err
 	}
 
-	// Ensure the filePath doesn't try to escape the collection directory
-	cleanFilePath := filepath.Clean(filePath)
-	if cleanFilePath == ".." || filepath.IsAbs(cleanFilePath) || strings.HasPrefix(cleanFilePath, "../") {
-		return nil, "", errors.New("invalid path")
+	cleanFilePath, err := cleanCollectionFilePath(filePath)
+	if err != nil {
+		return nil, "", core.NewHTTPErrorStr(http.StatusBadRequest, "invalid path")
 	}
 
 	// Construct the full path
@@ -588,13 +704,13 @@ func (s *UserGitRepoCollectionService) GetFileContent(repo *models.UserGitRepo, 
 	// Check if the path exists and is a file
 	fileInfo, err := os.Stat(fullPath)
 	if os.IsNotExist(err) {
-		return nil, "", errors.New("file does not exist")
+		return nil, "", core.NewHTTPErrorStr(http.StatusNotFound, "file does not exist")
 	}
 	if err != nil {
 		return nil, "", err
 	}
 	if fileInfo.IsDir() {
-		return nil, "", errors.New("path is a directory, not a file")
+		return nil, "", core.NewHTTPErrorStr(http.StatusBadRequest, "path is a directory, not a file")
 	}
 
 	// Read the file content

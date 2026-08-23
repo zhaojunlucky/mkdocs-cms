@@ -33,6 +33,7 @@ func (ctrl *UserGitRepoCollectionController) Init(ctx *core.APPContext, router *
 		collections.GET("/repo/:repoId/:collectionName/files/folder/exists", ctrl.FolderExists)
 		collections.DELETE("/repo/:repoId/:collectionName/files/folder", ctrl.DeleteFolder)
 		collections.PUT("/repo/:repoId/:collectionName/files/folder/rename", ctrl.RenameFolder)
+		collections.GET("/repo/:repoId/files/resolve-edit-path", ctrl.ResolveConfiguredEditPath)
 		collections.GET("/repo/:repoId/:collectionName/files/content", ctrl.GetFileContent)
 		collections.PUT("/repo/:repoId/:collectionName/files/content", ctrl.UpdateFileContent)
 		collections.DELETE("/repo/:repoId/:collectionName/files", ctrl.DeleteFile)
@@ -138,6 +139,50 @@ func (ctrl *UserGitRepoCollectionController) GetCollectionFilesInPath(c *gin.Con
 	core.ResponseOKArr(c, files)
 }
 
+type ResolveConfiguredEditPathResponse struct {
+	Collection string `json:"collection"`
+	Path       string `json:"path"`
+}
+
+func (ctrl *UserGitRepoCollectionController) ResolveConfiguredEditPath(c *gin.Context) {
+	reqParam := core.NewRequestParam()
+	userId := reqParam.AddContextParam("userId", false, nil).
+		SetError(http.StatusUnauthorized, "Unauthorized")
+	repoIDParam := reqParam.AddUrlParam("repoId", false, regexp.MustCompile(`\d+`))
+	pathParam := reqParam.AddQueryParam("path", false, nil)
+
+	if err := reqParam.Handle(c); err != nil {
+		core.HandleError(c, err)
+		return
+	}
+
+	repoID, err := repoIDParam.UInt64()
+	if err != nil {
+		log.Errorf("Failed to parse repository ID: %v", err)
+		core.ResponseErrStr(c, http.StatusBadRequest, "Invalid repository ID")
+		return
+	}
+
+	repo, err := ctrl.service.VerifyRepoOwnership(userId.String(), uint(repoID))
+	if err != nil {
+		log.Errorf("Failed to verify repository ownership: %v", err)
+		core.HandleError(c, err)
+		return
+	}
+
+	resolved, err := ctrl.service.ResolveConfiguredEditPath(repo, pathParam.String())
+	if err != nil {
+		log.Errorf("Failed to resolve configured edit path: %v", err)
+		core.HandleError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, ResolveConfiguredEditPathResponse{
+		Collection: resolved.CollectionName,
+		Path:       resolved.Path,
+	})
+}
+
 // GetFileContent returns the content of a file within a collection
 func (ctrl *UserGitRepoCollectionController) GetFileContent(c *gin.Context) {
 	reqParam := core.NewRequestParam()
@@ -176,7 +221,7 @@ func (ctrl *UserGitRepoCollectionController) GetFileContent(c *gin.Context) {
 	content, contentType, err := ctrl.service.GetFileContent(repo, collectionName.String(), filePath)
 	if err != nil {
 		log.Errorf("Failed to get file content: %v", err)
-		core.ResponseErr(c, http.StatusInternalServerError, err)
+		core.HandleError(c, err)
 		return
 	}
 	log.Infof("File %s content retrieved successfully", filePath)

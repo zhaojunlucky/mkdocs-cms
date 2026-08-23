@@ -7,6 +7,7 @@ import { EditRepositoryComponent } from './repositories/edit-repository/edit-rep
 import { CollectionComponent } from './repositories/collection/collection.component';
 import { EditFileComponent } from './repositories/edit-file/edit-file.component';
 import { CreateFileComponent } from './repositories/create-file/create-file.component';
+import { RedirectEditComponent } from './repositories/redirect-edit/redirect-edit.component';
 import { authGuard } from './auth/auth.guard';
 import {NotFoundComponent} from './not-found/not-found.component';
 import {ErrorComponent} from './error/error.component';
@@ -19,6 +20,7 @@ export const routes: Routes = [
   { path: 'repositories/import', component: RepositoryImportComponent, canActivate: [authGuard] },
   { path: 'repositories/:id', component: RepositoryDetailComponent, canActivate: [authGuard] ,
     children: [
+      { path: 'redirect/edit', component: RedirectEditComponent, canActivate: [authGuard], data: { hideCollectionsSidebar: true } },
       { path: 'collection/:collectionName', component: CollectionComponent, canActivate: [authGuard] },
       { path: 'collection/:collectionName/edit', component: EditFileComponent, canActivate: [authGuard], canDeactivate: [CanDeactivateFormGuard], data: { hideCollectionsSidebar: true } },
       { path: 'collection/:collectionName/create', component: CreateFileComponent, canActivate: [authGuard], canDeactivate: [CanDeactivateFormGuard], data: { hideCollectionsSidebar: true } },

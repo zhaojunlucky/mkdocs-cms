@@ -1,5 +1,5 @@
 import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../auth.service';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -9,7 +9,6 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import {PageTitleService} from '../../services/page.title.service';
-import {StrUtils} from '../../shared/utils/str.utils';
 
 @Component({
   selector: 'app-login',
@@ -32,23 +31,18 @@ export class LoginComponent implements OnInit {
   constructor(
     private readonly authService: AuthService,
     private readonly route: ActivatedRoute,
-    private readonly router: Router,
     private readonly snackBar: MatSnackBar,
     private readonly pageTitleService: PageTitleService
   ) {}
 
   ngOnInit(): void {
     this.pageTitleService.title = 'Login';
+    const initialReturnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    this.authService.rememberReturnUrl(initialReturnUrl);
     // Check if user is already logged in
     if (this.authService.isLoggedIn) {
       this.route.queryParams.subscribe(params => {
-        const returnUrl = params['returnUrl'];
-        if (returnUrl) {
-          let routeParams = StrUtils.parseRedirectUrl(returnUrl);
-          this.router.navigate(routeParams['paths'], { queryParams: routeParams['queryParams'] });
-        } else {
-          this.router.navigate(['/home']);
-        }
+        this.authService.navigateAfterLogin(params['returnUrl']);
       })
       return;
     }
@@ -65,7 +59,7 @@ export class LoginComponent implements OnInit {
         this.authService.handleAuthCallback(searchParams).subscribe({
           next: () => {
             this.loading = false;
-            this.router.navigate(['/home']);
+            this.authService.navigateAfterLogin(this.route.snapshot.queryParamMap.get('returnUrl'));
           },
           error: (error) => {
             this.loading = false;
