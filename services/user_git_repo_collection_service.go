@@ -398,37 +398,6 @@ func (s *UserGitRepoCollectionService) GetCollectionByName(repo *models.UserGitR
 	return models.UserGitRepoCollection{}, core.NewHTTPErrorStr(http.StatusNotFound, "collection not found")
 }
 
-func (s *UserGitRepoCollectionService) ResolveCollectionEditPath(repo *models.UserGitRepo, collectionName string, rawPath string) (string, bool, error) {
-	collection, err := s.GetCollectionByName(repo, collectionName)
-	if err != nil {
-		return "", false, err
-	}
-
-	cleanPath, err := cleanCollectionFilePath(rawPath)
-	if err != nil {
-		return "", false, core.NewHTTPErrorStr(http.StatusBadRequest, "invalid path")
-	}
-
-	if isExistingFile(filepath.Join(collection.Path, cleanPath)) {
-		return cleanPath, cleanPath != rawPath, nil
-	}
-
-	for _, root := range collectionEditRootCandidates(collection.SourcePath) {
-		prefix := strings.TrimRight(root, "/") + "/"
-		if !strings.HasPrefix(cleanPath, prefix) {
-			continue
-		}
-
-		collectionPath, err := cleanCollectionFilePath(strings.TrimPrefix(cleanPath, prefix))
-		if err != nil {
-			return "", false, core.NewHTTPErrorStr(http.StatusBadRequest, "invalid path")
-		}
-		return collectionPath, collectionPath != rawPath, nil
-	}
-
-	return cleanPath, cleanPath != rawPath, nil
-}
-
 type ResolvedEditPath struct {
 	CollectionName string
 	Path           string
@@ -724,9 +693,9 @@ func (s *UserGitRepoCollectionService) GetFileContent(repo *models.UserGitRepo, 
 		return nil, "", err
 	}
 
-	cleanFilePath, _, err := s.ResolveCollectionEditPath(repo, collectionName, filePath)
+	cleanFilePath, err := cleanCollectionFilePath(filePath)
 	if err != nil {
-		return nil, "", err
+		return nil, "", core.NewHTTPErrorStr(http.StatusBadRequest, "invalid path")
 	}
 
 	// Construct the full path

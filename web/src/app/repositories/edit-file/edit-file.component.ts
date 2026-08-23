@@ -287,7 +287,7 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
         this.collection = collections.entries.find(c => c.name === this.collectionName);
         if (this.collection) {
           this.loadSeoReport();
-          this.resolveEditPath();
+          this.loadFileContent()
         } else {
           this.error = `Failed to load collection: ${this.collectionName}`;
           this.isLoading = false;
@@ -308,29 +308,6 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
       error: (err: any) => {
         console.warn('Failed to load SEO report:', err);
         this.seoReport = null;
-      }
-    });
-  }
-
-  resolveEditPath(): void {
-    this.collectionService.resolveEditPath(this.repositoryId, this.collectionName, this.filePath).subscribe({
-      next: (response) => {
-        if (response.changed && response.path && response.path !== this.filePath) {
-          this.router.navigate(
-            ['/repositories', this.repositoryId, 'collection', this.collectionName, 'edit'],
-            {
-              queryParams: {path: response.path},
-              replaceUrl: true
-            }
-          );
-          return;
-        }
-
-        this.loadFileContent();
-      },
-      error: (err: any) => {
-        this.error = `Failed to resolve edit path: ${StrUtils.stringifyHTTPErr(err)}`;
-        this.isLoading = false;
       }
     });
   }

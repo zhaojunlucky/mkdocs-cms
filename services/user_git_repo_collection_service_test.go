@@ -8,22 +8,6 @@ import (
 	"github.com/zhaojunlucky/mkdocs-cms/models"
 )
 
-func TestResolveCollectionEditPathUsesConfiguredCollection(t *testing.T) {
-	repo := newTestRepo(t)
-	service := &UserGitRepoCollectionService{}
-
-	path, changed, err := service.ResolveCollectionEditPath(repo, "post", "blog/Posts/2026/2026-08-17-kubectl-context.md")
-	if err != nil {
-		t.Fatalf("ResolveCollectionEditPath returned error: %v", err)
-	}
-	if path != "2026/2026-08-17-kubectl-context.md" {
-		t.Fatalf("resolved path = %q, want %q", path, "2026/2026-08-17-kubectl-context.md")
-	}
-	if !changed {
-		t.Fatal("changed = false, want true")
-	}
-}
-
 func TestResolveConfiguredEditPathChoosesLongestCollectionRoot(t *testing.T) {
 	repo := newTestRepo(t)
 	service := &UserGitRepoCollectionService{}
@@ -49,53 +33,11 @@ func TestResolveConfiguredEditPathRejectsUnconfiguredPath(t *testing.T) {
 	}
 }
 
-func TestResolveCollectionEditPathKeepsCollectionRelativePath(t *testing.T) {
+func TestGetFileContentKeepsCollectionRelativePath(t *testing.T) {
 	repo := newTestRepo(t)
 	service := &UserGitRepoCollectionService{}
 
-	path, changed, err := service.ResolveCollectionEditPath(repo, "post", "2026/2026-08-17-kubectl-context.md")
-	if err != nil {
-		t.Fatalf("ResolveCollectionEditPath returned error: %v", err)
-	}
-	if path != "2026/2026-08-17-kubectl-context.md" {
-		t.Fatalf("resolved path = %q, want %q", path, "2026/2026-08-17-kubectl-context.md")
-	}
-	if changed {
-		t.Fatal("changed = true, want false")
-	}
-}
-
-func TestResolveCollectionEditPathExactPathWins(t *testing.T) {
-	repo := newTestRepo(t)
-	service := &UserGitRepoCollectionService{}
-	writeTestFile(t, repo.LocalPath, "docs/blog/Posts/blog/Posts/2026/file.md")
-
-	path, changed, err := service.ResolveCollectionEditPath(repo, "post", "blog/Posts/2026/file.md")
-	if err != nil {
-		t.Fatalf("ResolveCollectionEditPath returned error: %v", err)
-	}
-	if path != "blog/Posts/2026/file.md" {
-		t.Fatalf("resolved path = %q, want exact collection-relative path", path)
-	}
-	if changed {
-		t.Fatal("changed = true, want false")
-	}
-}
-
-func TestResolveCollectionEditPathRejectsTraversal(t *testing.T) {
-	repo := newTestRepo(t)
-	service := &UserGitRepoCollectionService{}
-
-	if _, _, err := service.ResolveCollectionEditPath(repo, "post", "blog/Posts/../secret.md"); err == nil {
-		t.Fatal("ResolveCollectionEditPath returned nil error for traversal path")
-	}
-}
-
-func TestGetFileContentAcceptsMkDocsEditPath(t *testing.T) {
-	repo := newTestRepo(t)
-	service := &UserGitRepoCollectionService{}
-
-	content, contentType, err := service.GetFileContent(repo, "post", "blog/Posts/2026/2026-08-17-kubectl-context.md")
+	content, contentType, err := service.GetFileContent(repo, "post", "2026/2026-08-17-kubectl-context.md")
 	if err != nil {
 		t.Fatalf("GetFileContent returned error: %v", err)
 	}
@@ -104,6 +46,25 @@ func TestGetFileContentAcceptsMkDocsEditPath(t *testing.T) {
 	}
 	if contentType != "text/markdown" {
 		t.Fatalf("contentType = %q, want %q", contentType, "text/markdown")
+	}
+}
+
+func TestGetFileContentDoesNotResolveMkDocsEditPath(t *testing.T) {
+	repo := newTestRepo(t)
+	service := &UserGitRepoCollectionService{}
+
+	_, _, err := service.GetFileContent(repo, "post", "blog/Posts/2026/2026-08-17-kubectl-context.md")
+	if err == nil {
+		t.Fatal("GetFileContent returned nil error for MkDocs edit path")
+	}
+}
+
+func TestGetFileContentRejectsTraversal(t *testing.T) {
+	repo := newTestRepo(t)
+	service := &UserGitRepoCollectionService{}
+
+	if _, _, err := service.GetFileContent(repo, "post", "blog/Posts/../secret.md"); err == nil {
+		t.Fatal("GetFileContent returned nil error for traversal path")
 	}
 }
 

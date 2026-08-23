@@ -38,11 +38,6 @@ export interface FolderExistsResponse {
   isDir: boolean;
 }
 
-export interface ResolveEditPathResponse {
-  path: string;
-  changed: boolean;
-}
-
 export interface ResolveConfiguredEditPathResponse {
   collection: string;
   path: string;
@@ -76,10 +71,6 @@ export class CollectionService {
     return this.http.get(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files/content?path=${encodeURIComponent(path)}`, {
       responseType: 'text'
     });
-  }
-
-  resolveEditPath(repoId: string | number, collectionName: string, path: string): Observable<ResolveEditPathResponse> {
-    return this.http.get<ResolveEditPathResponse>(`${this.apiUrl}/v1/collections/repo/${repoId}/${collectionName}/files/resolve-edit-path?path=${encodeURIComponent(path)}`);
   }
 
   resolveConfiguredEditPath(repoId: string | number, path: string): Observable<ResolveConfiguredEditPathResponse> {
