@@ -343,9 +343,7 @@ func BuildURLPath(sourcePath string, meta map[string]interface{}, site SiteInfo)
 	docsPrefix := strings.TrimRight(filepath.ToSlash(site.DocsDir), "/") + "/"
 	path := strings.TrimPrefix(sourcePath, docsPrefix)
 	path = strings.TrimSuffix(path, filepath.Ext(path))
-	if strings.HasSuffix(path, "/index") {
-		path = strings.TrimSuffix(path, "/index")
-	}
+	path = strings.TrimSuffix(path, "/index")
 	if site.UseDirectoryURLs {
 		return "/" + strings.Trim(path, "/") + "/"
 	}
