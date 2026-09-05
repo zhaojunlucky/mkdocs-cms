@@ -50,7 +50,7 @@
     <div class="edit-file-shell">
       <header class="editor-toolbar">
         <div class="editor-nav">
-          <a class="back-link" [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" matTooltip="Back to collection">
+          <a class="back-link" [routerLink]="['/repositories', repositoryId, 'collection', collectionName]" [queryParams]="{path: parentPath}" matTooltip="Back to collection">
             <mat-icon>arrow_back</mat-icon>
           </a>
           <div class="editor-title">

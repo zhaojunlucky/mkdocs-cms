@@ -100,3 +100,26 @@ pre {
   border-top-color: transparent !important;
   border-bottom-color: var(--vditor-tooltip-bg, #3b3e43) !important;
 }
+
+/* Hide the browser-native file button that Vditor overlays on its upload icon. */
+.vditor-toolbar__item input[type="file"] {
+  opacity: 0;
+  color: transparent;
+  font-size: 0;
+  line-height: 0;
+  padding: 0;
+  border: 0;
+  appearance: none;
+}
+
+.vditor-toolbar__item input[type="file"]::file-selector-button,
+.vditor-toolbar__item input[type="file"]::-webkit-file-upload-button {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  color: transparent;
+  font-size: 0;
+  appearance: none;
+}
