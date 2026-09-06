@@ -245,6 +245,11 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
     this.changed = true;
   }
 
+  get parentPath(): string {
+    const lastSlashIndex = this.filePath.lastIndexOf('/');
+    return lastSlashIndex === -1 ? '' : this.filePath.substring(0, lastSlashIndex);
+  }
+
   ngOnInit(): void {
     this.pageTitleService.title = 'Edit File';
     if (this.route.parent) {
@@ -487,10 +492,9 @@ export class EditFileComponent implements OnInit, CanComponentDeactivate {
   navigateToCollection(): void {
     // Navigate back to the collection view
 
-    const pathWithoutFile = this.filePath.substring(0, this.filePath.lastIndexOf('/'));
     this.router.navigate(['/repositories', this.repositoryId, 'collection', this.collectionName], {
       queryParams: {
-        path: pathWithoutFile
+        path: this.parentPath
       }
     });
   }

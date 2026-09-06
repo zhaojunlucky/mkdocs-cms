@@ -1,0 +1,50 @@
+@if (findReplaceOpen) {
+  <div class="find-replace-bar" role="search">
+    <div class="find-replace-row">
+      <button mat-icon-button type="button" class="replace-toggle"
+              [matTooltip]="replaceRowOpen ? 'Hide replace' : 'Replace'"
+              (click)="replaceRowOpen = !replaceRowOpen">
+        <mat-icon>{{ replaceRowOpen ? 'expand_less' : 'expand_more' }}</mat-icon>
+      </button>
+      <input #findInput
+             class="find-replace-input"
+             type="text"
+             placeholder="Find"
+             [(ngModel)]="findQuery"
+             (ngModelChange)="onFindQueryChange()"
+             (keydown.enter)="onFindEnter($event)"
+             (keydown.escape)="closeFindReplace()" />
+      <span class="match-counter">
+        @if (findQuery) {
+          {{ matchCount > 0 ? currentMatchNumber + ' / ' + matchCount : 'No results' }}
+        }
+      </span>
+      <button mat-icon-button type="button" class="case-toggle" [class.active]="matchCase"
+              matTooltip="Match case" (click)="toggleMatchCase()">
+        <span class="case-label">Aa</span>
+      </button>
+      <button mat-icon-button type="button" matTooltip="Previous match" [disabled]="matchCount === 0" (click)="findPrev()">
+        <mat-icon>keyboard_arrow_up</mat-icon>
+      </button>
+      <button mat-icon-button type="button" matTooltip="Next match" [disabled]="matchCount === 0" (click)="findNext()">
+        <mat-icon>keyboard_arrow_down</mat-icon>
+      </button>
+      <button mat-icon-button type="button" matTooltip="Close" (click)="closeFindReplace()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    @if (replaceRowOpen) {
+      <div class="find-replace-row replace-row">
+        <input class="find-replace-input"
+               type="text"
+               placeholder="Replace"
+               [(ngModel)]="replaceQuery"
+               (keydown.enter)="replaceCurrent()"
+               (keydown.escape)="closeFindReplace()" />
+        <button mat-button type="button" [disabled]="matchCount === 0" (click)="replaceCurrent()">Replace</button>
+        <button mat-button type="button" [disabled]="!findQuery" (click)="replaceAll()">Replace All</button>
+      </div>
+    }
+  </div>
+}
+<div #vditorContainer class="vditor-container"></div>
