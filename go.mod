@@ -10,7 +10,7 @@ require (
 	github.com/minio/minio-go/v7 v7.0.97
 	github.com/sirupsen/logrus v1.9.4
 	github.com/yuin/goldmark v1.7.16
-	github.com/zhaojunlucky/golib v1.3.0
+	github.com/zhaojunlucky/golib v1.3.1
 	golang.org/x/crypto v0.54.0
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/time v0.14.0
